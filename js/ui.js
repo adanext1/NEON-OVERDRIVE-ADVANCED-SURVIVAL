@@ -37,10 +37,6 @@ function showLevelUpMenu(pObj) {
     modal.style.display = 'block';
     isPaused = true;
 
-    if (typeof isOnline !== 'undefined' && isOnline) {
-        sendGameEvent('level-up-pause', { playerId: pObj.id });
-    }
-
     const choicesDiv = document.getElementById('level-up-choices');
     choicesDiv.innerHTML = '';
 
@@ -71,6 +67,10 @@ function showLevelUpMenu(pObj) {
 
     // --- MENU LOCAL ---
     isLocalLevelUpOpen = true;
+    
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        sendGameEvent('level-up-pause', { playerId: pObj.id });
+    }
     if (descElem) descElem.style.display = 'block';
     let playerLabel = pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2';
     titleElem.innerText = `⚡ MEJORA DE SISTEMA — ${playerLabel}`;
