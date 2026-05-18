@@ -39,7 +39,7 @@ let players = [
         hp: 100, maxHp: 100, shield: 0, maxShield: 40, xp: 0, nextXp: 100, level: 1, credits: 0, angle: 0,
         damageModifier: 1.0, weapons: ['basic'], currentWeaponIndex: 0,
         dashCooldown: 0, dashTimer: 0, dashVx: 0, dashVy: 0, pulseCooldown: 0,
-        aimMode: 'AUTO', overdriveTimer: 0,
+        aimMode: 'AUTO', overdriveTimer: 0, color: '#00ffcc',
         flashTicks: 0, damageFlashAlpha: 0,
         weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } }
     }

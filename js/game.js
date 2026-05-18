@@ -98,8 +98,8 @@ function processGamepadInput() {
     if (!lastGamepadButtons[0]) lastGamepadButtons[0] = [];
     if (!lastGamepadButtons[1]) lastGamepadButtons[1] = [];
 
-    // Activar co-op si el Mando 1 presiona START (botón 9) y no estamos en co-op
-    if (gp1 && gp1.buttons[9]?.pressed && !lastGamepadButtons[0][9] && !isCoop) {
+    // Activar co-op si el Mando 1 presiona START (botón 9) y no estamos en co-op ni en online
+    if (gp1 && gp1.buttons[9]?.pressed && !lastGamepadButtons[0][9] && !isCoop && !isOnline) {
         isCoop = true;
         let p2 = {
             id: 2,
@@ -783,7 +783,7 @@ function update() {
             if (d.matType) { userSave.materials[d.matType]++; saveGame(); }
             if (nearestP.xp >= nearestP.nextXp) {
                 nearestP.level++; nearestP.xp -= nearestP.nextXp; nearestP.nextXp = Math.floor(nearestP.nextXp * 1.45);
-                createExplosion(nearestP.x, nearestP.y, nearestP.id === 1 ? '#00ffcc' : '#ff007f', 35, 1.8);
+                createExplosion(nearestP.x, nearestP.y, nearestP.color || '#00ffcc', 35, 1.8);
                 showLevelUpMenu(nearestP);
             }
             drops.splice(i, 1); updateUI();
@@ -909,8 +909,8 @@ function draw() {
         ctx.closePath();
 
         if (p.flashTicks > 0) { ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ff0055'; ctx.fill(); }
-        else { ctx.strokeStyle = p.dashTimer > 0 ? (p.id === 1 ? '#00ffff' : '#ff00ff') : (p.id === 1 ? '#00ffcc' : '#ff007f'); }
-        ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = p.id === 1 ? '#ff007f' : '#00ffff'; ctx.fillRect(0, -3, p.radius * 1.4, 6);
+        else { ctx.strokeStyle = p.dashTimer > 0 ? (p.color === '#00ffcc' ? '#00ffff' : '#ff00ff') : (p.color || '#00ffcc'); }
+        ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = p.color === '#00ffcc' ? '#ff007f' : '#00ffff'; ctx.fillRect(0, -3, p.radius * 1.4, 6);
 
         if (p.shield > 0) {
             ctx.beginPath(); ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);

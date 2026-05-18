@@ -3,7 +3,7 @@ let currentRoomId;
 let isOnline = false;
 let isHost = false;
 
-function connectToServer(url = 'http://localhost:3000') {
+function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrender.com') {
     socket = io(url);
 
     socket.on('connect', () => {
@@ -29,7 +29,7 @@ function connectToServer(url = 'http://localhost:3000') {
             players.push({
                 id: 2, x: data.x, y: data.y, radius: 15, speed: 4, hp: 100, maxHp: 100,
                 credits: 0, level: 1, xp: 0, nextXp: 100, weapons: ['blaster'], currentWeaponIndex: 0,
-                color: '#ff007f', shield: 0, maxShield: 40, aimMode: 'AUTO'
+                color: isHost ? '#ff007f' : '#00ffcc', shield: 0, maxShield: 40, aimMode: 'AUTO'
             });
         }
         
@@ -76,6 +76,8 @@ function connectToServer(url = 'http://localhost:3000') {
 
 function createOnlineRoom() {
     isHost = true;
+    isCoop = true;
+    players[0].color = '#00ffcc'; // Host siempre verde/cyan
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     connectToServer();
     socket.emit('join-room', currentRoomId);
@@ -85,6 +87,8 @@ function createOnlineRoom() {
 
 function joinOnlineRoom(roomId) {
     isHost = false;
+    isCoop = true;
+    players[0].color = '#ff007f'; // Cliente siempre rosa/rojo
     currentRoomId = roomId.toUpperCase();
     connectToServer();
     socket.emit('join-room', currentRoomId);
