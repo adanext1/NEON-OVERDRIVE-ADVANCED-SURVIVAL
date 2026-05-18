@@ -11,13 +11,11 @@ function updateMenuSelection(modalId) {
 
 let levelUpQueue = [];
 let levelUpCountdownInterval = null;
+let isLocalLevelUpOpen = false;
 
 function showLevelUpMenu(pObj) {
     if (!pObj) pObj = players[0];
 
-    // En online: solo el jugador LOCAL maneja SU menu
-    // Si pObj.id === 1 y somos el host, o pObj.id === 2 y somos el cliente (id===2 no existe localmente si somos host)
-    // La regla: solo mostramos cartas si pObj === players[0] (el local)
     let isLocalPlayer = (pObj === players[0]);
 
     const modal = document.getElementById('level-up-modal');
@@ -26,11 +24,9 @@ function showLevelUpMenu(pObj) {
         return;
     }
     
-    // Marcar como abierto inmediatamente para evitar llamadas dobles en el mismo frame
     modal.style.display = 'block';
     isPaused = true;
 
-    // Notificar al aliado que pausamos (para que él también pare)
     if (typeof isOnline !== 'undefined' && isOnline) {
         sendGameEvent('level-up-pause', { playerId: pObj.id });
     }
@@ -39,21 +35,20 @@ function showLevelUpMenu(pObj) {
     choicesDiv.innerHTML = '';
 
     const titleElem = modal.querySelector('h2');
-    const descElem = modal.querySelector('p'); // "Selecciona una directiva..."
+    const descElem = modal.querySelector('p');
     
     let playerColor = pObj.id === 1 ? '#00ffcc' : '#ff007f';
     titleElem.style.color = playerColor;
 
-    // Limpiar timer y barra viejos si quedaron por algún motivo
     let oldTimer = document.getElementById('levelup-timer');
     if (oldTimer) oldTimer.remove();
     let oldBar = document.getElementById('levelup-bar');
     if (oldBar) oldBar.remove();
 
     if (!isLocalPlayer) {
-        // Pantalla de espera para el aliado
+        isLocalLevelUpOpen = false;
         titleElem.innerText = `⏳ JUGADOR ${pObj.id} ELIGIENDO MEJORA...`;
-        if (descElem) descElem.style.display = 'none'; // Ocultar "Selecciona..."
+        if (descElem) descElem.style.display = 'none';
         
         choicesDiv.innerHTML = `
             <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.6);">
@@ -65,7 +60,8 @@ function showLevelUpMenu(pObj) {
     }
 
     // --- MENU LOCAL ---
-    if (descElem) descElem.style.display = 'block'; // Mostrar "Selecciona..."
+    isLocalLevelUpOpen = true;
+    if (descElem) descElem.style.display = 'block';
     let playerLabel = pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2';
     titleElem.innerText = `⚡ MEJORA DE SISTEMA — ${playerLabel}`;
 
@@ -118,13 +114,14 @@ function showLevelUpMenu(pObj) {
         u.apply();
         modal.style.display = 'none';
         isPaused = false;
+        isLocalLevelUpOpen = false;
         
         // Remover elementos insertados dinámicamente
         let t = document.getElementById('levelup-timer'); if (t) t.remove();
         let b = document.getElementById('levelup-bar'); if (b) b.remove();
 
         if (typeof isOnline !== 'undefined' && isOnline) {
-            sendGameEvent('level-up-resume', {});
+            sendGameEvent('level-up-resume', { playerId: pObj.id });
         }
         if (levelUpQueue.length > 0) {
             let nextP = levelUpQueue.shift();

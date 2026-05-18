@@ -84,20 +84,34 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             messagesDiv.appendChild(msgEl);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else if (data.type === 'level-up-pause') {
-            // El aliado subió de nivel: pausar localmente y mostrar pantalla de espera
-            isPaused = true;
             let remoteP = players.find(p => p.id === data.payload.playerId) || players[0];
-            showLevelUpMenu(remoteP);
-        } else if (data.type === 'level-up-resume') {
-            // El aliado eligió su mejora: cerrar modal de espera y reanudar
-            let modal = document.getElementById('level-up-modal');
-            if (modal) modal.style.display = 'none';
-            isPaused = false;
             
-            // Procesar cola de subidas de nivel si quedó algo pendiente mientras esperábamos
-            if (typeof levelUpQueue !== 'undefined' && levelUpQueue.length > 0) {
-                let nextP = levelUpQueue.shift();
-                setTimeout(() => showLevelUpMenu(nextP), 300);
+            // Si nosotros estamos eligiendo mejora localmente, encolamos la del aliado
+            if (typeof isLocalLevelUpOpen !== 'undefined' && isLocalLevelUpOpen) {
+                levelUpQueue.push(remoteP);
+            } else {
+                // Si no, pausamos y mostramos la pantalla de espera
+                isPaused = true;
+                showLevelUpMenu(remoteP);
+            }
+        } else if (data.type === 'level-up-resume') {
+            // Si nosotros estamos eligiendo mejora localmente, el aliado terminó su espera
+            if (typeof isLocalLevelUpOpen !== 'undefined' && isLocalLevelUpOpen) {
+                // Quitar al aliado de la cola si estaba ahí (ya no necesitamos mostrar su espera)
+                if (typeof levelUpQueue !== 'undefined') {
+                    levelUpQueue = levelUpQueue.filter(p => p.id !== data.payload.playerId);
+                }
+            } else {
+                // Estábamos en pantalla de espera: cerrar y reanudar
+                let modal = document.getElementById('level-up-modal');
+                if (modal) modal.style.display = 'none';
+                isPaused = false;
+                
+                // Procesar cola por si teníamos algo pendiente nosotros
+                if (typeof levelUpQueue !== 'undefined' && levelUpQueue.length > 0) {
+                    let nextP = levelUpQueue.shift();
+                    setTimeout(() => showLevelUpMenu(nextP), 300);
+                }
             }
         }
     });
