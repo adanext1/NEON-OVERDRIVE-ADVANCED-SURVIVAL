@@ -902,30 +902,40 @@ function update() {
         if (hit) continue;
     }
 
-    // Drops por cercanía
-    for (let i = drops.length - 1; i >= 0; i--) {
-        let d = drops[i]; 
-        let nearestP = players[0];
-        let dist = Math.hypot(players[0].x - d.x, players[0].y - d.y);
-        
-        players.forEach(p => {
-            let d2 = Math.hypot(p.x - d.x, p.y - d.y);
-            if (d2 < dist) {
-                nearestP = p;
-                dist = d2;
-            }
-        });
+    if (!isOnline || isHost) {
+        // Drops por cercanía
+        for (let i = drops.length - 1; i >= 0; i--) {
+            let d = drops[i]; 
+            let nearestP = players[0];
+            let dist = Math.hypot(players[0].x - d.x, players[0].y - d.y);
+            
+            players.forEach(p => {
+                let d2 = Math.hypot(p.x - d.x, p.y - d.y);
+                if (d2 < dist) {
+                    nearestP = p;
+                    dist = d2;
+                }
+            });
 
-        if (dist < 150 && dist > 0) { d.x += ((nearestP.x - d.x) / dist) * 6.5; d.y += ((nearestP.y - d.y) / dist) * 6.5; }
-        if (dist < nearestP.radius + d.radius) {
-            nearestP.credits += d.credits; nearestP.xp += Math.round(d.xp * xpMultiplier);
-            if (d.matType) { userSave.materials[d.matType]++; saveGame(); }
-            if (nearestP.xp >= nearestP.nextXp) {
-                nearestP.level++; nearestP.xp -= nearestP.nextXp; nearestP.nextXp = Math.floor(nearestP.nextXp * 1.45);
-                createExplosion(nearestP.x, nearestP.y, nearestP.color || '#00ffcc', 35, 1.8);
-                showLevelUpMenu(nearestP);
+            if (dist < 150 && dist > 0) { d.x += ((nearestP.x - d.x) / dist) * 6.5; d.y += ((nearestP.y - d.y) / dist) * 6.5; }
+            if (dist < nearestP.radius + d.radius) {
+                nearestP.credits += d.credits; nearestP.xp += Math.round(d.xp * xpMultiplier);
+                if (d.matType) { userSave.materials[d.matType]++; saveGame(); }
+                if (nearestP.xp >= nearestP.nextXp) {
+                    nearestP.level++; nearestP.xp -= nearestP.nextXp; nearestP.nextXp = Math.floor(nearestP.nextXp * 1.45);
+                    createExplosion(nearestP.x, nearestP.y, nearestP.color || '#00ffcc', 35, 1.8);
+                    showLevelUpMenu(nearestP);
+                }
+                drops.splice(i, 1); updateUI();
+                
+                // Enviar sincronización de stats al Cliente
+                if (typeof isOnline !== 'undefined' && isOnline && isHost) {
+                    sendGameEvent('sync-stats', {
+                        p1: { xp: players[0].xp, level: players[0].level, credits: players[0].credits, nextXp: players[0].nextXp },
+                        p2: { xp: (players[1] ? players[1].xp : 0), level: (players[1] ? players[1].level : 1), credits: (players[1] ? players[1].credits : 0), nextXp: (players[1] ? players[1].nextXp : 100) }
+                    });
+                }
             }
-            drops.splice(i, 1); updateUI();
         }
     }
 

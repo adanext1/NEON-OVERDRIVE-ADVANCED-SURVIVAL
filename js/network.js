@@ -84,6 +84,30 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             if (!isHost) {
                 toggleShop(true);
             }
+        } else if (data.type === 'open-level-up') {
+            if (!isHost) {
+                let localP = players.find(p => p.id === 2) || players[0];
+                showLevelUpMenu(localP);
+            }
+        } else if (data.type === 'sync-stats') {
+            if (!isHost) {
+                let hostP = players.find(p => p.id === 1) || players[1];
+                let clientP = players.find(p => p.id === 2) || players[0];
+                
+                if (hostP) {
+                    hostP.xp = data.payload.p1.xp;
+                    hostP.level = data.payload.p1.level;
+                    hostP.credits = data.payload.p1.credits;
+                    hostP.nextXp = data.payload.p1.nextXp;
+                }
+                if (clientP) {
+                    clientP.xp = data.payload.p2.xp;
+                    clientP.level = data.payload.p2.level;
+                    clientP.credits = data.payload.p2.credits;
+                    clientP.nextXp = data.payload.p2.nextXp;
+                }
+                updateUI();
+            }
         } else if (data.type === 'start-game') {
             if (!isHost && typeof startGameSimulation === 'function') {
                 startGameSimulation();

@@ -62,6 +62,10 @@ function showLevelUpMenu(pObj) {
                 <div style="font-size:16px; letter-spacing:2px;">Tu aliado está eligiendo una mejora</div>
                 <div style="font-size:12px; margin-top:12px; color: ${playerColor};">El juego se reanudará cuando elija</div>
             </div>`;
+            
+        if (typeof isOnline !== 'undefined' && isOnline && isHost) {
+            sendGameEvent('open-level-up', { playerId: pObj.id });
+        }
         return;
     }
 
