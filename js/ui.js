@@ -16,7 +16,17 @@ let isLocalLevelUpOpen = false;
 function showLevelUpMenu(pObj) {
     if (!pObj) pObj = players[0];
 
-    let isLocalPlayer = (pObj === players[0]);
+    // Detección robusta de si es el jugador local
+    let isLocalPlayer = false;
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        if (typeof isHost !== 'undefined' && isHost) {
+            isLocalPlayer = (pObj.id === 1);
+        } else {
+            isLocalPlayer = (pObj.id === 2);
+        }
+    } else {
+        isLocalPlayer = (pObj === players[0]);
+    }
 
     const modal = document.getElementById('level-up-modal');
     if (modal.style.display === 'block') {
