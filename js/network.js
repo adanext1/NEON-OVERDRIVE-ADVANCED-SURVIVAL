@@ -14,12 +14,18 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
 
     socket.on('player-joined', (data) => {
         console.log('Otro jugador se unió a la sala.');
-        showNetworkMessage('¡Un jugador se ha unido a tu partida!');
+        showNetworkMessage('🎮 ¡JUGADOR 2 CONECTADO! Listo para jugar.', 5000);
         let p2Status = document.getElementById('p2-status');
         if (p2Status) {
             p2Status.innerText = '[ONLINE]';
             p2Status.style.color = '#00ffcc';
         }
+        // Indicador visual en la sala
+        let joinBanner = document.createElement('div');
+        joinBanner.innerText = '✅ ALIADO CONECTADO';
+        joinBanner.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,255,100,0.15);border:2px solid #00ff55;color:#00ff55;font-family:Courier New;font-size:28px;padding:20px 40px;border-radius:8px;z-index:9999;pointer-events:none;transition:opacity 1s;';
+        document.body.appendChild(joinBanner);
+        setTimeout(() => { joinBanner.style.opacity = '0'; setTimeout(() => joinBanner.remove(), 1000); }, 2500);
     });
 
     socket.on('remote-player-update', (data) => {
@@ -40,7 +46,8 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             p2.hp = data.hp;
             p2.shield = data.shield;
             p2.aimMode = data.aimMode;
-            p2.currentWeaponIndex = data.currentWeaponIndex;
+            if (data.weapons) p2.weapons = data.weapons;
+            p2.currentWeaponIndex = Math.min(data.currentWeaponIndex, (p2.weapons.length - 1));
         }
     });
 
@@ -108,7 +115,8 @@ function sendPlayerUpdate() {
         hp: p1.hp,
         shield: p1.shield,
         aimMode: p1.aimMode,
-        currentWeaponIndex: p1.currentWeaponIndex
+        currentWeaponIndex: p1.currentWeaponIndex,
+        weapons: p1.weapons
     });
 }
 
