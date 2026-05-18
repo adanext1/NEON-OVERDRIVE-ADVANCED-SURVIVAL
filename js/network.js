@@ -93,6 +93,12 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             let modal = document.getElementById('level-up-modal');
             if (modal) modal.style.display = 'none';
             isPaused = false;
+            
+            // Procesar cola de subidas de nivel si quedó algo pendiente mientras esperábamos
+            if (typeof levelUpQueue !== 'undefined' && levelUpQueue.length > 0) {
+                let nextP = levelUpQueue.shift();
+                setTimeout(() => showLevelUpMenu(nextP), 300);
+            }
         }
     });
 }
