@@ -269,10 +269,20 @@ function toggleShop(show) {
     isPaused = show; 
     document.getElementById('shop-modal').style.display = show ? 'block' : 'none'; 
     
-    // Ocultar columna del J2 si no estamos en co-op
+    let shopP1Col = document.getElementById('shop-p1-col');
     let shopP2Col = document.getElementById('shop-p2-col');
-    if (shopP2Col) {
-        shopP2Col.style.display = isCoop ? 'block' : 'none';
+    
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        if (typeof isHost !== 'undefined' && isHost) {
+            if (shopP1Col) shopP1Col.style.display = 'block';
+            if (shopP2Col) shopP2Col.style.display = 'none';
+        } else {
+            if (shopP1Col) shopP1Col.style.display = 'none';
+            if (shopP2Col) shopP2Col.style.display = 'block';
+        }
+    } else {
+        if (shopP1Col) shopP1Col.style.display = 'block';
+        if (shopP2Col) shopP2Col.style.display = isCoop ? 'block' : 'none';
     }
     
     if (show) updateMenuSelection('shop-modal'); 

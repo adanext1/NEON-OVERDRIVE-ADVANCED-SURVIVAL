@@ -80,6 +80,10 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
                 }
                 updateUI();
             }
+        } else if (data.type === 'open-shop') {
+            if (!isHost) {
+                toggleShop(true);
+            }
         } else if (data.type === 'start-game') {
             if (!isHost && typeof startGameSimulation === 'function') {
                 startGameSimulation();

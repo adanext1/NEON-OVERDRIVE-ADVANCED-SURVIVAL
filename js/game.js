@@ -710,7 +710,13 @@ function update() {
                 }
             });
             players.forEach(p => p.credits += 60);
-            updateUI(); toggleShop(true); hazards = []; airDrops = [];
+            updateUI(); 
+            toggleShop(true); 
+            hazards = []; 
+            airDrops = [];
+            if (typeof isOnline !== 'undefined' && isOnline && isHost) {
+                sendGameEvent('open-shop', {});
+            }
         }
     } else if (enemies.length === 0 && !isShopActive && !inCollectionMenu) {
         // Limpiar drones al terminar oleada
