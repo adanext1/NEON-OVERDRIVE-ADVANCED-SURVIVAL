@@ -85,9 +85,20 @@ function resetGame() {
         p.level = 1;
         p.xp = 0;
         p.nextXp = 100;
-        p.weapons = ['blaster'];
+        p.hp = p.maxHp || 100;
+        p.shield = 0;
+        p.weapons = ['basic'];
         p.currentWeaponIndex = 0;
+        p.overdriveTimer = 0;
+        p.dashTimer = 0;
+        p.dashCooldown = 0;
+        p.pulseCooldown = 0;
+        p.weaponUpgrades = { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } };
     });
+    // En online, quitar al jugador remoto para que se re-cree cuando se reconecte
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        players.splice(1);
+    }
     
     document.getElementById('game-over-modal').style.display = 'none';
     startGameSimulation();
@@ -434,6 +445,7 @@ function fireWeapon(pObj) {
     if (!pObj) pObj = players[0];
     let now = Date.now(); 
     let wep = WEAPONS[pObj.weapons[pObj.currentWeaponIndex]];
+    if (!wep) return; // arma no reconocida, ignorar disparo
     
     let mods = pObj.weaponUpgrades[pObj.weapons[pObj.currentWeaponIndex]] || { damage: 0, fireRate: 0 };
     let baseRate = wep.fireRate - mods.fireRate;
@@ -549,7 +561,7 @@ function update() {
         if (p.inputSource === 'keyboard') {
             if (p.dashTimer > 0) {
                 p.x += p.dashVx; p.y += p.dashVy; p.dashTimer--;
-                createExplosion(p.x, p.y, p.id === 1 ? '#00ffff' : '#ff007f', 2, 0.2);
+                createExplosion(p.x, p.y, p.color === '#00ffcc' ? '#00ffff' : '#ff00ff', 2, 0.2);
             } else {
                 let mx = 0; let my = 0;
                 if (keys['w'] || keys['arrowup']) my = -1; if (keys['s'] || keys['arrowdown']) my = 1;
@@ -639,7 +651,11 @@ function update() {
             players.forEach(p => p.credits += 60);
             updateUI(); toggleShop(true); hazards = []; airDrops = [];
         }
-    } else if (enemies.length === 0 && !isShopActive && !inCollectionMenu) { startWave(); }
+    } else if (enemies.length === 0 && !isShopActive && !inCollectionMenu) {
+        // Limpiar drones al terminar oleada
+        helperDrones = [];
+        startWave();
+    }
 
     // Balas vs Enemigos
     for (let i = bullets.length - 1; i >= 0; i--) {

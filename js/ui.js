@@ -41,6 +41,9 @@ function showLevelUpMenu(pObj) {
     
     pObj.weapons.forEach(wKey => {
         let wep = WEAPONS[wKey];
+        if (!wep) return; // Ignorar armas no reconocidas
+        if (!pObj.weaponUpgrades) pObj.weaponUpgrades = {};
+        if (!pObj.weaponUpgrades[wKey]) pObj.weaponUpgrades[wKey] = { damage: 0, fireRate: 0 };
         pool.push({ title: `Calibre: ${wep.name}`, desc: `+20% Daño`, rarity: 'común', apply: () => { pObj.weaponUpgrades[wKey].damage += Math.floor(wep.damage * 0.20); } });
         pool.push({ title: `Cargador: ${wep.name}`, desc: `+15% Cadencia`, rarity: 'común', apply: () => { pObj.weaponUpgrades[wKey].fireRate += Math.floor(wep.fireRate * 0.15); } });
     });
@@ -56,7 +59,7 @@ function showLevelUpMenu(pObj) {
     }
     
     pool.push({ title: 'Maestría Total', desc: '+15% Daño a TODAS las armas', rarity: 'legendaria', apply: () => { 
-        for (let k in pObj.weaponUpgrades) { pObj.weaponUpgrades[k].damage += Math.floor(WEAPONS[k].damage * 0.15); } 
+        for (let k in pObj.weaponUpgrades) { if (WEAPONS[k]) pObj.weaponUpgrades[k].damage += Math.floor(WEAPONS[k].damage * 0.15); } 
     } });
 
     let choices = [];
