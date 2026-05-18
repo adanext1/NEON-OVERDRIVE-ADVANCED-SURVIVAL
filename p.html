@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON OVERDRIVE: ADVANCED SURVIVAL + COLLECTION</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <!-- Panel HUD Principal (Jugador 1) -->
+        <div class="hud-box" id="hud-box">
+            <div class="hud-header">
+                <span id="hud-wave">OLEADA: 1</span>
+                <span id="hud-xp">NV: 1 (0%)</span>
+            </div>
+            
+            <div class="hud-stat">
+                <span>❤️</span>
+                <div class="hud-bar"><div id="hp-bar-fill" class="hud-bar-fill hp-fill"></div></div>
+                <span id="hud-hp" class="hud-val">100/100</span>
+            </div>
+            
+            <div class="hud-stat" id="shield-stat" style="display:none;">
+                <span>🛡️</span>
+                <div class="hud-bar"><div id="shield-bar-fill" class="hud-bar-fill shield-fill"></div></div>
+                <span id="hud-shield" class="hud-val">0/40</span>
+            </div>
+            
+            <div class="hud-row">
+                <span id="hud-credits">CRÉDITOS: $0</span>
+                <span style="margin-left:10px;" id="hud-mats">C:0 | P:0 | Cr:0</span>
+            </div>
+            
+            <div class="hud-row">
+                <span id="hud-weapon" style="color: #ff007f;">ARMA: Blaster</span>
+                <span style="margin-left:10px;" id="hud-aim" style="color: #ffff00;">APUNTADO: AUTO</span>
+            </div>
+
+            <div style="margin-top:10px; font-size:11px; color:#aaa;">DASH [SHIFT L]:</div>
+            <div class="cooldown-bar">
+                <div id="dash-cd" class="cooldown-fill" style="background:#00ffff;"></div>
+            </div>
+
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">PULSO [E]:</div>
+            <div class="cooldown-bar">
+                <div id="pulse-cd" class="cooldown-fill" style="background:#ff007f;"></div>
+            </div>
+
+            <div style="margin-top:10px; font-size:10px; color:#00ffcc; text-align:center;">[P] Pausa</div>
+        </div>
+
+        <!-- Panel HUD Secundario (Jugador 2) -->
+        <div class="hud-box" id="hud-box-p2" style="display: none;">
+            <div class="hud-header">
+                <span>JUGADOR 2 <span id="p2-status" style="color: #ff007f;">[OFFLINE]</span></span>
+                <span id="hud-xp-p2">NV: 1 (0%)</span>
+            </div>
+            
+            <div class="hud-stat">
+                <span>❤️</span>
+                <div class="hud-bar"><div id="hp-bar-fill-p2" class="hud-bar-fill hp-fill"></div></div>
+                <span id="hud-hp-p2" class="hud-val">100/100</span>
+            </div>
+            
+            <div class="hud-stat" id="shield-stat-p2" style="display:none;">
+                <span>🛡️</span>
+                <div class="hud-bar"><div id="shield-bar-fill-p2" class="hud-bar-fill shield-fill"></div></div>
+                <span id="hud-shield-p2" class="hud-val">0/40</span>
+            </div>
+            
+            <div class="hud-row">
+                <span id="hud-credits-p2">CRÉDITOS: $0</span>
+                <span style="margin-left:10px;" id="hud-mats-p2">C:0 | P:0 | Cr:0</span>
+            </div>
+            
+            <div class="hud-row">
+                <span id="hud-weapon-p2" style="color: #ff007f;">ARMA: Blaster</span>
+                <span style="margin-left:10px;" id="hud-aim-p2" style="color: #ffff00;">APUNTADO: AUTO</span>
+            </div>
+
+            <div style="margin-top:10px; font-size:11px; color:#aaa;">DASH:</div>
+            <div class="cooldown-bar">
+                <div id="dash-cd-p2" class="cooldown-fill" style="background:#00ffff;"></div>
+            </div>
+
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">PULSO:</div>
+            <div class="cooldown-bar">
+                <div id="pulse-cd-p2" class="cooldown-fill" style="background:#ff007f;"></div>
+            </div>
+        </div>
+
+        <div id="wave-alert">OLEADA 1</div>
+        <div id="pause-display">=== PAUSA ===</div>
+
+        <!-- Menú Principal Inicial -->
+        <div id="main-menu">
+            <h1>NEON OVERDRIVE</h1>
+            <h2>ADVANCED SURVIVAL</h2>
+            <p style="margin-bottom: 20px; color: #aaa; font-size: 12px;">Sistemas listos para inicialización de
+                combate.</p>
+            <button class="shop-btn" onclick="startGameSimulation()">INICIAR SIMULACIÓN</button>
+            <button class="shop-btn" style="border-color: #00ffcc; color: #00ffcc;" onclick="createOnlineRoom()">CREAR SALA ONLINE</button>
+            <div style="display: flex; gap: 10px; margin: 10px 0;">
+                <input type="text" id="room-id-input" placeholder="CÓDIGO DE SALA" style="flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-family: inherit; font-size: 14px; text-transform: uppercase;">
+                <button class="shop-btn" style="width: auto; margin: 0; padding: 10px 20px;" onclick="joinOnlineRoom(document.getElementById('room-id-input').value)">UNIRSE</button>
+            </div>
+            <button class="shop-btn" style="border-color: #ffff00; color: #ffff00;"
+                onclick="toggleCollection(true)">REVISAR ÁLBUM PERMANENTE</button>
+        </div>
+
+        <!-- Tienda de Upgrades -->
+        <div id="shop-modal">
+            <h2>TECNOLOGÍA DISPONIBLE</h2>
+            <p style="margin-bottom: 12px; color: #888; font-size: 13px;">ESPACIO o MANDO para combatir | [C] para Álbum</p>
+            
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                <!-- Columna Jugador 1 -->
+                <div id="shop-p1-col" style="flex: 1; border-right: 1px solid #333; padding-right: 10px;">
+                    <h3 style="color: #00ffcc; margin-bottom: 10px;">Jugador 1</h3>
+                    <button class="shop-btn" id="btn-up-hp" onclick="buyUpgrade('hp', players[0])">+25 HP Máxima - $50</button>
+                    <button class="shop-btn" id="btn-up-dmg" onclick="buyUpgrade('dmg', players[0])">+20% Daño - $60</button>
+                    <button class="shop-btn" id="btn-wep-shotgun" onclick="buyUpgrade('shotgun', players[0])">Escopeta - $150</button>
+                    <button class="shop-btn" id="btn-wep-plasma" onclick="buyUpgrade('plasma', players[0])">Cañón Plasma - $300</button>
+                </div>
+                
+                <!-- Columna Jugador 2 -->
+                <div style="flex: 1; padding-left: 10px;" id="shop-p2-col">
+                    <h3 style="color: #ff007f; margin-bottom: 10px;">Jugador 2</h3>
+                    <button class="shop-btn" id="btn-up-hp-p2" onclick="buyUpgrade('hp', players[1])">+25 HP Máxima - $50</button>
+                    <button class="shop-btn" id="btn-up-dmg-p2" onclick="buyUpgrade('dmg', players[1])">+20% Daño - $60</button>
+                    <button class="shop-btn" id="btn-wep-shotgun-p2" onclick="buyUpgrade('shotgun', players[1])">Escopeta - $150</button>
+                    <button class="shop-btn" id="btn-wep-plasma-p2" onclick="buyUpgrade('plasma', players[1])">Cañón Plasma - $300</button>
+                </div>
+            </div>
+            
+            <button class="shop-btn" style="border-color:#ff007f; color:#ff007f; margin-top: 20px;" onclick="toggleShop(false)">VOLVER A COMBATIR</button>
+        </div>
+
+        <!-- Colección Permanente -->
+        <div id="collection-modal">
+            <h2>ÁLBUM DE RELIQUIAS</h2>
+            <p style="color: #aaa; font-size: 12px;">Componentes en inventario permanente:</p>
+            <div style="font-size: 13px; color: #00ffff; margin: 5px 0;" id="mats-display">Núcleos: 0 | Placas: 0 |
+                Cristales: 0</div>
+
+            <div class="collection-grid" id="collection-grid"></div>
+            <button class="shop-btn" style="border-color:#ffff00; color:#ffff00;"
+                onclick="closeCollectionMenu()">VOLVER</button>
+        </div>
+
+        <!-- Game Over Modal -->
+        <!-- MODAL DE SUBIDA DE NIVEL -->
+        <div id="level-up-modal" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 10, 15, 0.95); border: 2px solid #ff007f; padding: 30px; color: #fff; z-index: 100; text-align: center; width: 500px; box-shadow: 0 0 20px rgba(255, 0, 127, 0.5); border-radius: 10px;">
+            <h2 style="color: #ff007f; text-shadow: 0 0 10px rgba(255, 0, 127, 0.7); margin-bottom: 10px;">MEJORA DE SISTEMA</h2>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 25px;">Selecciona una directiva de mejora:</p>
+            <div id="level-up-choices" style="display: flex; gap: 15px; justify-content: center;">
+                <!-- Las cartas se generarán dinámicamente -->
+            </div>
+        </div>
+
+        <div id="game-over-modal" style="display: none;">
+            <h2 style="color: #ff0055; text-shadow: 0 0 10px rgba(255, 0, 85, 0.7);">SISTEMAS COLAPSADOS</h2>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">La simulación ha terminado.</p>
+            <div style="font-size: 16px; color: #00ffcc; margin-bottom: 20px;" id="game-over-stats">Oleada alcanzada: 1
+            </div>
+            <button class="shop-btn" onclick="resetGame()">REINICIAR SIMULACIÓN</button>
+            <button class="shop-btn" style="border-color:#ffff00; color:#ffff00;"
+                onclick="toggleCollection(true)">REVISAR ÁLBUM</button>
+        </div>
+
+        <!-- Chat Box -->
+        <div id="chat-box" style="position: absolute; bottom: 20px; left: 20px; width: 300px; background: rgba(5, 5, 20, 0.85); border: 1px solid #00ffcc; border-radius: 8px; padding: 10px; font-family: monospace; z-index: 50; display: none; pointer-events: auto;">
+            <div id="chat-messages" style="height: 120px; overflow-y: auto; color: #fff; font-size: 12px; margin-bottom: 10px; text-align: left;">
+                <div style="color: #00ffcc;">[Sistema] Chat conectado.</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="chat-input" placeholder="Escribe un mensaje..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; padding: 5px; border-radius: 4px; font-size: 12px;" onkeydown="if(event.key==='Enter') sendChat()">
+                <button class="shop-btn" style="width: auto; margin: 0; padding: 5px 10px; font-size: 12px;" onclick="sendChat()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/network.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+</body>
+
+</html>
