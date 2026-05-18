@@ -16,6 +16,7 @@ function spawnDamageText(x, y, amount, type = 'normal') {
 
 function takeDamage(pObj, amount) {
     if (amount <= 0) return;
+    if (pObj.isDead) return; // Ya muerto, no recibir más daño
     pObj.flashTicks = 6; pObj.damageFlashAlpha = 0.5;
     
     // Animación en el HUD
@@ -23,7 +24,7 @@ function takeDamage(pObj, amount) {
     let hudElem = document.getElementById(hudId);
     if (hudElem) {
         hudElem.classList.remove('hud-damage');
-        void hudElem.offsetWidth; // Trigger reflow
+        void hudElem.offsetWidth;
         hudElem.classList.add('hud-damage');
     }
 
@@ -32,9 +33,18 @@ function takeDamage(pObj, amount) {
         spawnDamageText(pObj.x, pObj.y, absorbed, 'shield'); createExplosion(pObj.x, pObj.y, '#00aaff', 8, 1.2);
     }
     if (amount > 0) {
-        pObj.hp -= amount; spawnDamageText(pObj.x, pObj.y, amount, 'hazard'); createExplosion(pObj.x, pObj.y, '#ff0055', 12, 1.5);
+        pObj.hp -= amount;
         if (pObj.hp <= 0) {
-            let allDead = players.every(p => p.hp <= 0);
+            pObj.hp = 0;
+            pObj.isDead = true;
+            pObj.reviveTimer = 0;
+            createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
+            screenShake = 15;
+            spawnDamageText(pObj.x, pObj.y - 20, 'KO', 'hazard');
+            showNetworkMessage(`💀 ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} CAÍDO — acércate y mantén [R] para revivir!`, 5000);
+
+            // Chequear si TODOS están muertos → Game Over
+            let allDead = players.every(p => p.isDead || p.hp <= 0);
             if (allDead && !isGameOver) {
                 isGameOver = true;
                 document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
@@ -42,8 +52,20 @@ function takeDamage(pObj, amount) {
                 updateMenuSelection('game-over-modal');
                 isPaused = true;
             }
+        } else {
+            spawnDamageText(pObj.x, pObj.y, amount, 'hazard'); createExplosion(pObj.x, pObj.y, '#ff0055', 12, 1.5);
         }
     }
+    updateUI();
+}
+
+function revivePlayer(pObj) {
+    pObj.isDead = false;
+    pObj.hp = Math.floor(pObj.maxHp * 0.3); // Revive con 30% de vida
+    pObj.shield = 0;
+    createExplosion(pObj.x, pObj.y, '#00ff88', 30, 1.5);
+    showNetworkMessage(`✅ ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} REVIVIDO!`, 3000);
+    screenShake = 8;
     updateUI();
 }
 
@@ -557,6 +579,7 @@ function update() {
 
     // Movimiento
     players.forEach(p => {
+        if (p.isDead) return; // No mover jugadores muertos
         if (typeof isOnline !== 'undefined' && isOnline && p.id !== 1) return; 
         if (p.inputSource === 'keyboard') {
             if (p.dashTimer > 0) {
@@ -585,9 +608,31 @@ function update() {
 
     // Disparar
     players.forEach(p => {
+        if (p.isDead) return; // No disparar si está muerto
         if (typeof isOnline !== 'undefined' && isOnline && p.id !== 1) return; 
         if (p.id === 1 && p.inputSource === 'keyboard' && mouse.isDown) fireWeapon(p);
         else if (p.isShooting) fireWeapon(p);
+    });
+
+    // --- REVIVIR CON [R] ---
+    players.forEach(deadP => {
+        if (!deadP.isDead) return;
+        if (!isCoop) return; // Solo en coop
+        players.forEach(aliveP => {
+            if (aliveP.isDead || aliveP === deadP) return;
+            let dist = Math.hypot(aliveP.x - deadP.x, aliveP.y - deadP.y);
+            if (dist < 60 && (keys['r'] || aliveP.isReviving)) {
+                deadP.reviveTimer = (deadP.reviveTimer || 0) + 1;
+                aliveP.isReviving = true;
+                if (deadP.reviveTimer >= 180) { // 3 segundos (60fps)
+                    revivePlayer(deadP);
+                    aliveP.isReviving = false;
+                }
+            } else {
+                deadP.reviveTimer = Math.max(0, (deadP.reviveTimer || 0) - 2);
+                aliveP.isReviving = false;
+            }
+        });
     });
 
     // Air Drops
@@ -647,7 +692,17 @@ function update() {
             if (spawnTimer >= 900 && enemiesToSpawn > 0) { spawnEnemy(); enemiesToSpawn--; spawnTimer = 0; }
         }
         if (enemiesToSpawn === 0 && enemies.length === 0) {
-            waveActive = false; wave++; 
+            waveActive = false; wave++;
+            // Auto-revivir jugadores caídos al final de oleada con 1 HP
+            players.forEach(p => {
+                if (p.isDead) {
+                    p.isDead = false;
+                    p.hp = 1;
+                    p.reviveTimer = 0;
+                    createExplosion(p.x, p.y, '#00ff88', 20, 1);
+                    showNetworkMessage(`➕ ${p.id === 1 ? 'J1' : 'J2'} revivido al terminar la oleada con 1 HP`, 3000);
+                }
+            });
             players.forEach(p => p.credits += 60);
             updateUI(); toggleShop(true); hazards = []; airDrops = [];
         }
@@ -919,13 +974,13 @@ function update() {
                 showNetworkMessage(`✅ NÚCLEO ESTABILIZADO — +$${reward} créditos!`, 3000);
                 updateUI(); ev.active = false;
             } else if (ev.timer <= 0) {
-                // Fracaso — onda expansiva
+                // Fracaso — onda expansiva (max 40% del HP máx para no matar de un golpe)
                 createExplosion(ev.x, ev.y, '#ff0000', 80, 3); screenShake = 20;
                 players.forEach(p => {
-                    let dmg = (p.shield > 0 ? p.shield : p.hp) * 0.5;
+                    let dmg = p.maxHp * 0.4;
                     takeDamage(p, dmg);
                 });
-                showNetworkMessage('❌ NÚCLEO DETONADO — 50% de vida perdida!', 3000);
+                showNetworkMessage('❌ NÚCLEO DETONADO — 40% de vida perdida!', 3000);
                 ev.active = false;
             }
         }
@@ -1266,7 +1321,30 @@ function draw() {
 
     // Dibujar Jugadores
     players.forEach(p => {
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle); ctx.beginPath();
+        ctx.save(); ctx.translate(p.x, p.y);
+
+        if (p.isDead) {
+            // Jugador muerto: dibujar como fantasma + texto KO
+            ctx.globalAlpha = 0.3 + Math.sin(Date.now() * 0.005) * 0.1;
+            ctx.strokeStyle = p.color; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-p.radius, -p.radius); ctx.lineTo(p.radius, p.radius); ctx.moveTo(p.radius, -p.radius); ctx.lineTo(-p.radius, p.radius); ctx.stroke();
+            ctx.globalAlpha = 0.7;
+            ctx.font = "bold 14px 'Courier New'"; ctx.fillStyle = '#ff4444'; ctx.textAlign = 'center';
+            ctx.fillText('KO', 0, -p.radius - 8);
+            // Anillo de progreso de revivir
+            if (p.reviveTimer > 0) {
+                ctx.globalAlpha = 1;
+                ctx.beginPath(); ctx.arc(0, 0, p.radius + 12, -Math.PI / 2, -Math.PI / 2 + (p.reviveTimer / 180) * Math.PI * 2);
+                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 4; ctx.stroke();
+                ctx.font = "bold 11px 'Courier New'"; ctx.fillStyle = '#00ff88';
+                ctx.fillText('HOLD R', 0, p.radius + 26);
+            }
+            ctx.textAlign = 'left';
+            ctx.restore();
+            return;
+        }
+
+        ctx.rotate(p.angle); ctx.beginPath();
         for (let i = 0; i < 6; i++) { let a = i * Math.PI / 3; ctx.lineTo(Math.cos(a) * p.radius, Math.sin(a) * p.radius); }
         ctx.closePath();
 
