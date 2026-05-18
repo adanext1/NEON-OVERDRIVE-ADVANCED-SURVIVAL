@@ -69,6 +69,17 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
                     enemiesToSpawn--;
                 }
             }
+        } else if (data.type === 'wave-sync') {
+            if (!isHost) {
+                wave = data.payload.wave;
+                waveActive = true;
+                let ab = document.getElementById('wave-alert');
+                if (ab) {
+                    ab.innerHTML = `OLEADA ${wave}<br><span style='font-size:18px; color:#fff;'>SISTEMAS INVASORES DETECTADOS</span>`;
+                    ab.style.opacity = 1; setTimeout(() => ab.style.opacity = 0, 2200);
+                }
+                updateUI();
+            }
         } else if (data.type === 'start-game') {
             if (!isHost && typeof startGameSimulation === 'function') {
                 startGameSimulation();

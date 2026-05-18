@@ -82,7 +82,9 @@ function startGameSimulation() {
         if (userSave.artifacts.shieldGen > 0) { p.shield = p.maxShield; }
     });
 
-    startWave();
+    if (!isOnline || isHost) {
+        startWave();
+    }
     
     if (typeof isOnline !== 'undefined' && isOnline && isHost) {
         sendGameEvent('start-game', {});
@@ -437,6 +439,10 @@ function getEventName(type) {
 
 function startWave() {
     waveActive = true; enemiesToSpawn = 6 + (wave * 4); if (wave % 5 === 0) enemiesToSpawn = 8 + wave;
+    
+    if (typeof isOnline !== 'undefined' && isOnline && isHost) {
+        sendGameEvent('wave-sync', { wave: wave });
+    }
     if (userSave.artifacts.shieldGen > 0) { 
         players.forEach(p => p.shield = p.maxShield);
         updateUI(); 
@@ -691,7 +697,7 @@ function update() {
         } else {
             if (spawnTimer >= 900 && enemiesToSpawn > 0) { spawnEnemy(); enemiesToSpawn--; spawnTimer = 0; }
         }
-        if (enemiesToSpawn === 0 && enemies.length === 0) {
+        if ((!isOnline || isHost) && enemiesToSpawn === 0 && enemies.length === 0) {
             waveActive = false; wave++;
             // Auto-revivir jugadores caídos al final de oleada con 1 HP
             players.forEach(p => {
@@ -709,7 +715,9 @@ function update() {
     } else if (enemies.length === 0 && !isShopActive && !inCollectionMenu) {
         // Limpiar drones al terminar oleada
         helperDrones = [];
-        startWave();
+        if (!isOnline || isHost) {
+            startWave();
+        }
     }
 
     // Balas vs Enemigos
