@@ -20,11 +20,14 @@ function showLevelUpMenu(pObj) {
     // La regla: solo mostramos cartas si pObj === players[0] (el local)
     let isLocalPlayer = (pObj === players[0]);
 
-    if (document.getElementById('level-up-modal').style.display === 'block') {
+    const modal = document.getElementById('level-up-modal');
+    if (modal.style.display === 'block') {
         levelUpQueue.push(pObj);
         return;
     }
-
+    
+    // Marcar como abierto inmediatamente para evitar llamadas dobles en el mismo frame
+    modal.style.display = 'block';
     isPaused = true;
 
     // Notificar al aliado que pausamos (para que él también pare)
@@ -32,28 +35,37 @@ function showLevelUpMenu(pObj) {
         sendGameEvent('level-up-pause', { playerId: pObj.id });
     }
 
-    const modal = document.getElementById('level-up-modal');
     const choicesDiv = document.getElementById('level-up-choices');
     choicesDiv.innerHTML = '';
 
     const titleElem = modal.querySelector('h2');
+    const descElem = modal.querySelector('p'); // "Selecciona una directiva..."
+    
     let playerColor = pObj.id === 1 ? '#00ffcc' : '#ff007f';
     titleElem.style.color = playerColor;
+
+    // Limpiar timer y barra viejos si quedaron por algún motivo
+    let oldTimer = document.getElementById('levelup-timer');
+    if (oldTimer) oldTimer.remove();
+    let oldBar = document.getElementById('levelup-bar');
+    if (oldBar) oldBar.remove();
 
     if (!isLocalPlayer) {
         // Pantalla de espera para el aliado
         titleElem.innerText = `⏳ JUGADOR ${pObj.id} ELIGIENDO MEJORA...`;
+        if (descElem) descElem.style.display = 'none'; // Ocultar "Selecciona..."
+        
         choicesDiv.innerHTML = `
-            <div style="text-align:center; padding: 40px 20px; color: rgba(255,255,255,0.6);">
+            <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.6);">
                 <div style="font-size:48px; margin-bottom:16px; animation: pulse 1s infinite;">⚡</div>
                 <div style="font-size:16px; letter-spacing:2px;">Tu aliado está eligiendo una mejora</div>
                 <div style="font-size:12px; margin-top:12px; color: ${playerColor};">El juego se reanudará cuando elija</div>
             </div>`;
-        modal.style.display = 'block';
         return;
     }
 
     // --- MENU LOCAL ---
+    if (descElem) descElem.style.display = 'block'; // Mostrar "Selecciona..."
     let playerLabel = pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2';
     titleElem.innerText = `⚡ MEJORA DE SISTEMA — ${playerLabel}`;
 
@@ -106,6 +118,11 @@ function showLevelUpMenu(pObj) {
         u.apply();
         modal.style.display = 'none';
         isPaused = false;
+        
+        // Remover elementos insertados dinámicamente
+        let t = document.getElementById('levelup-timer'); if (t) t.remove();
+        let b = document.getElementById('levelup-bar'); if (b) b.remove();
+
         if (typeof isOnline !== 'undefined' && isOnline) {
             sendGameEvent('level-up-resume', {});
         }
@@ -115,20 +132,20 @@ function showLevelUpMenu(pObj) {
         }
     }
 
-    // Countdown de 15 segundos
+    // Countdown de 15 segundos - INSERTAR FUERA DE CHOICES (antes)
     let timeLeft = 15;
     let timerEl = document.createElement('div');
     timerEl.id = 'levelup-timer';
     timerEl.style.cssText = `text-align:center; font-size:28px; font-weight:bold; font-family:'Courier New',monospace; color:#ffff00; margin-bottom:12px; letter-spacing:4px; text-shadow: 0 0 10px #ffff00;`;
     timerEl.innerText = `⏱ ${timeLeft}s`;
-    choicesDiv.appendChild(timerEl);
+    modal.insertBefore(timerEl, choicesDiv);
 
     let urgencyBar = document.createElement('div');
+    urgencyBar.id = 'levelup-bar';
     urgencyBar.style.cssText = `height:4px; background: linear-gradient(90deg, #00ffcc, #ffff00); border-radius:2px; margin-bottom:16px; transition: width 1s linear; width:100%;`;
-    choicesDiv.appendChild(urgencyBar);
+    modal.insertBefore(urgencyBar, choicesDiv);
 
     // Crear las cartas
-    let cardEls = [];
     choices.forEach((u) => {
         let card = document.createElement('div');
         card.className = 'level-up-card';
@@ -143,28 +160,26 @@ function showLevelUpMenu(pObj) {
         `;
         card.onclick = () => applyChoice(u);
         choicesDiv.appendChild(card);
-        cardEls.push({ card, u });
     });
 
     // Iniciar countdown
     levelUpCountdownInterval = setInterval(() => {
         timeLeft--;
         if (timerEl) timerEl.innerText = `⏱ ${timeLeft}s`;
-        // Urgencia progresiva
+        
         let pct = (timeLeft / 15) * 100;
         if (urgencyBar) urgencyBar.style.width = `${pct}%`;
+        
         if (timeLeft <= 5) {
             if (timerEl) timerEl.style.color = '#ff4444';
             if (timerEl) timerEl.style.textShadow = '0 0 15px #ff0000';
         }
         if (timeLeft <= 0) {
-            // Auto-selección aleatoria
             let randomChoice = choices[Math.floor(Math.random() * choices.length)];
             applyChoice(randomChoice);
         }
     }, 1000);
 
-    modal.style.display = 'block';
     updateMenuSelection('level-up-modal');
 }
 
