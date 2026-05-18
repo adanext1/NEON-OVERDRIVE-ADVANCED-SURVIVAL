@@ -83,6 +83,16 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             msgEl.innerHTML = `<span style="color: #ff007f;">[Aliado]:</span> ${data.payload}`;
             messagesDiv.appendChild(msgEl);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } else if (data.type === 'level-up-pause') {
+            // El aliado subió de nivel: pausar localmente y mostrar pantalla de espera
+            isPaused = true;
+            let remoteP = players.find(p => p.id === data.payload.playerId) || players[0];
+            showLevelUpMenu(remoteP);
+        } else if (data.type === 'level-up-resume') {
+            // El aliado eligió su mejora: cerrar modal de espera y reanudar
+            let modal = document.getElementById('level-up-modal');
+            if (modal) modal.style.display = 'none';
+            isPaused = false;
         }
     });
 }

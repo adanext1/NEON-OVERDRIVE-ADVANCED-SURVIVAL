@@ -10,111 +10,164 @@ function updateMenuSelection(modalId) {
 }
 
 let levelUpQueue = [];
+let levelUpCountdownInterval = null;
 
 function showLevelUpMenu(pObj) {
     if (!pObj) pObj = players[0];
-    
+
+    // En online: solo el jugador LOCAL maneja SU menu
+    // Si pObj.id === 1 y somos el host, o pObj.id === 2 y somos el cliente (id===2 no existe localmente si somos host)
+    // La regla: solo mostramos cartas si pObj === players[0] (el local)
+    let isLocalPlayer = (pObj === players[0]);
+
     if (document.getElementById('level-up-modal').style.display === 'block') {
         levelUpQueue.push(pObj);
         return;
     }
 
     isPaused = true;
+
+    // Notificar al aliado que pausamos (para que él también pare)
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        sendGameEvent('level-up-pause', { playerId: pObj.id });
+    }
+
     const modal = document.getElementById('level-up-modal');
     const choicesDiv = document.getElementById('level-up-choices');
     choicesDiv.innerHTML = '';
-    
+
     const titleElem = modal.querySelector('h2');
-    if (pObj.id === 1) {
-        titleElem.innerText = "MEJORA DE SISTEMA - JUGADOR 1";
-        titleElem.style.color = "#00ffcc";
-    } else {
-        titleElem.innerText = "MEJORA DE SISTEMA - JUGADOR 2";
-        titleElem.style.color = "#ff007f";
+    let playerColor = pObj.id === 1 ? '#00ffcc' : '#ff007f';
+    titleElem.style.color = playerColor;
+
+    if (!isLocalPlayer) {
+        // Pantalla de espera para el aliado
+        titleElem.innerText = `⏳ JUGADOR ${pObj.id} ELIGIENDO MEJORA...`;
+        choicesDiv.innerHTML = `
+            <div style="text-align:center; padding: 40px 20px; color: rgba(255,255,255,0.6);">
+                <div style="font-size:48px; margin-bottom:16px; animation: pulse 1s infinite;">⚡</div>
+                <div style="font-size:16px; letter-spacing:2px;">Tu aliado está eligiendo una mejora</div>
+                <div style="font-size:12px; margin-top:12px; color: ${playerColor};">El juego se reanudará cuando elija</div>
+            </div>`;
+        modal.style.display = 'block';
+        return;
     }
 
+    // --- MENU LOCAL ---
+    let playerLabel = pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2';
+    titleElem.innerText = `⚡ MEJORA DE SISTEMA — ${playerLabel}`;
+
+    // Construir pool de mejoras
     let pool = [
         { title: 'Blindaje', desc: '+25 HP Máx', rarity: 'común', apply: () => { pObj.maxHp += 25; pObj.hp += 25; updateUI(); } },
         { title: 'Motores', desc: '+12% Velocidad', rarity: 'común', apply: () => { pObj.speed *= 1.12; } },
         { title: 'Regeneración', desc: 'Cura 30% de vida', rarity: 'común', apply: () => { pObj.hp = Math.min(pObj.maxHp, pObj.hp + pObj.maxHp * 0.3); updateUI(); } }
     ];
-    
+
     pObj.weapons.forEach(wKey => {
         let wep = WEAPONS[wKey];
-        if (!wep) return; // Ignorar armas no reconocidas
+        if (!wep) return;
         if (!pObj.weaponUpgrades) pObj.weaponUpgrades = {};
         if (!pObj.weaponUpgrades[wKey]) pObj.weaponUpgrades[wKey] = { damage: 0, fireRate: 0 };
         pool.push({ title: `Calibre: ${wep.name}`, desc: `+20% Daño`, rarity: 'común', apply: () => { pObj.weaponUpgrades[wKey].damage += Math.floor(wep.damage * 0.20); } });
         pool.push({ title: `Cargador: ${wep.name}`, desc: `+15% Cadencia`, rarity: 'común', apply: () => { pObj.weaponUpgrades[wKey].fireRate += Math.floor(wep.fireRate * 0.15); } });
     });
-    
+
     pool.push({ title: 'Hiper-Daño', desc: '+40% Daño Global', rarity: 'rara', apply: () => { pObj.damageModifier += 0.40; } });
     pool.push({ title: 'Súper Escudo', desc: 'Otorga +50 Escudo Temporal', rarity: 'rara', apply: () => { pObj.shield = Math.min(pObj.maxShield + 50, pObj.shield + 50); updateUI(); } });
-    
-    if (pObj.weapons.includes('shotgun')) {
-        pool.push({ title: 'Metralla', desc: '+2 Proyectiles (Escopeta)', rarity: 'legendaria', apply: () => { 
+
+    if (pObj.weapons.includes('shotgun') && pObj.weaponUpgrades && pObj.weaponUpgrades.shotgun) {
+        pool.push({ title: 'Metralla', desc: '+2 Proyectiles (Escopeta)', rarity: 'legendaria', apply: () => {
             if (pObj.weaponUpgrades.shotgun.count === undefined) pObj.weaponUpgrades.shotgun.count = 0;
             pObj.weaponUpgrades.shotgun.count += 2;
-        } });
+        }});
     }
-    
-    pool.push({ title: 'Maestría Total', desc: '+15% Daño a TODAS las armas', rarity: 'legendaria', apply: () => { 
-        for (let k in pObj.weaponUpgrades) { if (WEAPONS[k]) pObj.weaponUpgrades[k].damage += Math.floor(WEAPONS[k].damage * 0.15); } 
-    } });
 
+    pool.push({ title: 'Maestría Total', desc: '+15% Daño a TODAS las armas', rarity: 'legendaria', apply: () => {
+        for (let k in pObj.weaponUpgrades) { if (WEAPONS[k]) pObj.weaponUpgrades[k].damage += Math.floor(WEAPONS[k].damage * 0.15); }
+    }});
+
+    // Sortear 3 opciones
     let choices = [];
-    for (let i = 0; i < 3; i++) {
+    let attempts = 0;
+    while (choices.length < 3 && attempts < 50) {
+        attempts++;
         let roll = Math.random();
-        let rarity = 'común';
-        if (roll < 0.05) rarity = 'legendaria';
-        else if (roll < 0.20) rarity = 'rara';
-        
+        let rarity = roll < 0.05 ? 'legendaria' : roll < 0.20 ? 'rara' : 'común';
         let filtered = pool.filter(u => u.rarity === rarity);
         if (filtered.length === 0) filtered = pool.filter(u => u.rarity === 'común');
-        
-        let randomU = filtered[Math.floor(Math.random() * filtered.length)];
-        
-        if (choices.includes(randomU)) { i--; continue; }
-        choices.push(randomU);
+        let pick = filtered[Math.floor(Math.random() * filtered.length)];
+        if (!choices.includes(pick)) choices.push(pick);
     }
-    
-    choices.forEach((u, idx) => {
+
+    // Función para aplicar una mejora y cerrar
+    function applyChoice(u) {
+        if (levelUpCountdownInterval) { clearInterval(levelUpCountdownInterval); levelUpCountdownInterval = null; }
+        u.apply();
+        modal.style.display = 'none';
+        isPaused = false;
+        if (typeof isOnline !== 'undefined' && isOnline) {
+            sendGameEvent('level-up-resume', {});
+        }
+        if (levelUpQueue.length > 0) {
+            let nextP = levelUpQueue.shift();
+            setTimeout(() => showLevelUpMenu(nextP), 300);
+        }
+    }
+
+    // Countdown de 15 segundos
+    let timeLeft = 15;
+    let timerEl = document.createElement('div');
+    timerEl.id = 'levelup-timer';
+    timerEl.style.cssText = `text-align:center; font-size:28px; font-weight:bold; font-family:'Courier New',monospace; color:#ffff00; margin-bottom:12px; letter-spacing:4px; text-shadow: 0 0 10px #ffff00;`;
+    timerEl.innerText = `⏱ ${timeLeft}s`;
+    choicesDiv.appendChild(timerEl);
+
+    let urgencyBar = document.createElement('div');
+    urgencyBar.style.cssText = `height:4px; background: linear-gradient(90deg, #00ffcc, #ffff00); border-radius:2px; margin-bottom:16px; transition: width 1s linear; width:100%;`;
+    choicesDiv.appendChild(urgencyBar);
+
+    // Crear las cartas
+    let cardEls = [];
+    choices.forEach((u) => {
         let card = document.createElement('div');
         card.className = 'level-up-card';
-        
-        let rarityColor = '#00ffcc';
-        if (u.rarity === 'rara') rarityColor = '#ffff00';
-        if (u.rarity === 'legendaria') rarityColor = '#ff00ff';
-        
+        let rarityColor = u.rarity === 'legendaria' ? '#ff00ff' : u.rarity === 'rara' ? '#ffff00' : '#00ffcc';
         card.style.borderColor = rarityColor;
-        card.style.color = rarityColor;
-        
         card.innerHTML = `
             <div>
-                <div style="font-weight:bold; font-size:18px; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.3);">${u.title}</div>
-                <div style="color:rgba(255,255,255,0.9); font-size:13px; margin-top: 8px; line-height: 1.4;">${u.desc}</div>
+                <div style="font-weight:bold; font-size:18px; color:#fff; text-shadow:0 0 5px rgba(255,255,255,0.3);">${u.title}</div>
+                <div style="color:rgba(255,255,255,0.9); font-size:13px; margin-top:8px; line-height:1.4;">${u.desc}</div>
             </div>
             <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; font-weight:bold; color:${rarityColor}">${u.rarity}</div>
         `;
-        
-        card.onclick = () => {
-            console.log('Card clicked:', u.title);
-            u.apply();
-            modal.style.display = 'none';
-            isPaused = false;
-            
-            if (levelUpQueue.length > 0) {
-                let nextP = levelUpQueue.shift();
-                setTimeout(() => showLevelUpMenu(nextP), 300);
-            }
-        };
-        
+        card.onclick = () => applyChoice(u);
         choicesDiv.appendChild(card);
+        cardEls.push({ card, u });
     });
-    
+
+    // Iniciar countdown
+    levelUpCountdownInterval = setInterval(() => {
+        timeLeft--;
+        if (timerEl) timerEl.innerText = `⏱ ${timeLeft}s`;
+        // Urgencia progresiva
+        let pct = (timeLeft / 15) * 100;
+        if (urgencyBar) urgencyBar.style.width = `${pct}%`;
+        if (timeLeft <= 5) {
+            if (timerEl) timerEl.style.color = '#ff4444';
+            if (timerEl) timerEl.style.textShadow = '0 0 15px #ff0000';
+        }
+        if (timeLeft <= 0) {
+            // Auto-selección aleatoria
+            let randomChoice = choices[Math.floor(Math.random() * choices.length)];
+            applyChoice(randomChoice);
+        }
+    }, 1000);
+
     modal.style.display = 'block';
     updateMenuSelection('level-up-modal');
 }
+
 
 function updateUI() {
     let p1 = players[0];
