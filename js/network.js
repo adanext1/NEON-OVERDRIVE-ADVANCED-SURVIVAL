@@ -28,7 +28,7 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             // Crear jugador 2 si no existe
             players.push({
                 id: 2, x: data.x, y: data.y, radius: 15, speed: 4, hp: 100, maxHp: 100,
-                credits: 0, level: 1, xp: 0, nextXp: 100, weapons: ['blaster'], currentWeaponIndex: 0,
+                credits: 0, level: 1, xp: 0, nextXp: 100, weapons: ['basic'], currentWeaponIndex: 0,
                 color: isHost ? '#ff007f' : '#00ffcc', shield: 0, maxShield: 40, aimMode: 'AUTO'
             });
         }
@@ -63,6 +63,10 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
         } else if (data.type === 'start-game') {
             if (!isHost && typeof startGameSimulation === 'function') {
                 startGameSimulation();
+            }
+        } else if (data.type === 'spawn-dynamic-event') {
+            if (!isHost) {
+                dynamicEvents.push(data.payload);
             }
         } else if (data.type === 'chat') {
             let messagesDiv = document.getElementById('chat-messages');

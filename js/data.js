@@ -62,3 +62,8 @@ let gameStarted = false; let isPaused = false; let inCollectionMenu = false; let
 let isGameOver = false;
 let selectedMenuItem = [0, 0];
 let lastGamepadButtons = [];
+
+// --- EVENTOS DINÁMICOS ---
+let dynamicEvents = [];
+let helperDrones = [];
+let xpMultiplier = 1;

@@ -150,7 +150,7 @@ function updateUI() {
         
         document.getElementById('hud-credits-p2').innerText = `CRÉDITOS: $${p2.credits}`;
         document.getElementById('hud-xp-p2').innerText = `NV: ${p2.level} (${Math.floor((p2.xp / p2.nextXp) * 100)}%)`;
-        document.getElementById('hud-weapon-p2').innerText = `ARMA: ${WEAPONS[p2.weapons[p2.currentWeaponIndex]].name}`;
+        document.getElementById('hud-weapon-p2').innerText = `ARMA: ${(WEAPONS[p2.weapons[p2.currentWeaponIndex]] || {name: '?'}).name}`;
         document.getElementById('hud-aim-p2').innerText = `APUNTADO: ${p2.aimMode}`;
 
         let shElementP2 = document.getElementById('hud-shield-p2');
