@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON OVERDRIVE - Historial de Versiones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #05050d;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle, #0e0e22 0%, #03030a 100%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(5, 5, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 2px solid #ff007f;
+            box-shadow: 0 0 25px rgba(255, 0, 127, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.7);
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+
+        h2 {
+            color: #ffff00;
+            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .version-box {
+            border: 1px solid #00ffcc;
+            background: rgba(0, 255, 204, 0.03);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .version-box:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+            background: rgba(0, 255, 204, 0.05);
+        }
+
+        .version-box.version-major {
+            border: 1px solid #ffff00;
+            background: rgba(255, 255, 0, 0.03);
+        }
+        .version-box.version-major:hover {
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2);
+            background: rgba(255, 255, 0, 0.05);
+        }
+        .version-box.version-major .version-title {
+            color: #ffff00;
+            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+
+        .version-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 204, 0.3);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .version-title {
+            color: #00ffcc;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .version-date {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .change-list {
+            list-style: none;
+        }
+
+        .change-list li {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .change-list li::before {
+            content: ">>";
+            color: #ff007f;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 8px;
+            border: 1px solid currentColor;
+        }
+
+        .tag-new { color: #00ffcc; }
+        .tag-fix { color: #ffaa00; }
+        .tag-balance { color: #ffff00; }
+
+        .btn-back {
+            display: block;
+            width: 200px;
+            margin: 30px auto 0;
+            padding: 12px;
+            background: #111;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-back:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 15px #00ffcc;
+            cursor: pointer;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05050d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff007f;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff0055;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>NEON OVERDRIVE</h1>
+        <h2>Historial de Sistemas y Actualizaciones</h2>
+
+        <!-- Versión 0.7.1 -->
+        <div class="version-box">
+            <div class="version-header">
+                <span class="version-title">v0.7.1 - Audio, Balance & Rediseño de Jefes</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li><span class="tag tag-new">Nuevo</span> Sistema de sonido sintetizado para disparos, explosiones e impactos.</li>
+                <li><span class="tag tag-new">Nuevo</span> Música dinámica para jefes y gameplay normal.</li>
+                <li><span class="tag tag-new">Nuevo</span> Menú de Pausa interactivo con Sliders para controlar volumen de música y SFX.</li>
+                <li><span class="tag tag-new">Nuevo</span> Visualización de Daño y Multiplicador en el HUD.</li>
+                <li><span class="tag tag-improved">Mejora</span> Renombrado el botón de Álbum a **"Mejoras Permanentes"** y añadido botón para reproducir música de menú.</li>
+                <li><span class="tag tag-improved">Mejora</span> **Rediseño de Vector Supreme (Ol. 10):** Ahora tiene 3 fases únicas (Anillos, Láseres y Clones Kamikaze).</li>
+                <li><span class="tag tag-improved">Mejora</span> **Balance de Tienda:** Los precios de Vida y Daño escalan un 50% con cada compra.</li>
+                <li><span class="tag tag-improved">Mejora</span> **Sistema de Armadura:** Enemigos pesados reducen el daño por impacto.</li>
+                <li><span class="tag tag-improved">Mejora</span> Balance de vida de enemigos (escalado duplicado).</li>
+                <li><span class="tag tag-fix">Fix</span> Corregido error de NaN en los textos de daño al golpear ciertos enemigos.</li>
+            </ul>
+        </div>
+
+        <!-- Versión 0.7.0 -->
+        <div class="version-box version-major">
+            <div class="version-header">
+                <span class="version-title">v0.7.0 - Actualización de Enemigos</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li><span class="tag tag-new">Nuevo</span> Jefe de la Oleada 5 mejorado con máquina de estados (Dash, Láser y Esbirros).</li>
+                <li><span class="tag tag-new">Nuevo</span> Enemigo "Vortex Node" (Atracción y ralentización).</li>
+                <li><span class="tag tag-new">Nuevo</span> Enemigo "Helix Weaver" (Barreras láser de daño crítico).</li>
+                <li><span class="tag tag-new">Nuevo</span> Enemigo "Binary Aegis" (Escudos rotativos que bloquean balas).</li>
+                <li><span class="tag tag-new">Nuevo</span> Enemigo "EMP Stalker" (Invisibilidad e inhabilitación de habilidades).</li>
+                <li><span class="tag tag-new">Nuevo</span> Jefe Final de la Oleada 10 "Vector Supreme" con 3 fases de combate.</li>
+                <li><span class="tag tag-balance">Balance</span> Progresión de aparición de enemigos según la dificultad de la oleada.</li>
+            </ul>
+        </div>
+
+        <!-- Versión 0.6.3 -->
+        <div class="version-box">
+            <div class="version-header">
+                <span class="version-title">v0.6.3 - Estado Actual</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li><span class="tag tag-new">Nuevo</span> Sistema de autoridad del Host para la experiencia (XP).</li>
+                <li><span class="tag tag-new">Nuevo</span> Sistema de chat integrado para el modo cooperativo online.</li>
+                <li><span class="tag tag-new">Nuevo</span> Eventos dinámicos en oleadas (Extractor, Sobrecarga, Portales, Bloqueo y Anomalía).</li>
+                <li><span class="tag tag-fix">Mejora</span> Sistema de subida de nivel optimizado con temporizador de 15s y selección automática.</li>
+                <li><span class="tag tag-new">Nuevo</span> Mecánica de reanimación de aliados caídos manteniendo pulsada la tecla [R] o botón del mando.</li>
+                <li><span class="tag tag-fix">Mejora</span> Auto-revivir a jugadores caídos al terminar la oleada con 1 HP.</li>
+                <li><span class="tag tag-balance">Balance</span> Ajustes en el daño del Cañón Plasma y radio de efecto (AoE).</li>
+            </ul>
+        </div>
+
+        <!-- Registro de perdida -->
+        <div class="version-box" style="border-color: rgba(255, 0, 127, 0.5); background: rgba(255, 0, 127, 0.02);">
+            <div class="version-header" style="border-color: rgba(255, 0, 127, 0.3);">
+                <span class="version-title" style="color: #ff007f;">v0.6.2 y anteriores</span>
+                <span class="version-date">Datos Perdidos</span>
+            </div>
+            <ul class="change-list">
+                <li style="color: #888;">El historial de cambios detallado de las versiones anteriores a la 0.6.3 no fue registrado en este archivo.</li>
+                <li style="color: #888;">A partir de este punto, registraremos aquí todos los cambios futuros para llevar un control estricto del desarrollo.</li>
+            </ul>
+        </div>
+
+        <a href="p.html" class="btn-back">VOLVER AL SIMULADOR</a>
+    </div>
+
+</body>
+
+</html>

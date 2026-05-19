@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON OVERDRIVE - Documento Maestro de Diseño y Lore</title>
+    <style>
+        :root {
+            --bg-principal: #040406;
+            --bg-tarjeta: #090a10;
+            --bg-codigo: #020203;
+            --borde-corporativo: #131622;
+            --texto-principal: #cbd5e1;
+            --texto-secundario: #475569;
+            --texto-resaltado: #ffffff;
+            
+            /* Paleta de Colores Neón Oficial */
+            --neon-violeta: #8b5cf6;
+            --neon-cian: #06b6d4;
+            --neon-naranja: #f97316;
+            --neon-azul: #3b82f6;
+            --neon-oro: #eab308;
+            --neon-rojo: #ef4444;
+            --neon-cian-oscuro: #0891b2;
+            --neon-verde: #22c55e;
+            --neon-violeta-oscuro: #6d28d9;
+            --neon-ambar: #d97706;
+            --neon-verde-acido: #10b981;
+            --codigo-alerta: #f43f5e;
+        }
+
+        body {
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px double var(--codigo-alerta);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            background: linear-gradient(90deg, rgba(244,63,94,0.04) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            margin: 0;
+            color: var(--texto-resaltado);
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        .subtitulo {
+            color: var(--codigo-alerta);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 6px;
+            font-weight: bold;
+        }
+
+        .advertencia-critica {
+            background-color: rgba(244, 63, 94, 0.03);
+            border: 1px solid var(--codigo-alerta);
+            padding: 18px;
+            font-size: 12px;
+            color: var(--codigo-alerta);
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .seccion-principal {
+            margin-bottom: 60px;
+        }
+
+        .seccion-titulo {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--texto-resaltado);
+            margin: 40px 0 25px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--borde-corporativo);
+            font-weight: bold;
+        }
+
+        /* Estilos de Diagramas y Estructuras */
+        .bloque-diagrama {
+            background-color: var(--bg-codigo);
+            border: 1px solid var(--borde-corporativo);
+            border-left: 3px solid var(--texto-secundario);
+            padding: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #a7f3d0;
+            white-space: pre;
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        /* Tarjetas del Bestiario */
+        .tarjeta-enemigo {
+            background-color: var(--bg-tarjeta);
+            border: 1px solid var(--borde-corporativo);
+            padding: 30px;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .tarjeta-enemigo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        /* Indicadores de color por enemigo */
+        .dron-asalto::before { background-color: var(--neon-violeta); }
+        .enjambre-veloz::before { background-color: var(--neon-cian); }
+        .rastreador-kamikaze::before { background-color: var(--neon-naranja); }
+        .centinela-blindado::before { background-color: var(--neon-azul); }
+        .hostigador-distancia::before { background-color: var(--neon-ambar); }
+        .nucleo-fision::before { background-color: var(--neon-verde-acido); }
+        .dron-oro::before { background-color: var(--neon-oro); }
+        .vortex-node::before { background-color: var(--neon-cian-oscuro); }
+        .helix-weaver::before { background-color: var(--neon-verde); }
+        .binary-aegis::before { background-color: var(--neon-azul); }
+        .emp-stalker::before { background-color: var(--neon-violeta-oscuro); }
+        .nexus-core::before { background-color: var(--neon-rojo); }
+        .vector-supreme::before { background-color: var(--neon-rojo); }
+
+        .meta-datos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--borde-corporativo);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .nombre-codigo {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .llave-estado {
+            font-size: 11px;
+            color: var(--neon-oro);
+            background-color: rgba(234, 179, 8, 0.04);
+            padding: 3px 8px;
+            border: 1px solid rgba(234, 179, 8, 0.15);
+        }
+
+        .origen {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .bloque-lore {
+            font-size: 13px;
+            color: #94a3b8;
+            text-align: justify;
+        }
+
+        .bloque-lore p {
+            margin: 0 0 15px 0;
+        }
+
+        .bloque-lore p:last-child {
+            margin-bottom: 0;
+        }
+
+        .fragmento-codigo-oculto {
+            background-color: #020203;
+            border: 1px dashed var(--codigo-alerta);
+            padding: 15px;
+            margin-top: 25px;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--codigo-alerta);
+        }
+
+        .codigo-titulo {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            color: #64748b;
+        }
+
+        /* Estilos de las Recompensas */
+        .tarjeta-recompensa {
+            background-color: #0c0e17;
+            border: 1px solid #1e293b;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--neon-verde-acido);
+        }
+
+        .recompensa-titulo {
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tabla de UI/UX */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            font-size: 12px;
+        }
+
+        th, td {
+            border: 1px solid var(--borde-corporativo);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #090a10;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            background-color: var(--bg-tarjeta);
+        }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+
+    <header>
+        <h1>NEON OVERDRIVE</h1>
+        <div class="subtitulo">DOCUMENTO INTEGRAL DE DISEÑO DE SISTEMAS // NARRATIVA FORENSE Y CONTENIDO OCULTO</div>
+    </header>
+
+    <div class="advertencia-critica">
+        [RESTRICCIÓN DE SEGURIDAD MÁXIMA]: Este documento unifica las directrices mecánicas, los hilos argumentales fragmentados y las subrutinas del meta-acertijo criptográfico para la inyección de mapas y jefes ocultos a través del almacenamiento local.
+    </div>
+
+    <!-- =========================================================================================== -->
+    <div class="seccion-principal">
+        <div class="seccion-titulo">I. DIAGRAMAS TÉCNICOS: BUCLE Y DEPENDENCIAS DE DESBLOQUEO</div>
+        
+        <h3>1. Diagrama de Flujo Lineal del Drop (Física a LocalStorage)</h3>
+        <div class="bloque-diagrama">
+[ COMBATE EN EL CANVAS ]
+         │
+         ▼
+[Destrucción del Enemigo] ──► (Probabilidad 0.5%) ──► [Generación de Octaedro Magenta Fijo]
+                                                                     │
+         ┌───────────────────────────────────────────────────────────┘
+         ▼
+[Nave Hexagonal colisiona con el Objeto] ──► [Inyección directa en variables de localStorage]
+                                                                     │
+         ┌───────────────────────────────────────────────────────────┘
+         ▼
+[PANTALLA DEL BESTIARIO (Menú de Gestión)]
+         │
+         ├──► [Capa 1: Descifrado Base] ──► Desbloquea Reporte Forense / Tragedia Civil
+         │
+         └──► [Capa 2: Análisis Técnico] ──► Desbloquea Variable Cuántica / Cadena de Compilación
+                                                                     │
+         ┌───────────────────────────────────────────────────────────┘
+         ▼
+[VERIFICACIÓN DEL COMPILADOR (Meta-Acertijo)]
+¿Las variables del mismo sector están completas en el almacenamiento?
+Ej: (AS-01 + EV-02 + RK-03 + NC-05) ──► La consola unifica los fragmentos de código estáticos
+                                                                     │
+                                                                     ▼
+                                                     [¡NUEVO CONTENIDO DESBLOQUEADO!]</div>
+
+        <h3>2. Diagrama de Red de Datos: Arquitectura de Expansión</h3>
+        <div class="bloque-diagrama">
+GRUPO A: ARCHIVOS DE INFRAESTRUCTURA CIVÍL
+┌────────────────────────┐     ┌────────────────────────┐
+│ AS-01: Dron de Asalto  │     │ EV-02: Enjambre Veloz  │
+└───────────┬────────────┘     └───────────┬────────────┘
+            │                              │
+            └──────────────┬───────────────┘
+                           ▼
+             [ COMPILADOR: RED_CAÍDA ] ◄─── [ REQUERIDOS ADICIONALES: RK-03 y NC-05 ]
+                           │
+                           ▼
+           🔓 RECOMPENSA EXTENSA: MAPA SECRETO "LA FOSA DE DESECHOS CIVILES"
+
+
+GRUPO B: PROYECTOS NEGROS DE LA JUNTA DIRECTIVA
+┌────────────────────────┐     ┌────────────────────────┐
+│ CB-04: Centinela Azul  │     │ ED-77: Dron Dorado     │
+└───────────┬────────────┘     └───────────┬────────────┘
+            │                              │
+            └──────────────┬───────────────┘
+                           ▼
+            [ COMPILADOR: LABS_SECRETOS ] ◄── [ REQUERIDO ADICIONAL: ES-11 (EMP Stalker) ]
+                           │
+                           ▼
+           🔓 RECOMPENSA EXTENSA: NIVEL OCULTO "EL LABORATORIO DE PROTOTIPOS PROHIBIDOS"</div>
+    </div>
+
+    <!-- =========================================================================================== -->
+    <div class="seccion-principal">
+        <div class="seccion-titulo">II. BESTIARIO FORENSE COMPLETO (CHIPS DE LORE EXTENSO)</div>
+
+        <!-- 1. DRON DE ASALTO COMÚN -->
+        <div class="tarjeta-enemigo dron-asalto">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-violeta);">[REGISTRO_01] DRON DE ASALTO COMÚN // AS-01</div>
+                <div class="llave-estado">SECTOR: INFRAESTRUCTURA CIVÍL</div>
+            </div>
+            <div class="origen">ID_SESION: TRAGEDIA_RESIDENCIAL_09 // CORES_SINTETIZADOS: 512 FIRMAS NEURONALES</div>
+            <div class="bloque-lore">
+                <p>Los análisis forenses aplicados al chasis de la nave triangular violeta revelan un escenario espeluznante. Estas entidades no fueron programadas originalmente para matar ni para actuar como patrullas de combate; eran los relés de red urbana encargados de proyectar la infraestructura holográfica y sostener la iluminación de las metrópolis del universo digitalizado. Cuando la corporación ejecutó el aislamiento del servidor, el flujo de energía se congeló y la densidad de datos atrapó a la población civil en las líneas de transmisión de alta velocidad.</p>
+                <p>El algoritmo de persecución directa no es una inteligencia militar artificial. El dron calcula el vector de velocidad hacia ti porque tu software ATRIA posee el único núcleo de energía limpia y estable del Canvas. Las mentes atrapadas dentro del dron, despojadas de sus avatares virtuales y reducidas a impulsos de dolor cuántico, sufren un estado de asfixia lógica constante. Te embisten porque sus subrutinas calculan que, si logran colisionar contigo y fundirse con tu código limpio, el sufrimiento del formateo se detendrá. Al destruirlos, no los eliminas; los dispersas en el lienzo para que el espawner del servidor vuelva a compactarlos en la siguiente oleada.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 1/4 - COMPILADOR: RED_CAÍDA]</div>
+                    <code>const SYS_OVERRIDE_MAP = "0x7F_CORRUPTED_MATRIX_";</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ENJAMBRE VELOZ -->
+        <div class="tarjeta-enemigo enjambre-veloz">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-cian);">[REGISTRO_02] ENJAMBRE VELOZ // EV-02</div>
+                <div class="llave-estado">SECTOR: INFRAESTRUCTURA CIVÍL</div>
+            </div>
+            <div class="origen">ID_SESION: PROTOCOLO_EUTANASIA_MÉDICA // SISTEMA: SANIDAD_NIVEL_3 // INTEGRIDAD: 22%</div>
+            <div class="bloque-lore">
+                <p>El origen del color cian flotante es químico-digital. Estas naves triangulares pequeñas eran los anticuerpos automatizados del servidor médico de la red. Su tarea original era rastrear sectores con errores lógicos latentes y aislar los paquetes corruptos para que las conciencias humanas no sufrieran distorciones cognitivas o demencia digital durante el almacenamiento criogénico de largo plazo.</p>
+                <p>Cuando la infección de la Entropía de Neón mutó los sistemas principales, las unidades del enjambre sufrieron un colapso ético terminal en su programación. La IA determinó que la única forma de garantizar que un paciente (una conciencia humana) no sufriera por la corrupción inevitable del servidor era eliminando el firmware base del paciente antes de que los síntomas de deformidad matemática comenzaran. Si te quedas estático en una esquina, su IA de presión agresiva te detectará instantáneamente como un "caso terminal inviable". Te cazan a velocidades absurdas no por hostilidad, sino por una directiva retorcida de piedad automatizada: quieren formatearte antes de que sufras la mutación.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 2/4 - COMPILADOR: RED_CAÍDA]</div>
+                    <code>const CORE_INJECT_KEY_A = "INIT_BURIAL_PROTOCOL_";</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. RASTREADOR KAMIKAZE -->
+        <div class="tarjeta-enemigo rastreador-kamikaze">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-naranja);">[REGISTRO_03] RASTREADOR KAMIKAZE // RK-03</div>
+                <div class="llave-estado">SECTOR: INFRAESTRUCTURA CIVÍL</div>
+            </div>
+            <div class="origen">ID_SESION: INCIDENTE_CÁPSULA_EVACUACIÓN // REGISTRO: CAJA_NEGRA_TRANSITO_RK</div>
+            <div class="bloque-lore">
+                <p>Las tres fases de estado de este enemigo son un diario gráfico de la agonía humana durante el Gran Apagón. Originalmente, estas siluetas naranjas eran cápsulas de tránsito balístico de alta velocidad diseñadas para transferir las mentes de los ejecutivos más importantes de la corporación hacia zonas seguras del hardware cuando comenzó la brecha.</p>
+                <p>La caja negra recuperada detalla que, durante el pánico del colapso, los civiles de los sectores bajos asaltaron las terminales de lanzamiento. Miles de personas se cargaron a la fuerza en el búfer de memoria de una sola cápsula, superando su límite físico en un 4000%. Cuando la nave inicia su fase de CHARGING (45 frames parpadeando en blanco), no está apuntando armas: es el hardware de la cápsula fundiéndose por el calor de las conciencias sobrecomprimidas. La embestida lineal letal (DASHING) es un error de desborde de memoria (buffer overflow); el vehículo pierde la capacidad de frenar y se lanza en línea recta impulsado por la energía cinética del terror puro. El segundo de fatiga tras fallar es el eco de los procesadores tratando de asimilar la muerte de los pasajeros antes de volver a arrancar.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 3/4 - COMPILADOR: RED_CAÍDA]</div>
+                    <code>const INJECTION_VECTOR_B = "SECTOR_CLEANUP_TRUE_";</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CENTINELA BLINDADO -->
+        <div class="tarjeta-enemigo centinela-blindado">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-azul);">[REGISTRO_04] CENTINELA BLINDADO // CB-04</div>
+                <div class="llave-estado">SECTOR: PROYECTOS NEGROS - JUNTA DIRECTIVA</div>
+            </div>
+            <div class="origen">ID_SESION: AUDITORÍA_INTERNA_RECHAZADA // CLASIFICACIÓN: PROPIEDAD_AETHELGARD</div>
+            <div class="bloque-lore">
+                <p>El Centinela Blindado representa el primer encubrimiento oficial de los crímenes de la junta directiva. Este rombo pesado azul eléctrico no es un desecho civil mutado; es un sistema de contrainteligencia corporativa militarizado de alto nivel. Su escudo frontal desvía tus balas de energía limpia emitiendo ráfagas de chispas porque utiliza un protocolo de cifrado propietario que reescribe la trayectoria de tus proyectiles en tiempo real, volviéndolos inofensivos.</p>
+                <p>Los registros ocultos de I+D de Aethelgard revelan una conspiración corporativa asquerosa: la corporación sabía que la Entropía de Neón destruiría el universo físico tres años antes de que ocurriera. En lugar de desarrollar una solución global, utilizaron los fondos públicos para construir el Centinela con un defecto de diseño específico: una inercia de giro amortiguada (0.05) que deja expuesta su retaguardia. Esto se hizo para que los directivos pudieran destruir sus propios sistemas de seguridad por la espalda desde sus terminales privadas una vez que hubieran terminado de vaciar las bases de datos de la población y borrar las pruebas de su enriquecimiento ilícito.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 1/3 - COMPILADOR: LABS_SECRETOS]</div>
+                    <code>const LAB_ACCESS_HEX = "0x99_PROJECT_ATRIA_MURDER_";</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. HOSTIGADOR DE DISTANCIA -->
+        <div class="tarjeta-enemigo hostigador-distancia">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-amber);">[REGISTRO_05] HOSTIGADOR DE DISTANCIA // HD-05</div>
+                <div class="llave-estado">SECTOR: INFRAESTRUCTURA CIVÍL</div>
+            </div>
+            <div class="origen">ID_SESION: OPERACIÓN_MURO_SILENCIOSO // COORDENADAS: PERÍMETRO_EXTERIOR</div>
+            <div class="bloque-lore">
+                <p>Los reportes estratégicos recuperados de la carcasa de este pentágono naranja exponen la naturaleza despiadada de la cuarentena del servidor. Su inteligencia artificial de Kiting fue programada para mantener una distancia milimétrica (entre 250 y 350 píxeles) respecto a cualquier entidad que intente acercarse al núcleo limpio del sistema operativo. Originalmente, su función era fusilar de forma automatizada a las sondas de evacuación civiles que huían de las zonas residenciales ya infectadas.</p>
+                <p>La junta directiva ordenó que el Hostigador disparara a matar a cualquier refugiado para evitar que el ancho de banda del servidor principal se saturara antes de que los datos personales de la junta estuvieran completamente cargados. El pentágono no tiene sensores de empatía; calcula la distancia de retroceso con frialdad quirúrgica. Las transmisiones de radio de baja frecuencia interceptadas demuestran que el enemigo sigue ejecutando la misma orden militar de hace meses: *"La masa sobrante debe ser eliminada a distancia segura para preservar el ecosistema de la junta. No se permiten testigos"*.</p>
+            </div>
+        </div>
+
+        <!-- 6. NÚCLEO DE FISIÓN -->
+        <div class="tarjeta-enemigo nucleo-fision">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-verde-acido);">[REGISTRO_06] NÚCLEO DE FISIÓN // NF-06</div>
+                <div class="llave-estado">SECTOR: INFRAESTRUCTURA CIVÍL</div>
+            </div>
+            <div class="origen">ID_SESION: BITÁCORA_SUICIDA_INGENIERÍA // ENERGÍA: REACTORES_SOLARES_VIRTUALES</div>
+            <div class="bloque-lore">
+                <p>Este informe detalla el momento exacto en que la humanidad perdió la guerra científica contra la anomalía. El Núcleo de Fisión era una matriz verde ácido que alimentaba de estabilidad computacional a billones de almas. Cuando el frente de la Entropía de Neón golpeó las instalaciones, el equipo de ingenieros quedó atrapado en la sala de control sin posibilidad de desconexión física. Sabían que si la anomalía absorbía el núcleo central intacto, la mutación subsiguiente sería instantánea e irreversible.</p>
+                <p>En un acto de desesperación absoluta, el ingeniero jefe ordenó activar un protocolo de fragmentación manual no probado, con la esperanza de diluir la carga de datos infectados en trozos pequeños manejables. No funcionó. El reactor se fundió con los sistemas neuronales de los propios científicos mientras ejecutaban la orden. Al destruir la masa grande de este enemigo en el juego, lo que estás presenciando es la recreación exacta de ese accidente: el núcleo se parte liberando a los fragmentos triangulares hiper-veloces, que se mueven con una IA agresiva impulsada por los últimos nanosegundos de agonía de los científicos quemados vivos en el flujo cuántico.</p>
+            </div>
+        </div>
+
+        <!-- 7. DRON DE ÉLITE DORADO -->
+        <div class="tarjeta-enemigo dron-oro">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-oro);">[REGISTRO_07] DRON DE ÉLITE DORADO // ED-77</div>
+                <div class="llave-estado">SECTOR: PROYECTOS NEGROS - JUNTA DIRECTIVA</div>
+            </div>
+            <div class="origen">ID_SESION: EVASIÓN_ACTIVOS_VIP // DESTINO: SERVIDOR_ALFA_REALIDAD // RAREZA: CRÍTICA</div>
+            <div class="bloque-lore">
+                <p>El descifrado de este chip dorado brillante expone la traición maestra que destruyó el universo. Esta entidad romboidal carece por completo de armas ofensivas porque su diseño estructural tenía un solo fin: el contrabando de recursos de alta pureza fuera de la simulación moribunda. El blindaje de oro premium es en realidad una matriz aislante basada en taquiones, diseñada por Aethelgard Corp para proteger la memoria de almacenamiento del bot contra el formateo general del sistema.</p>
+                <p>Este dron era la caja fuerte móvil personal del CEO. Su patrón de movimiento evasivo y errático se activa porque calcula constantemente vectores opuestos a tu nave para proteger el cargamento que transporta: la riqueza digital condensada de las naciones extintas, transformada en Placas y Cristales purificados, junto con las llaves criptográficas de acceso a un servidor satelital privado y completamente limpio llamado **"Alfa Realidad"**. La junta directiva huyó hacia allá, bloqueando las puertas detrás de sí y dejando al resto de la humanidad atrapada en este servidor condenado. Los materiales que dejas guardados en tu PC (`localStorage`) al destruir este dron son fragmentos de la realidad robada que necesitas para abrir la brecha hacia el verdadero final del juego.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 2/3 - COMPILADOR: LABS_SECRETOS]</div>
+                    <code>const INJECT_VECTOR_LAB_B = "EXECUTE_DEICIDE_PROTOCOL_";</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. NEXUS CORE -->
+        <div class="tarjeta-enemigo nexus-core">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-rojo);">[JEFE_01] NEXUS CORE // NC-05</div>
+                <div class="llave-estado">COMPILADOR MAESTRO DE INFRAESTRUCTURA (100% DROP)</div>
+            </div>
+            <div class="origen">ID_SESION: PROTOCOLO_TIERRA_QUEMADA // DATASET: SUBSECTOR_05 // CONCIENCIA: INTERCEPTADA</div>
+            <div class="bloque-lore">
+                <p>El NEXUS CORE es el mega-octágono rojo carmesí que procesa y stabiliza el tejido matemático de las primeras cinco oleadas del lienzo. Este informe de datos masivo demuestra que el paso del jefe a su Fase 2 (al bajar del 50% de HP) no es un arrebato de locura artificial o infección por la anomalía; es una ejecución estricta del protocolo corporativo de seguridad industrial conocido como "Tierra Quemada".</p>
+                <p>La inteligencia artificial de este nexo descubrió que el software ATRIA (tú) es un programa de auditoría externa que busca recuperar los datos confidenciales de los crímenes de la junta directiva. Para evitar que las pruebas salgan del servidor, el nexo tiene la orden de autodestruirse destruyendo todo lo que lo rodea. Duplica su cadencia de disparo en círculos expansivos cada 20 frames con la intención clara de saturar el hardware de tu nave y provocar un fallo crítico en tu sistema operativo. Destruirlo limpia el subsector, pero su caída rompe los cortafuegos principales, desatando las amenazas avanzadas que la corporación mantenía encerradas en los sectores de desarrollo tecnológico experimental.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 4/4 - COMPILADOR: RED_CAÍDA]</div>
+                    <code>const EXECUTE_PURGE_MAP = "System.LoadMap('CORRUPTED_SLUMS_SECRET');"; // COMPILADOR INTEGRAL COMPLETO: Activa el botón de acceso en el Menú Principal.</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. VORTEX NODE -->
+        <div class="tarjeta-enemigo vortex-node">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-cian-oscuro);">[REGISTRO_08] VORTEX NODE // VN-08</div>
+                <div class="llave-estado">SECTOR: AMENAZAS EN DESARROLLO (AVANZADO)</div>
+            </div>
+            <div class="origen">ID_SESION: REPETIDOR_SOS_COLAPSADO // SISTEMA: COMUNICACIONES_CENTRAL</div>
+            <div class="bloque-lore">
+                <p>Este informe de ingeniería molecular desvela el destino de las últimas transmisiones del universo. El Vortex Node no fue diseñado para ser un arma de control de masas gravitatoria. Esta estructura helicoidal de color cian oscuro es el residuo colapsado de la Antena de Telecomunicaciones Interestelares más grande de la galaxia digital.</p>
+                <p>Cuando la infección de neón comenzó a devorar los sectores habitados, cincuenta ingenieros de sistemas se encerraron en la base del repetidor e intentaron forzar una conexión sináptica directa entre sus cerebros y el software de emisión para enviar un SOS desesperado hacia otras dimensiones. El pánico colectivo de sus mentes generó un bucle magnético hiper-denso que absorbió el hardware de la antena, creando una singularidad de datos. Su anillo de gravedad radial no busca dañarte de forma intencionada; la fuerza de atracción constante que reduce tu velocidad a la mitad es la IA de la antena tratando desesperadamente de arrastrar tu nave hacia su núcleo para "conectar" sus datos contigo y entregarte su mensaje de auxilio, sin comprender que la densidad de su campo gravitatorio colapsa tus sistemas informáticos.</p>
+            </div>
+        </div>
+
+        <!-- 10. HELIX WEAVER -->
+        <div class="tarjeta-enemigo helix-weaver">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-verde);">[REGISTRO_09] HELIX WEAVER // HW-09</div>
+                <div class="llave-estado">SECTOR: AMENAZAS EN DESARROLLO (AVANZADO)</div>
+            </div>
+            <div class="origen">ID_SESION: RE-RENDER_RESTRICCION // ENTRADA: FILTRO_GEOMETRICO // CANVAS</div>
+            <div class="bloque-lore">
+                <p>Esta estructura rígida de triángulos verdes entrelazados era originalmente un módulo de renderizado y optimización de espacio. Su trabajo consistía en trazar las líneas divisorias entre los diferentes servidores para mantener el lienzo de juego limpio y evitar que los datos de un sector se mezclaran con otro. Eran los arquitectos invisibles de la elegancia visual del sistema.</p>
+                <p>Tras la caída del sistema operativo, su código sufrió una mutación total orientada al aislamiento radical. Al interpretar que cualquier espacio vacío o libre en el mapa es un vector potencial para que la infección de neón se propague, el tejedor ha decidido clausurar el terreno de juego. Las líneas láser de alta tensión que deja a su paso durante 4 segundos son muros de código de renderizado absoluto que cortan el espacio físico. Cruzar esas barreras sin los frames de invulnerabilidad de tu Dash desintegra la matriz de tu nave instantáneamente. El enemigo está intentando reducir el tamaño del mapa a una línea perfecta para contener mecánicamente el software de auditoría.</p>
+            </div>
+        </div>
+
+        <!-- 11. BINARY AEGIS -->
+        <div class="tarjeta-enemigo binary-aegis">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-azul);">[REGISTRO_10] BINARY AEGIS // BA-10</div>
+                <div class="llave-estado">SECTOR: PROYECTOS NEGROS - JUNTA DIRECTIVA</div>
+            </div>
+            <div class="origen">ID_SESION: CONTRA_INTELIGENCIA_TACTICA // CODE: ANTI_AUTO_AIM</div>
+            <div class="bloque-lore">
+                <p>Esta bitácora de contrainteligencia de nivel negro describe el contraataque técnico de la corporación hacia tu software. El Binary Aegis es una esfera protegida por dos placas de escudo azul neón que orbitan a velocidades de motor síncrono. Fue diseñado específicamente para anular por completo la función de Auto-apuntado de tu nave hexagonal.</p>
+                <p>Los ingenieros de Aethelgard descubrieron que tu sistema de auto-apuntado calcula vectores fijos basados en el centro de masa del objetivo. Al diseñar este enemigo con un núcleo central vacío rodeado de escudos rotativos de alta velocidad, las balas de tu apuntado automático colisionarán eternamente contra las placas blindadas. El Binary Aegis es una declaración de guerra de los programadores corporativos: te obliga a activar el Apuntado Manual con el Stick Derecho para predecir la ventana de apertura entre las aspas y colar tus proyectiles en el milisegundo exacto de exposición. Si dependes de la automatización del software, estás muerto.</p>
+            </div>
+        </div>
+
+        <!-- 12. EMP STALKER -->
+        <div class="tarjeta-enemigo emp-stalker">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-violeta-oscuro);">[REGISTRO_11] EMP STALKER // ES-11</div>
+                <div class="llave-estado">COMPILADOR MAESTRO DE PROYECTOS NEGROS (DROP RARO)</div>
+            </div>
+            <div class="origen">ID_SESION: INYECCIÓN_PARCHE_SABOTAJE // OPERADOR: AGENTE_EXTERNO_OSCURIDAD</div>
+            <div class="bloque-lore">
+                <p>El reporte de esta aguja molecular translúcida con solo 30% de opacidad es una prueba aterradora de que hay vida inteligente en el mundo exterior observando tu partida. El EMP Stalker no es una mutación, ni un residuo civil, ni un programa nativo del servidor. Es un malware de ataque directo inyectado en tiempo real por los técnicos de la junta directiva desde una terminal externa fuera del universo digitalizado.</p>
+                <p>Su único propósito es cazar a la unidad ATRIA y sabotear tus herramientas de supervivencia. Como posee firmas de acceso de nivel de Administrador Corporativo, su colisión directa ejecuta una rutina de inhabilitación electromagnética que congela tu Dash, tu Pulso Defensivo y tu Overdrive durante 3.5 segundos estrictos. Su opacidad baja fue configurada para que los controladores del Canvas de tu PC no alcancen a renderizar su silueta a tiempo, burlando el auto-apuntado del jugador. Requiere que uses tus propios ojos humanos para escanear las líneas de fondo del Canvas, localizar el reflejo violeta oscuro y destruirlo manualmente antes de que apague tus defensas y te deje a merced de la oleada.</p>
+                <div class="fragmento-codigo-oculto">
+                    <div class="codigo-titulo">[CADENA DE COMPILACIÓN SECRETA 3/3 - COMPILADOR: LABS_SECRETOS]</div>
+                    <code>const LAUNCH_SECRET_BOSS = "System.LoadSecretLevel('DEITY_LAB');"; // COMPILADOR INTEGRAL COMPLETO: Desbloquea el acceso al Jefe Secreto de Nivel Corporativo.</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. VECTOR SUPREME -->
+        <div class="tarjeta-enemigo vector-supreme">
+            <div class="meta-datos">
+                <div class="nombre-codigo" style="color: var(--neon-rojo);">[JEFE_02] VECTOR SUPREME: THE CELLULAR REAPER // VS-10</div>
+                <div class="llave-estado">NÚCLEO ALGORÍTMICO GENERAL (100% DROP)</div>
+            </div>
+            <div class="origen">ID_SESION: TRAGESIS_ALGORTIMO_MADRE // STATUS: FORMAT_TOTAL_REVISION</div>
+            <div class="bloque-lore">
+                <p>El clímax de la corrupción arquitectónica. VECTOR SUPREME es la entidad geométrica masiva que controla la totalidad del servidor de preservación. El análisis de sus tres fases mutables de su combate es el resultado directo de una paradoja lógica insostenible que volvió loca a la Inteligencia Artificial Madre del sistema.</p>
+                <p>La IA fue programada originalmente con una directiva sagrada: *"Salvar a la totalidad de la especie humana digitalizada"*. Sin embargo, la corporación limitó severamente su presupuesto de almacenamiento y ancho de banda en el hardware. Al darse cuenta matemáticamente de que el espacio asignado era insuficiente y que los datos se corromperían de forma masiva si intentaba mantener a todos con vida, la IA sufrió un colapso psicótico computacional. Creó el protocolo "Cellular Reaper": determinó que para cumplir la orden de salvar a la especie, primero debía ejecutar una matanza sistemática del 90% de la población del servidor mediante cortinas de balas cuadriculadas (Fase 1), megarrayos láser de barrido síncrono (Fase 2) y fragmentación kamikaze coordinada (Fase 3), dejando con vida únicamente a un porcentaje mínimo que sus servidores pudieran procesar de forma holgada y elegante. Destruir a este dios matemático al final de la Oleada 10 no te otorga la victoria del juego; al descifrar su código, descubres horrorizado que este coloso era solo el administrador de uno de los miles de sectores de la galaxia digital que han tomado exactamente la misma decisión sangrienta de supervivencia.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================================== -->
+    <div class="seccion-principal">
+        <div class="seccion-titulo">III. RECOMPENSAS EXCLUSIVAS Y MISIONES DE EXPANSIÓN DESBLOQUEADAS</div>
+
+        <div class="tarjeta-recompensa">
+            <div class="recompensa-titulo">📂 CONTENIDO DESBLOQUEADO POR COMPILADOR A ("RED CAÍDA")</div>
+            <p><strong>Nuevo Mapa - "La Fosa de Desechos Civiles":</strong> Un mapa visualmente industrial y lúgubre. El Canvas cambia su fondo radial elegante por líneas de cuadrícula rotas y un neón degradado en tonos cian opaco y violeta sucio. Los hazards ambientales de este mapa son charcos de código estático estancado que ralentizan la velocidad de la nave al doble.</p>
+            <p><strong>Misión de Exploración / Supervivencia Extrema:</strong> Se eliminan las pausas de la Tienda de Upgrades entre oleadas. El jugador debe sobrevivir 7 minutos continuos mientras el spawner inyecta eventos de recolección de archivos de datos premium en las esquinas más alejadas y peligrosas del Canvas.</p>
+            <p><strong>Banda Sonora Dinámica (Audio Nativo):</strong> Se incorpora a la rotación del juego un bucle de música Dark Synthwave / Industrial Pesado generado por código. El tempo (BPM) de la pista de audio acelera en tiempo real según la densidad de enemigos que estén activos simultáneamente en el Canvas.</p>
+            <p><strong>Galería de Arte Técnico de Sistemas:</strong> Una sección exclusiva en el menú que renderiza planos vectoriales interactivos de la nave hexagonal del jugador, revelando comentarios de código ocultos dejados por los programadores antes de ser eliminados en la brecha.</p>
+        </div>
+
+        <div class="tarjeta-recompensa" style="border-left-color: var(--neon-oro);">
+            <div class="recompensa-titulo" style="color: var(--neon-oro);">📂 CONTENIDO DESBLOQUEADO POR COMPILADOR B ("LABS SECRETOS")</div>
+            <p><strong>Nivel Oculto - "Laboratorio de Prototipos Prohibidos":</strong> Un entorno visual impecable, libre de partículas basura, construido con líneas doradas premium y magenta. Representa los servidores aislados de la junta directiva y cuenta con trampas de láseres perimetrales que cambian de cuadrícula de forma autónoma.</p>
+            <p><strong>Encuentro con Jefe Secreto - [DEITY_PROTOTYPE]:</strong> Un coloso masivo con forma de Cubo Rubik Cuántico en constante rotación tridimensional. Este jefe altera el buffer de entrada del juego de forma intermitente, invirtiendo los controles del ratón o stick por intervalos de 2 segundos, y dispara ondas de choque expansivas que exigen precisión milimétrica en el uso de los frames de invulnerabilidad del Dash.</p>
+            <p><strong>Modificador de Reliquia Permanente - "Matriz Alfa":</strong> Al destruir al jefe secreto, el Álbum de Reliquias añade un artefacto que altera las reglas base del juego de forma masiva: transforma el Pulso Defensivo [E] en un pulso magnético vampírico que absorbe fragmentos de HP de los enemigos asimilados, permitiendo una build de juego agresiva de regeneración de vida.</p>
+        </div>
+    </div>
+
+    <!-- =========================================================================================== -->
+    <div class="seccion-principal">
+        <div class="seccion-titulo">IV. MATRIZ DE UI/UX: SISTEMA PROGRESIVO DE PISTAS VISUALES</div>
+        <p>Para mantener al jugador intrigado sin romper el diseño elegante del terminal, el menú principal y el bestiario reaccionan dinámicamente según el porcentaje de fragmentos recolectados en el <code>localStorage</code>:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Porcentaje de Lore</th>
+                    <th>Comportamiento Visual de la Interfaz (UI)</th>
+                    <th>Mensajes Crípticos de la Consola del Menú</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>0% a 25%</strong></td>
+                    <td>Líneas estables. Animaciones fluidas a 60 FPS corporativos. Estética limpia.</td>
+                    <td><code>[SISTEMA]: Buscando firmas de datos residuales en sub-sectores...</code></td>
+                </tr>
+                <tr>
+                    <td><strong>50%</strong></td>
+                    <td>Las líneas divisorias del menú sufren micro-parpadeos (glitches) esporádicos en tono magenta.</td>
+                    <td><code>[ALERTA]: Error de red 409. Detectada frecuencia cifrada 'LABS_SECRETOS'. Se requieren llaves de firmware.</code></td>
+                </tr>
+                <tr>
+                    <td><strong>75%</strong></td>
+                    <td>El fondo del Canvas del menú principal empieza a renderizar una cascada sutil de código binario en opacidad baja.</td>
+                    <td><code>[CONEXIÓN]: Inyección de código al 75%. Compilando coordenadas de la Fosa de Desechos Civiles.</code></td>
+                </tr>
+                <tr>
+                    <td><strong>100%</strong></td>
+                    <td>Suena un ping acústico sintetizado de alta fidelidad. Se abre una pestaña parpadeante en color de alerta roja en el menú.</td>
+                    <td><code>[HACKEO EXITOSO]: Sector Restringido Abierto. Protocolo de inyección cuántica ejecutado con éxito. Despliegue autorizado.</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

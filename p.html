@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.6.3</title>
+    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.7.1</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -40,6 +40,11 @@
             <div class="hud-row">
                 <span id="hud-weapon" style="color: #ff007f;">ARMA: Blaster</span>
                 <span style="margin-left:10px;" id="hud-aim" style="color: #ffff00;">APUNTADO: AUTO</span>
+            </div>
+            
+            <div class="hud-row">
+                <span id="hud-damage" style="color: #ff5500;">DAÑO: --</span>
+                <span style="margin-left:10px;" id="hud-dmg-mod" style="color: #ffaa00;">MOD: 1.0x</span>
             </div>
 
             <div style="margin-top:10px; font-size:11px; color:#aaa;">DASH [SHIFT L]:</div>
@@ -96,14 +101,44 @@
         </div>
 
         <div id="wave-alert">OLEADA 1</div>
-        <div id="pause-display">=== PAUSA ===</div>
-        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,204,0.35);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.6.3</div>
+        
+        <!-- Banner de Presentación de Jefe -->
+        <div id="boss-banner" style="display: none;">
+            <div class="boss-title">ALERTA DE JEFE</div>
+            <div class="boss-name">VECTOR SUPREME</div>
+            <div class="boss-subtitle">THE CELLULAR REAPER</div>
+        </div>
+
+        <!-- Barra de Vida del Jefe -->
+        <div id="boss-hp-container" style="display: none;">
+            <div class="boss-hp-label">VECTOR SUPREME</div>
+            <div class="boss-hp-bar">
+                <div id="boss-hp-fill" class="boss-hp-fill"></div>
+            </div>
+        </div>
+        <!-- Modal de Pausa con Sliders -->
+        <div id="pause-display" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 10, 15, 0.95); border: 2px solid #00ffcc; padding: 25px; color: #fff; z-index: 1000; text-align: center; width: 320px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); border-radius: 10px; font-family: inherit;">
+            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); margin-bottom: 20px; font-size: 20px;">=== PAUSA ===</h2>
+            
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; letter-spacing: 1px;">VOLUMEN MÚSICA</label>
+                <input type="range" id="music-volume" min="0" max="1" step="0.05" value="1" style="width: 100%; accent-color: #00ffcc;" oninput="updateMusicVolume(this.value)">
+            </div>
+            
+            <div style="margin-bottom: 25px; text-align: left;">
+                <label style="display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; letter-spacing: 1px;">VOLUMEN EFECTOS</label>
+                <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="1" style="width: 100%; accent-color: #ff007f;" oninput="updateSFXVolume(this.value)">
+            </div>
+            
+            <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc;" onclick="togglePauseFromBtn()">REANUDAR</button>
+        </div>
+        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,204,0.35);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.7.1</div>
 
         <!-- Menú Principal Inicial -->
         <div id="main-menu">
             <h1>NEON OVERDRIVE</h1>
             <h2>ADVANCED SURVIVAL</h2>
-            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.6.3 &mdash; HOST AUTHORITY FOR XP</p>
+            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.7.1 &mdash; HOST AUTHORITY FOR XP</p>
             <p style="margin-bottom: 20px; color: #aaa; font-size: 12px;">Sistemas listos para inicialización de
                 combate.</p>
             <button class="shop-btn" onclick="startGameSimulation()">INICIAR SIMULACIÓN</button>
@@ -112,8 +147,9 @@
                 <input type="text" id="room-id-input" placeholder="CÓDIGO DE SALA" style="flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-family: inherit; font-size: 14px; text-transform: uppercase;">
                 <button class="shop-btn" style="width: auto; margin: 0; padding: 10px 20px;" onclick="joinOnlineRoom(document.getElementById('room-id-input').value)">UNIRSE</button>
             </div>
-            <button class="shop-btn" style="border-color: #ffff00; color: #ffff00;"
-                onclick="toggleCollection(true)">REVISAR ÁLBUM PERMANENTE</button>
+            <button class="shop-btn" style="border-color: #ffff00; color: #ffff00;" onclick="toggleCollection(true)">MEJORAS PERMANENTES</button>
+            <button class="shop-btn" style="border-color: #ff007f; color: #ff007f;" onclick="window.open('changelog.html', '_blank')">VER CAMBIOS (CHANGELOG)</button>
+            <button class="shop-btn" style="border-color: #aa00ff; color: #aa00ff;" onclick="toggleMusic('view_from_the_bridge.mp3')">🎵 REPRODUCIR/PAUSAR MÚSICA</button>
         </div>
 
         <!-- Tienda de Upgrades -->

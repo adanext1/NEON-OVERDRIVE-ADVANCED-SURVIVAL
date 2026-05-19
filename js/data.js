@@ -41,11 +41,13 @@ let players = [
         dashCooldown: 0, dashTimer: 0, dashVx: 0, dashVy: 0, pulseCooldown: 0,
         aimMode: 'AUTO', overdriveTimer: 0, color: '#00ffcc',
         flashTicks: 0, damageFlashAlpha: 0,
-        weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } }
+        weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
+        upgradeCounts: { hp: 0, dmg: 0 }
     }
 ];
 
 let isCoop = false;
+let currentMusic = null;
 
 const WEAPONS = {
     basic: { name: "Blaster Láser", fireRate: 230, damage: 24, speed: 13, spread: 0, count: 1, color: '#00ffcc', type: 'single' },

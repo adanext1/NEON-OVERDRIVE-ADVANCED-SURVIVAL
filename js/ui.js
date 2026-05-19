@@ -209,6 +209,20 @@ function updateUI() {
     document.getElementById('hud-weapon').innerText = `ARMA: ${WEAPONS[p1.weapons[p1.currentWeaponIndex]].name}`;
     document.getElementById('hud-aim').innerText = `APUNTADO: ${p1.aimMode}`;
 
+    let wep = WEAPONS[p1.weapons[p1.currentWeaponIndex]];
+    if (wep) {
+        let mods = p1.weaponUpgrades ? (p1.weaponUpgrades[p1.weapons[p1.currentWeaponIndex]] || { damage: 0, fireRate: 0 }) : { damage: 0, fireRate: 0 };
+        let baseDmg = wep.damage + mods.damage;
+        let finalDmg = Math.floor(baseDmg * p1.damageModifier);
+        let dmgText = `DAÑO: ${finalDmg}`;
+        if (wep.type === 'spread') {
+            let count = wep.count + (mods.count || 0);
+            dmgText += ` x${count}`;
+        }
+        document.getElementById('hud-damage').innerText = dmgText;
+        document.getElementById('hud-dmg-mod').innerText = `MOD: ${p1.damageModifier.toFixed(1)}x`;
+    }
+
     let shElement = document.getElementById('hud-shield');
     let shStat = document.getElementById('shield-stat');
     if (userSave.artifacts.shieldGen && p1.maxShield > 0) {
@@ -357,8 +371,23 @@ function craftArtifact(key) {
 function buyUpgrade(type, pObj) {
     if (!pObj) pObj = players[0];
     
-    if (type === 'hp' && pObj.credits >= 50) { pObj.maxHp += 25; pObj.hp += 25; pObj.credits -= 50; }
-    else if (type === 'dmg' && pObj.credits >= 60) { pObj.damageModifier += 0.20; pObj.credits -= 60; }
+    let hpPrice = Math.floor(50 * Math.pow(1.5, pObj.upgradeCounts.hp));
+    let dmgPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
+
+    if (type === 'hp' && pObj.credits >= hpPrice) { 
+        pObj.maxHp += 25; pObj.hp += 25; pObj.credits -= hpPrice; 
+        pObj.upgradeCounts.hp++;
+        let btn = document.getElementById(pObj.id === 1 ? 'btn-up-hp' : 'btn-up-hp-p2');
+        let nextPrice = Math.floor(50 * Math.pow(1.5, pObj.upgradeCounts.hp));
+        if (btn) btn.innerText = `+25 HP Máxima - $${nextPrice}`;
+    }
+    else if (type === 'dmg' && pObj.credits >= dmgPrice) { 
+        pObj.damageModifier += 0.20; pObj.credits -= dmgPrice; 
+        pObj.upgradeCounts.dmg++;
+        let btn = document.getElementById(pObj.id === 1 ? 'btn-up-dmg' : 'btn-up-dmg-p2');
+        let nextPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
+        if (btn) btn.innerText = `+20% Daño - $${nextPrice}`;
+    }
     else if (type === 'shotgun' && pObj.credits >= 150 && !pObj.weapons.includes('shotgun')) { pObj.weapons.push('shotgun'); pObj.credits -= 150; pObj.currentWeaponIndex = pObj.weapons.length - 1; }
     else if (type === 'plasma' && pObj.credits >= 300 && !pObj.weapons.includes('plasma')) { pObj.weapons.push('plasma'); pObj.credits -= 300; pObj.currentWeaponIndex = pObj.weapons.length - 1; }
     updateUI();
