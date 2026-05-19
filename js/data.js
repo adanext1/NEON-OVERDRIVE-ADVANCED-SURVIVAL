@@ -8,7 +8,8 @@ resizeCanvas();
 // --- SISTEMA DE COLECCIÓN PERMANENTE ---
 let userSave = JSON.parse(localStorage.getItem('neon_overdrive_save')) || {
     materials: { core: 0, plate: 0, crystal: 0 },
-    artifacts: { hyperdrive: 0, shieldGen: 0, singularity: 0, shipHp: 0, shipDmg: 0 }
+    artifacts: { hyperdrive: 0, shieldGen: 0, singularity: 0, shipHp: 0, shipDmg: 0 },
+    settings: { musicVolume: 0.7, sfxVolume: 0.7 }
 };
 
 // Migración de guardado antiguo
@@ -18,6 +19,8 @@ if (typeof userSave.artifacts.hyperdrive === 'boolean') {
     userSave.artifacts.singularity = userSave.artifacts.singularity ? 1 : 0;
 }
 if (userSave.artifacts.shipHp === undefined) userSave.artifacts.shipHp = 0;
+if (userSave.artifacts.shipDmg === undefined) userSave.artifacts.shipDmg = 0;
+if (userSave.settings === undefined) userSave.settings = { musicVolume: 0.7, sfxVolume: 0.7 };
 if (userSave.artifacts.shipDmg === undefined) userSave.artifacts.shipDmg = 0;
 
 const ARTIFACT_RECIPES = {
@@ -42,7 +45,7 @@ let players = [
         aimMode: 'AUTO', overdriveTimer: 0, color: '#00ffcc',
         flashTicks: 0, damageFlashAlpha: 0,
         weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
-        upgradeCounts: { hp: 0, dmg: 0 }
+        upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 }
     }
 ];
 

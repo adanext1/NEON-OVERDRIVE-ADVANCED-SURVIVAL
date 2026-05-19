@@ -109,6 +109,27 @@ function showLevelUpMenu(pObj) {
         for (let k in pObj.weaponUpgrades) { if (WEAPONS[k]) pObj.weaponUpgrades[k].damage += Math.floor(WEAPONS[k].damage * 0.15); }
     }});
 
+    // --- NUEVAS CARTAS v0.8.0 ---
+    pool.push({ title: 'Enfriamiento Acelerado', desc: '-20% Calor en Minigun', rarity: 'rara', apply: () => { pObj.minigunHeatMod = (pObj.minigunHeatMod || 1.0) - 0.20; } });
+    pool.push({ title: 'Láser de Alta Frecuencia', desc: '+30% Daño en Mega-Láser', rarity: 'rara', apply: () => { pObj.laserDmgMod = (pObj.laserDmgMod || 1.0) + 0.30; } });
+    pool.push({ title: 'Batería de Respaldo', desc: '-15% Cooldown en Célula Q', rarity: 'rara', apply: () => { pObj.qCdMod = (pObj.qCdMod || 1.0) - 0.15; } });
+    pool.push({ title: 'Hiper-Ventilación', desc: '-30% Tiempo de Bloqueo por Sobrecalentamiento', rarity: 'rara', apply: () => { pObj.minigunCooldownMod = (pObj.minigunCooldownMod || 1.0) - 0.30; } });
+    
+    pool.push({ title: 'Protocolo Bastión Optimizado', desc: '+15% Reducción de Daño en Torreta', rarity: 'legendaria', apply: () => { pObj.turretDamageReduction = (pObj.turretDamageReduction || 0.3) + 0.15; } });
+
+    // --- MÁS CARTAS NUEVAS ---
+    // Comunes
+    pool.push({ title: 'Rastreador', desc: '+50 Rango de Atracción', rarity: 'común', apply: () => { pObj.magnetRange = (pObj.magnetRange || 150) + 50; } });
+    pool.push({ title: 'Reflejos', desc: '+8% Velocidad de Movimiento', rarity: 'común', apply: () => { pObj.speed *= 1.08; } });
+    
+    // Raras
+    pool.push({ title: 'Vampirismo Nano', desc: 'Recupera 1 HP al matar un enemigo', rarity: 'rara', apply: () => { pObj.lifeSteal = (pObj.lifeSteal || 0) + 1; } });
+    pool.push({ title: 'Munición Pesada', desc: '+25% Daño pero -10% Velocidad', rarity: 'rara', apply: () => { pObj.damageModifier += 0.25; pObj.speed *= 0.90; } });
+    
+    // Legendarias
+    pool.push({ title: 'Dron de Combate', desc: 'Invoca un dron de apoyo autónomo', rarity: 'legendaria', apply: () => { helperDrones.push({ x: pObj.x, y: pObj.y, ownerId: pObj.id, shootCooldown: 0, angle: 0 }); } });
+    pool.push({ title: 'Segunda Oportunidad', desc: 'Revive automáticamente con 50% HP al morir (1 vez)', rarity: 'legendaria', apply: () => { pObj.hasSecondChance = true; } });
+
     // Sortear 3 opciones
     let choices = [];
     let attempts = 0;
@@ -373,6 +394,9 @@ function buyUpgrade(type, pObj) {
     
     let hpPrice = Math.floor(50 * Math.pow(1.5, pObj.upgradeCounts.hp));
     let dmgPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
+    let laserPrice = Math.floor(200 * Math.pow(1.5, pObj.upgradeCounts.laser || 0));
+    let minigunPrice = Math.floor(180 * Math.pow(1.5, pObj.upgradeCounts.minigun || 0));
+    let qPrice = Math.floor(250 * Math.pow(1.5, pObj.upgradeCounts.q_cooldown || 0));
 
     if (type === 'hp' && pObj.credits >= hpPrice) { 
         pObj.maxHp += 25; pObj.hp += 25; pObj.credits -= hpPrice; 
@@ -387,6 +411,33 @@ function buyUpgrade(type, pObj) {
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-dmg' : 'btn-up-dmg-p2');
         let nextPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
         if (btn) btn.innerText = `+20% Daño - $${nextPrice}`;
+    }
+    else if (type === 'laser' && pObj.credits >= laserPrice) {
+        if (!pObj.laserDmgMod) pObj.laserDmgMod = 1.0;
+        pObj.laserDmgMod += 0.25; // +25% daño láser
+        pObj.credits -= laserPrice;
+        pObj.upgradeCounts.laser = (pObj.upgradeCounts.laser || 0) + 1;
+        let btn = document.getElementById(pObj.id === 1 ? 'btn-up-laser' : 'btn-up-laser-p2');
+        let nextPrice = Math.floor(200 * Math.pow(1.5, pObj.upgradeCounts.laser));
+        if (btn) btn.innerText = `Potencia Láser - $${nextPrice}`;
+    }
+    else if (type === 'minigun' && pObj.credits >= minigunPrice) {
+        if (!pObj.minigunHeatMod) pObj.minigunHeatMod = 1.0;
+        pObj.minigunHeatMod -= 0.15; // -15% generación de calor
+        pObj.credits -= minigunPrice;
+        pObj.upgradeCounts.minigun = (pObj.upgradeCounts.minigun || 0) + 1;
+        let btn = document.getElementById(pObj.id === 1 ? 'btn-up-minigun' : 'btn-up-minigun-p2');
+        let nextPrice = Math.floor(180 * Math.pow(1.5, pObj.upgradeCounts.minigun));
+        if (btn) btn.innerText = `Enfriamiento Minigun - $${nextPrice}`;
+    }
+    else if (type === 'q_cooldown' && pObj.credits >= qPrice) {
+        if (!pObj.qCdMod) pObj.qCdMod = 1.0;
+        pObj.qCdMod -= 0.10; // -10% cooldown
+        pObj.credits -= qPrice;
+        pObj.upgradeCounts.q_cooldown = (pObj.upgradeCounts.q_cooldown || 0) + 1;
+        let btn = document.getElementById(pObj.id === 1 ? 'btn-up-q' : 'btn-up-q-p2');
+        let nextPrice = Math.floor(250 * Math.pow(1.5, pObj.upgradeCounts.q_cooldown));
+        if (btn) btn.innerText = `Recarga Célula Q - $${nextPrice}`;
     }
     else if (type === 'shotgun' && pObj.credits >= 150 && !pObj.weapons.includes('shotgun')) { pObj.weapons.push('shotgun'); pObj.credits -= 150; pObj.currentWeaponIndex = pObj.weapons.length - 1; }
     else if (type === 'plasma' && pObj.credits >= 300 && !pObj.weapons.includes('plasma')) { pObj.weapons.push('plasma'); pObj.credits -= 300; pObj.currentWeaponIndex = pObj.weapons.length - 1; }

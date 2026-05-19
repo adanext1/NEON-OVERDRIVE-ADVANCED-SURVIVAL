@@ -17,6 +17,9 @@ function spawnDamageText(x, y, amount, type = 'normal') {
 function takeDamage(pObj, amount) {
     if (amount <= 0) return;
     if (pObj.isDead) return; // Ya muerto, no recibir más daño
+    
+    if (pObj.isTurret) amount *= (1 - (pObj.turretDamageReduction || 0.3)); // 30% base
+    
     pObj.flashTicks = 6; pObj.damageFlashAlpha = 0.5;
     
     // Animación en el HUD
@@ -35,28 +38,51 @@ function takeDamage(pObj, amount) {
     if (amount > 0) {
         pObj.hp -= amount;
         if (pObj.hp <= 0) {
-            pObj.hp = 0;
-            pObj.isDead = true;
-            pObj.reviveTimer = 0;
-            createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
-            screenShake = 15;
-            spawnDamageText(pObj.x, pObj.y - 20, 'KO', 'hazard');
-            showNetworkMessage(`💀 ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} CAÍDO — acércate y mantén [R] para revivir!`, 5000);
-
-            // Chequear si TODOS están muertos → Game Over
-            let allDead = players.every(p => p.isDead || p.hp <= 0);
-            if (allDead && !isGameOver) {
-                isGameOver = true;
-                document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
-                document.getElementById('game-over-modal').style.display = 'block';
-                updateMenuSelection('game-over-modal');
-                isPaused = true;
+            if (pObj.hasSecondChance) {
+                pObj.hp = Math.floor(pObj.maxHp * 0.5);
+                pObj.hasSecondChance = false;
+                createExplosion(pObj.x, pObj.y, '#ffff00', 40, 2.5);
+                screenShake = 10;
+                showNetworkMessage('🛡️ ¡SEGUNDA OPORTUNIDAD ACTIVADA!', 3000);
+            } else {
+                pObj.hp = 0;
+                createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
+                screenShake = 15;
+                spawnDamageText(pObj.x, pObj.y - 20, 'KO', 'hazard');
+                
+                // En solitario, Game Over directo e inmediato
+                if (!isCoop && !isOnline) {
+                    isGameOver = true;
+                    document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
+                    document.getElementById('game-over-modal').style.display = 'block';
+                    updateMenuSelection('game-over-modal');
+                    isPaused = true;
+                    return; // Detener ejecución para evitar que quede en bucle
+                } else {
+                    pObj.isDead = true;
+                    pObj.reviveTimer = 0;
+                    showNetworkMessage(`💀 ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} CAÍDO — acércate y mantén [R] para revivir!`, 5000);
+                }
             }
         } else {
             spawnDamageText(pObj.x, pObj.y, amount, 'hazard'); createExplosion(pObj.x, pObj.y, '#ff0055', 12, 1.5);
         }
     }
     updateUI();
+}
+
+// Mover el check de todos muertos fuera del takeDamage para coop
+function checkCoopGameOver() {
+    if (isCoop || isOnline) {
+        let allDead = players.every(p => p.isDead || p.hp <= 0);
+        if (allDead && !isGameOver) {
+            isGameOver = true;
+            document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
+            document.getElementById('game-over-modal').style.display = 'block';
+            updateMenuSelection('game-over-modal');
+            isPaused = true;
+        }
+    }
 }
 
 function revivePlayer(pObj) {
@@ -80,6 +106,18 @@ function startGameSimulation() {
         p.damageModifier = 1.0 + (userSave.artifacts.shipDmg * 0.05);
         p.maxShield = 40 + (userSave.artifacts.shieldGen * 10);
         if (userSave.artifacts.shieldGen > 0) { p.shield = p.maxShield; }
+        
+        // Variables v0.8.0
+        p.laserCharge = 0;
+        p.laserCooldown = 0;
+        p.isTurret = false;
+        p.minigunHeat = 0;
+        p.minigunOverheat = false;
+        p.qCooldown = 0;
+        p.qTurboTimer = 0;
+        p.minigunSpool = 0;
+        p.minigunCooldown = 0;
+        p.rearDischargeTimer = 0;
     });
 
     if (!isOnline || isHost) {
@@ -137,6 +175,8 @@ function processGamepadInput() {
     if (!lastGamepadButtons[1]) lastGamepadButtons[1] = [];
 
     // Activar co-op si el Mando 1 presiona START (botón 9) y no estamos en co-op ni en online
+    // Activar co-op si el Mando 1 presiona START (botón 9) y no estamos en co-op ni en online
+    /*
     if (gp1 && gp1.buttons[9]?.pressed && !lastGamepadButtons[0][9] && !isCoop && !isOnline) {
         isCoop = true;
         let p2 = {
@@ -149,7 +189,7 @@ function processGamepadInput() {
             aimMode: 'AUTO', overdriveTimer: 0,
             flashTicks: 0, damageFlashAlpha: 0,
             weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
-            upgradeCounts: { hp: 0, dmg: 0 }
+            upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 }
         };
         // Aplicar mejoras permanentes J2
         p2.maxHp = 100 + (userSave.artifacts.shipHp * 15);
@@ -161,6 +201,7 @@ function processGamepadInput() {
         players.push(p2);
         updateUI();
     }
+    */
 
     let inMenu = !gameStarted || isShopActive || inCollectionMenu || isGameOver || (document.getElementById('level-up-modal')?.style.display === 'block');
 
@@ -178,13 +219,28 @@ function processGamepadInput() {
         if (moveX !== 0 || moveY !== 0) {
             let magnitude = Math.hypot(moveX, moveY);
             if (magnitude > 1) { moveX /= magnitude; moveY /= magnitude; }
-            let currentSpeed = (pObj.vortexPullCount >= 2) ? pObj.speed / 2 : pObj.speed;
+            let currentSpeed = pObj.speed;
+            if (pObj.vortexPullCount >= 2) currentSpeed /= 2;
+            if (pObj.isChargingLaser) currentSpeed = 1.8;
+            if (pObj.isTurret) currentSpeed = 0;
+            
             if (pObj.dashTimer <= 0) { pObj.x += moveX * currentSpeed; pObj.y += moveY * currentSpeed; }
         }
 
         if (pObj.aimMode === 'MANUAL') {
             let aimX = gp.axes[2] || 0; let aimY = gp.axes[3] || 0;
-            if (Math.hypot(aimX, aimY) > 0.25) { pObj.angle = Math.atan2(aimY, aimX); }
+            if (Math.hypot(aimX, aimY) > 0.25) {
+                let targetAngle = Math.atan2(aimY, aimX);
+                let turnSpeed = 0.1;
+                if (pObj.isTurret && pObj.minigunHeat > 150) {
+                    turnSpeed = 0.02;
+                }
+                
+                let diff = targetAngle - pObj.angle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                pObj.angle += diff * turnSpeed;
+            }
         }
 
         if (gp.buttons[8]?.pressed && !lastGamepadButtons[gpIdx][8]) { pObj.aimMode = pObj.aimMode === 'AUTO' ? 'MANUAL' : 'AUTO'; updateUI(); }
@@ -207,7 +263,56 @@ function processGamepadInput() {
         }
 
         // Cambiar arma
+        // Cambiar arma (LT)
         if (gp.buttons[6]?.pressed && !lastGamepadButtons[gpIdx][6]) { pObj.currentWeaponIndex = (pObj.currentWeaponIndex + 1) % pObj.weapons.length; updateUI(); }
+        
+        // Pulso (B / Botón 1)
+        if (gp.buttons[1]?.pressed && !lastGamepadButtons[gpIdx][1]) {
+            if ((pObj.empTimer || 0) === 0 && (pObj.pulseCooldown || 0) === 0) {
+                triggerPulse();
+                playPulseSound();
+            }
+        }
+        
+        // Modo Torreta (Y / Botón 3)
+        if (gp.buttons[3]?.pressed && !lastGamepadButtons[gpIdx][3]) {
+            if (waveActive && (pObj.empTimer || 0) === 0) {
+                pObj.isTurret = !pObj.isTurret;
+                playTurretToggleSound();
+                if (pObj.isTurret) pObj.minigunSpool = 0;
+            }
+        }
+        
+        // Célula Q (R3 / Botón 11)
+        if (gp.buttons[11]?.pressed && !lastGamepadButtons[gpIdx][11]) {
+            if ((pObj.qCooldown || 0) <= 0 && (pObj.empTimer || 0) === 0) {
+                pObj.dashCooldown = 0;
+                pObj.pulseCooldown = 0;
+                pObj.laserCooldown = 0;
+                pObj.qTurboTimer = 240; // 4s
+                pObj.qCooldown = 900 * (pObj.qCdMod || 1.0); // 15s base
+                
+                playOverloadSound();
+                createExplosion(pObj.x, pObj.y, '#00ffaa', 30, 2);
+                showNetworkMessage('⚡ ¡CÉLULA DE SOBRECARGA ACTIVADA!', 2000);
+            }
+        }
+        
+        // Mega Láser (RB / Botón 5)
+        if (gp.buttons[5]?.pressed) {
+            if ((pObj.empTimer || 0) === 0 && (pObj.laserCooldown || 0) <= 0 && !pObj.isTurret) {
+                if (!pObj.isChargingLaser) {
+                    pObj.isChargingLaser = true;
+                    pObj.laserCharge = 0;
+                }
+            }
+        } else if (lastGamepadButtons[gpIdx][5] && !gp.buttons[5]?.pressed) {
+            // Se soltó el botón
+            if (pObj.isChargingLaser) {
+                pObj.isChargingLaser = false;
+                fireMegaLaser(pObj);
+            }
+        }
         
         gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false);
     }
@@ -268,8 +373,7 @@ function processGamepadInput() {
     let gpPausa = gp1 || gp2;
     if (gpPausa && gpPausa.buttons[9]?.pressed && !lastGamepadButtons[gpPausa === gp1 ? 0 : 1][9]) {
         if (!isShopActive && !inCollectionMenu && !isGameOver && gameStarted) {
-            isPaused = !isPaused;
-            document.getElementById('pause-display').style.display = isPaused ? 'block' : 'none';
+            togglePause();
         }
     }
 
@@ -316,18 +420,78 @@ function processGamepadInput() {
 window.addEventListener('keydown', e => {
     let k = e.key.toLowerCase(); keys[k] = true;
     if (!gameStarted) return;
-    if (k === 'p') { if (!isShopActive && !inCollectionMenu) { isPaused = !isPaused; document.getElementById('pause-display').style.display = isPaused ? 'block' : 'none'; } }
+    if (k === 'p') { if (!isShopActive && !inCollectionMenu) { togglePause(); } }
     if (isPaused) return;
     if (k === 'm') { players[0].aimMode = players[0].aimMode === 'AUTO' ? 'MANUAL' : 'AUTO'; updateUI(); }
-    if (e.key === 'Shift') triggerDash(); if (k === 'e') triggerPulse();
-    if (e.key === ' ' || e.key === 'Spacebar') { if (!waveActive && enemies.length === 0 && !inCollectionMenu) toggleShop(!isShopActive); }
+    if (e.key === 'Shift') { triggerDash(); playDashSound(); } 
+    if (k === 'e') { triggerPulse(); playPulseSound(); }
+    if (k === 'q') {
+        let p = players[0];
+        if ((p.qCooldown || 0) <= 0 && (p.empTimer || 0) === 0) {
+            p.dashCooldown = 0;
+            p.pulseCooldown = 0;
+            p.laserCooldown = 0;
+            p.qTurboTimer = 240; // 4s
+            p.qCooldown = 900 * (p.qCdMod || 1.0); // 15s base
+            
+            playOverloadSound();
+            createExplosion(p.x, p.y, '#00ffaa', 30, 2);
+            showNetworkMessage('⚡ ¡CÉLULA DE SOBRECARGA ACTIVADA!', 2000);
+        }
+    }
+    if (e.key === ' ' || e.key === 'Spacebar') {
+        if (gameStarted && !isPaused) {
+            let p = players[0];
+            if (waveActive) {
+                if ((p.empTimer || 0) === 0) {
+                    p.isTurret = !p.isTurret;
+                    playTurretToggleSound();
+                    if (p.isTurret) {
+                        p.minigunSpool = 0;
+                    }
+                }
+            } else if (enemies.length === 0 && !inCollectionMenu) {
+                toggleShop(!isShopActive);
+            }
+        }
+    }
     if (k === 'c') { if (!waveActive && enemies.length === 0) { if (isShopActive) toggleShop(false); toggleCollection(!inCollectionMenu); } }
     if (e.key >= '1' && e.key <= '3') { let idx = parseInt(e.key) - 1; if (players[0].weapons[idx]) players[0].currentWeaponIndex = idx; updateUI(); }
 });
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-window.addEventListener('mousedown', e => { if (e.button === 0 && gameStarted && !isPaused) mouse.isDown = true; });
-window.addEventListener('mouseup', e => { if (e.button === 0) mouse.isDown = false; });
+window.addEventListener('mousedown', e => {
+    if (e.button === 0 && gameStarted && !isPaused) mouse.isDown = true;
+    if (e.button === 2 && gameStarted && !isPaused) {
+        let p = players[0];
+        if ((p.empTimer || 0) === 0 && (p.laserCooldown || 0) <= 0 && !p.isTurret) {
+            p.isChargingLaser = true;
+            p.laserCharge = 0;
+        }
+    }
+});
+window.addEventListener('mouseup', e => {
+    if (e.button === 0) mouse.isDown = false;
+    if (e.button === 2) {
+        let p = players[0];
+        if (p.isChargingLaser) {
+            p.isChargingLaser = false;
+            fireMegaLaser(p);
+        }
+    }
+});
+window.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('wheel', e => {
+    if (!gameStarted || isPaused) return;
+    let p = players[0];
+    if (p.isTurret) return; // Bloquear cambio de arma en modo torreta
+    if (e.deltaY < 0) {
+        p.currentWeaponIndex = (p.currentWeaponIndex + 1) % p.weapons.length;
+    } else {
+        p.currentWeaponIndex = (p.currentWeaponIndex - 1 + p.weapons.length) % p.weapons.length;
+    }
+    updateUI();
+});
 
 function triggerDashKeyboard() {
     let moveX = 0; let moveY = 0;
@@ -387,16 +551,35 @@ function toggleMusic(filename) {
 
 // === SISTEMA DE EFECTOS DE SONIDO SINTETIZADOS ===
 let audioCtx;
-let musicVolume = 1.0;
-let sfxVolume = 1.0;
+let musicVolume = userSave.settings ? userSave.settings.musicVolume : 0.7;
+let sfxVolume = userSave.settings ? userSave.settings.sfxVolume : 0.7;
 
 function updateMusicVolume(val) {
     musicVolume = parseFloat(val);
     if (currentMusic) currentMusic.volume = musicVolume;
+    if (userSave.settings) {
+        userSave.settings.musicVolume = musicVolume;
+        saveGame();
+    }
 }
 
 function updateSFXVolume(val) {
     sfxVolume = parseFloat(val);
+    if (userSave.settings) {
+        userSave.settings.sfxVolume = sfxVolume;
+        saveGame();
+    }
+}
+
+function togglePause() {
+    isPaused = !isPaused;
+    document.getElementById('pause-display').style.display = isPaused ? 'block' : 'none';
+    if (isPaused) {
+        document.getElementById('music-volume').value = musicVolume;
+        document.getElementById('sfx-volume').value = sfxVolume;
+        document.getElementById('music-vol-val').innerText = Math.round(musicVolume*100) + '%';
+        document.getElementById('sfx-vol-val').innerText = Math.round(sfxVolume*100) + '%';
+    }
 }
 
 function togglePauseFromBtn() {
@@ -454,6 +637,107 @@ function playPlasmaSound() {
     } catch(e) { console.log(e); }
 }
 
+function playDashSound() {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.1 * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playPulseSound() {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.2 * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+}
+
+function playOverloadSound() {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15 * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function playTurretToggleSound() {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.1 * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playMinigunFireSound() {
+    initAudio();
+    
+    // Oscilador principal (Crujido)
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(Math.random() * 50 + 120, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.25 * sfxVolume, audioCtx.currentTime); // Subido de 0.05 a 0.25
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    
+    // Segundo oscilador (Golpe bajo para dar peso)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(60, audioCtx.currentTime);
+    gain2.gain.setValueAtTime(0.3 * sfxVolume, audioCtx.currentTime);
+    gain2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+    osc2.connect(gain2); gain2.connect(audioCtx.destination);
+    osc2.start(); osc2.stop(audioCtx.currentTime + 0.05);
+}
+
+function playLaserChargeSound(pitch) {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(pitch, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.05 * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+}
+
+function playLaserFireSound(power) {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.2 * power * sfxVolume, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+}
+
 function spawnEnemy() {
     let x = Math.random() < 0.5 ? -40 : canvas.width + 40; let y = Math.random() * canvas.height;
     if (Math.random() < 0.5) { x = Math.random() * canvas.width; y = Math.random() < 0.5 ? -40 : canvas.height + 40; }
@@ -474,7 +758,7 @@ function spawnEnemy() {
             enemy.bossStateTimer = 120; // Tiempo antes del primer ataque
             enemy.bossLaserAngle = 0;
             enemy.isCoreGuardian = true;
-            enemy.hp = 10000;
+            enemy.hp = 7500;
             enemy.maxHp = enemy.hp;
             
             playMusic('terminal_engine_failure.mp3');
@@ -504,7 +788,7 @@ function spawnEnemy() {
             enemy.bossAttackState = 'idle';
             enemy.bossStateTimer = 120;
             enemy.radius = 60;
-            enemy.hp = 25000;
+            enemy.hp = 18750;
             enemy.maxHp = enemy.hp;
             enemy.color = '#ff00ff';
             enemy.isVectorSupreme = true;
@@ -656,8 +940,144 @@ function startWave() {
     }
 }
 
+function fireMegaLaser(pObj) {
+    let charge = pObj.laserCharge;
+    pObj.laserCharge = 0; // Resetear carga
+    
+    let targetAngle = pObj.angle;
+    
+    // Fases de Potencia
+    if (charge < 60) {
+        // Fase 1: Spameo (Menos de 1s)
+        let dmg = 15 * pObj.damageModifier * (pObj.laserDmgMod || 1.0);
+        bullets.push({ x: pObj.x, y: pObj.y, vx: Math.cos(targetAngle) * 12, vy: Math.sin(targetAngle) * 12, radius: 3, color: '#00ffcc', damage: dmg, type: 'laser_thin', duration: 15 });
+        pObj.laserCooldown = 30; // 0.5s de cooldown
+        pObj.maxLaserCooldown = 30;
+        playLaserFireSound(0.5);
+    }
+    else if (charge >= 60 && charge < 120) {
+        // Fase 2: Carga Óptima (1s a 2s)
+        let dmg = 100 * pObj.damageModifier * (pObj.laserDmgMod || 1.0);
+        bullets.push({ x: pObj.x, y: pObj.y, vx: Math.cos(targetAngle) * 15, vy: Math.sin(targetAngle) * 15, radius: 8, color: '#ffff00', damage: dmg, type: 'laser_medium', duration: 30 });
+        pObj.laserCooldown = 240; // 4s de cooldown
+        pObj.maxLaserCooldown = 240;
+        playLaserFireSound(1.0);
+    }
+    else if (charge >= 120 && charge < 180) {
+        // Fase 3: Carga Crítica (2s a 3s)
+        let dmg = 300 * pObj.damageModifier * (pObj.laserDmgMod || 1.0);
+        bullets.push({ x: pObj.x, y: pObj.y, vx: Math.cos(targetAngle) * 20, vy: Math.sin(targetAngle) * 20, radius: 15, color: '#ff007f', damage: dmg, type: 'laser_heavy', duration: 100 });
+        pObj.laserCooldown = 480; // 8s de cooldown
+        pObj.maxLaserCooldown = 480;
+        screenShake = 15;
+        playLaserFireSound(2.0);
+    }
+    else {
+        // Fase 4: El Castigo (Más de 3s)
+        let selfDmg = pObj.maxHp * 0.15;
+        takeDamage(pObj, selfDmg);
+        pObj.laserCooldown = 360; // 6s de cooldown (bloqueo)
+        pObj.maxLaserCooldown = 360;
+        createExplosion(pObj.x, pObj.y, '#ff0000', 30, 2);
+        screenShake = 20;
+        spawnDamageText(pObj.x, pObj.y, selfDmg, 'hazard');
+        playExplosionSound(); // Sonido de explosión por castigo
+    }
+}
+
+function fireMinigun(pObj) {
+    if (pObj.minigunOverheat) return;
+    
+    let now = Date.now();
+    pObj.minigunSpool++; // Incrementar spool-up
+    
+    // Cadencia y daño según el spool
+    let fireRate = 120; // Lento al principio
+    let dmg = 5 * pObj.damageModifier;
+    
+    if (pObj.minigunSpool > 30) {
+        // Después de 0.5s
+        fireRate = 40; // Hiper-cadencia
+        dmg = 8 * pObj.damageModifier;
+    }
+    
+    if (!pObj.lastMinigunShot) pObj.lastMinigunShot = 0;
+    if (now - pObj.lastMinigunShot < fireRate) return;
+    pObj.lastMinigunShot = now;
+    playMinigunFireSound();
+    
+    // Dispersión dinámica
+    let spread = 0.05;
+    if (pObj.minigunSpool > 60) spread = 0.2; // Más dispersión con el tiempo
+    
+    let targetAngle = pObj.angle + (Math.random() - 0.5) * spread;
+    
+    bullets.push({ 
+        x: pObj.x, y: pObj.y, 
+        vx: Math.cos(targetAngle) * 15, vy: Math.sin(targetAngle) * 15, 
+        radius: 4, color: '#ffff00', damage: dmg, type: 'minigun' 
+    });
+    
+    // Incrementar calor
+    pObj.minigunHeat += 2 * (pObj.minigunHeatMod || 1.0);
+    if (pObj.minigunHeat >= 300) {
+        pObj.minigunOverheat = true;
+        pObj.minigunCooldown = 180 * (pObj.minigunCooldownMod || 1.0); // 3s base
+        showNetworkMessage('🔥 ¡MINIGUN SOBRECALENTADA!', 2000);
+    }
+}
+
+function triggerRearDischarge(pObj) {
+    let dmg = 30 * pObj.damageModifier;
+    let backAngle = pObj.angle + Math.PI;
+    
+    enemies.forEach(e => {
+        let dx = e.x - pObj.x;
+        let dy = e.y - pObj.y;
+        let dist = Math.hypot(dx, dy);
+        
+        if (dist < 150) {
+            let angleToEnemy = Math.atan2(dy, dx);
+            let angleDiff = Math.abs(angleToEnemy - backAngle);
+            if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+            
+            if (angleDiff < Math.PI / 2) {
+                e.hp -= dmg;
+                spawnDamageText(e.x, e.y, dmg);
+                
+                let pushForce = 5;
+                e.x += Math.cos(angleToEnemy) * pushForce;
+                e.y += Math.sin(angleToEnemy) * pushForce;
+                
+                createExplosion(e.x, e.y, '#00ffff', 5, 0.5);
+            }
+        }
+    });
+    
+    // Efecto visual
+    for (let i = 0; i < 20; i++) {
+        let a = backAngle + (Math.random() - 0.5) * Math.PI;
+        particles.push({
+            x: pObj.x + Math.cos(a) * 20,
+            y: pObj.y + Math.sin(a) * 20,
+            vx: Math.cos(a) * 4,
+            vy: Math.sin(a) * 4,
+            radius: Math.random() * 3 + 1,
+            color: '#00ffff',
+            alpha: 1,
+            decay: 0.05
+        });
+    }
+}
+
 function fireWeapon(pObj) {
     if (!pObj) pObj = players[0];
+    
+    if (pObj.isTurret) {
+        fireMinigun(pObj);
+        return;
+    }
+    
     let now = Date.now(); 
     let wep = WEAPONS[pObj.weapons[pObj.currentWeaponIndex]];
     if (!wep) return; // arma no reconocida, ignorar disparo
@@ -671,26 +1091,8 @@ function fireWeapon(pObj) {
 
     if (!pObj.lastShot) pObj.lastShot = 0;
     if (now - pObj.lastShot < currentFireRate || pObj.dashTimer > 0) return;
-    pObj.lastShot = now; 
-    let targetAngle = pObj.angle;
-
-    if (pObj.aimMode === 'AUTO' && enemies.length > 0) {
-        let closest = null; let minDist = Infinity;
-        enemies.forEach(e => {
-            if (e.isEMPStalker && !e.isRevealed) return;
-            let d = Math.hypot(e.x - pObj.x, e.y - pObj.y);
-            if (d < minDist) { minDist = d; closest = e; }
-        });
-        if (closest) {
-            targetAngle = Math.atan2(closest.y - pObj.y, closest.x - pObj.x);
-        } else if (pObj === players[0] && navigator.getGamepads()[0] === null) {
-            targetAngle = Math.atan2(mouse.y - pObj.y, mouse.x - pObj.x);
-        }
-    } else if (pObj === players[0] && navigator.getGamepads()[0] === null) {
-        targetAngle = Math.atan2(mouse.y - pObj.y, mouse.x - pObj.x);
-    }
-    
-    pObj.angle = targetAngle; 
+    pObj.lastShot = now;
+    let targetAngle = pObj.angle; 
     screenShake = wep.type === 'plasma' ? 10 : 3;
 
     let baseDmg = wep.damage + mods.damage;
@@ -773,17 +1175,70 @@ function update() {
 
     // Cooldowns
     players.forEach(p => {
-        if (p.dashCooldown > 0) p.dashCooldown--; 
-        if (p.pulseCooldown > 0) p.pulseCooldown--;
+        let cdRate = p.qTurboTimer > 0 ? 3 : 1;
+        if (p.dashCooldown > 0) p.dashCooldown -= cdRate; 
+        if (p.pulseCooldown > 0) p.pulseCooldown -= cdRate;
         if (p.overdriveTimer > 0) p.overdriveTimer--;
         if (p.flashTicks > 0) p.flashTicks--;
         if (p.damageFlashAlpha > 0) p.damageFlashAlpha -= 0.02;
         if (p.empTimer > 0) p.empTimer--;
+        
+        // Cooldowns v0.8.0
+        if (p.laserCooldown > 0) p.laserCooldown -= cdRate;
+        if (p.qCooldown > 0) p.qCooldown--;
+        if (p.qTurboTimer > 0) p.qTurboTimer--;
+        
+        if (p.dashCooldown < 0) p.dashCooldown = 0;
+        if (p.pulseCooldown < 0) p.pulseCooldown = 0;
+        if (p.laserCooldown < 0) p.laserCooldown = 0;
+        
+        // Carga del láser
+        if (p.isChargingLaser) {
+            p.laserCharge++;
+            if (p.laserCharge % 5 === 0) {
+                let pitch = 200 + (p.laserCharge / 180) * 800; // Sube de 200Hz a 1000Hz
+                playLaserChargeSound(pitch);
+            }
+        }
+        
+        // Minigun calor
+        let isShooting = p.inputSource === 'keyboard' ? mouse.isDown : p.isShooting;
+        if (!isShooting && p.minigunHeat > 0) {
+            p.minigunHeat -= 2;
+            if (p.minigunHeat < 0) p.minigunHeat = 0;
+            p.minigunSpool = 0; // Resetear spool-up si no dispara
+        }
+        if (p.minigunOverheat) {
+            p.minigunCooldown--;
+            if (p.minigunCooldown <= 0) {
+                p.minigunOverheat = false;
+                p.minigunHeat = 0;
+            }
+        }
+        
+        // Descarga trasera
+        if (p.isTurret) {
+            p.rearDischargeTimer++;
+            if (p.rearDischargeTimer >= 90) {
+                p.rearDischargeTimer = 0;
+                triggerRearDischarge(p);
+            }
+        }
     });
 
     let maxDashCD = Math.max(30, 90 - (userSave.artifacts.hyperdrive * 5));
     document.getElementById('dash-cd').style.width = `${(1 - players[0].dashCooldown / maxDashCD) * 100}%`;
     document.getElementById('pulse-cd').style.width = `${(1 - players[0].pulseCooldown / 300) * 100}%`;
+    document.getElementById('q-cd').style.width = `${(1 - players[0].qCooldown / 900) * 100}%`;
+    
+    let maxLaserCD = players[0].maxLaserCooldown || 480;
+    document.getElementById('laser-cd').style.width = `${(1 - players[0].laserCooldown / maxLaserCD) * 100}%`;
+    
+    let heatBar = document.getElementById('minigun-heat-bar');
+    if (heatBar) {
+        heatBar.style.width = `${(players[0].minigunHeat / 300) * 100}%`;
+        heatBar.style.background = players[0].minigunOverheat ? '#ff0000' : '#ffaa00';
+    }
 
     // Movimiento
     players.forEach(p => {
@@ -797,7 +1252,11 @@ function update() {
                 let mx = 0; let my = 0;
                 if (keys['w'] || keys['arrowup']) my = -1; if (keys['s'] || keys['arrowdown']) my = 1;
                 if (keys['a'] || keys['arrowleft']) mx = -1; if (keys['d'] || keys['arrowright']) mx = 1;
-                let currentSpeed = (p.vortexPullCount >= 2) ? p.speed / 2 : p.speed;
+                let currentSpeed = p.speed;
+                if (p.vortexPullCount >= 2) currentSpeed /= 2;
+                if (p.isChargingLaser) currentSpeed = 1.8;
+                if (p.isTurret) currentSpeed = 0;
+                
                 if (mx !== 0 || my !== 0) { let l = Math.hypot(mx, my); p.x += (mx / l) * currentSpeed; p.y += (my / l) * currentSpeed; }
             }
         } else if (p.inputSource === 'gamepad') {
@@ -810,9 +1269,32 @@ function update() {
         p.x = Math.max(p.radius, Math.min(canvas.width - p.radius, p.x));
         p.y = Math.max(p.radius, Math.min(canvas.height - p.radius, p.y));
 
-        if (p.aimMode === 'MANUAL' && p.inputSource === 'keyboard') {
-            p.angle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+        let targetAngle = p.angle;
+        if (p.aimMode === 'AUTO' && enemies.length > 0) {
+            let closest = null; let minDist = Infinity;
+            enemies.forEach(e => {
+                if (e.isEMPStalker && !e.isRevealed) return;
+                let d = Math.hypot(e.x - p.x, e.y - p.y);
+                if (d < minDist) { minDist = d; closest = e; }
+            });
+            if (closest) {
+                targetAngle = Math.atan2(closest.y - p.y, closest.x - p.x);
+            } else if (p.inputSource === 'keyboard') {
+                targetAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+            }
+        } else if (p.inputSource === 'keyboard') {
+            targetAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
         }
+        
+        let turnSpeed = 0.1;
+        if (p.isTurret && p.minigunHeat > 150) {
+            turnSpeed = 0.02; // Lento cuando está caliente
+        }
+        
+        let diff = targetAngle - p.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        p.angle += diff * turnSpeed;
     });
 
     // Disparar
@@ -934,10 +1416,22 @@ function update() {
     // Balas vs Enemigos
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i]; if (b.type === 'enemy') continue;
-        b.x += b.vx; b.y += b.vy; if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) { bullets.splice(i, 1); continue; }
+        b.x += b.vx; b.y += b.vy;
+        
+        if (b.duration !== undefined) {
+            b.duration--;
+            if (b.duration <= 0) { bullets.splice(i, 1); continue; }
+        }
+        
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) { bullets.splice(i, 1); continue; }
 
         for (let j = enemies.length - 1; j >= 0; j--) {
-            let e = enemies[j]; let dist = Math.hypot(b.x - e.x, b.y - e.y);
+            let e = enemies[j]; 
+            
+            if (!b.hitEnemies) b.hitEnemies = [];
+            if (b.hitEnemies.includes(e.id)) continue; // No golpear al mismo enemigo dos veces
+            
+            let dist = Math.hypot(b.x - e.x, b.y - e.y);
             
             // Colisión con escudos de Binary Aegis
             if (e.isBinaryAegis) {
@@ -971,12 +1465,25 @@ function update() {
                     }
                 } else {
                     let isCrit = Math.random() < 0.15; let finalDmg = isCrit ? b.damage * 1.8 : b.damage;
+                    
+                    // Daño porcentual por vida máxima a jefes con láser
+                    if (e.isBoss && (b.type === 'laser_medium' || b.type === 'laser_heavy')) {
+                        let pct = b.type === 'laser_heavy' ? 0.05 : 0.02; // 5% o 2% por impacto
+                        finalDmg += Math.floor(e.maxHp * pct);
+                    }
+                    
                     let damageTaken = Math.max(1, finalDmg - (e.armor || 0));
                     e.hp -= damageTaken; e.flashTicks = 4; createExplosion(b.x, b.y, b.color, 3, 0.5); spawnDamageText(e.x, e.y, damageTaken, isCrit ? 'crit' : 'normal');
                     playHitSound();
                 }
                 if (e.isBoss && e.hp <= e.maxHp * 0.5 && e.bossPhase === 0) { e.bossPhase = 1; e.bossInvulnTimer = 150; createExplosion(e.x, e.y, '#ffff00', 40, 2); }
-                bullets.splice(i, 1); break;
+                
+                if (b.type === 'laser_medium' || b.type === 'laser_heavy') {
+                    b.hitEnemies.push(e.id); // Registrar golpe
+                } else {
+                    bullets.splice(i, 1); 
+                    break;
+                }
             }
         }
     }
@@ -989,6 +1496,18 @@ function update() {
         if (e.hp <= 0) {
             createExplosion(e.x, e.y, e.color, e.isBoss ? 70 : 12, e.isBoss ? 2 : 1);
             playExplosionSound();
+            
+            // Vampirismo (Life Steal) para el jugador más cercano
+            let nearestP = players[0];
+            let minDist = Math.hypot(e.x - players[0].x, e.y - players[0].y);
+            players.forEach(p => {
+                let d = Math.hypot(e.x - p.x, e.y - p.y);
+                if (d < minDist) { minDist = d; nearestP = p; }
+            });
+            if (nearestP.lifeSteal) {
+                nearestP.hp = Math.min(nearestP.maxHp, nearestP.hp + nearestP.lifeSteal);
+                updateUI();
+            }
             let dropMat = null; let roll = Math.random();
             if (e.isBoss || e.isEliteGold) dropMat = e.dropType; else if (roll < 0.25) dropMat = e.dropType;
             drops.push({ x: e.x, y: e.y, credits: e.credits, xp: e.xp, radius: 4, matType: dropMat });
@@ -1460,7 +1979,8 @@ function update() {
                 }
             });
 
-            if (dist < 150 && dist > 0) { d.x += ((nearestP.x - d.x) / dist) * 6.5; d.y += ((nearestP.y - d.y) / dist) * 6.5; }
+            let magRange = nearestP.magnetRange || 150;
+            if (dist < magRange && dist > 0) { d.x += ((nearestP.x - d.x) / dist) * 6.5; d.y += ((nearestP.y - d.y) / dist) * 6.5; }
             if (dist < nearestP.radius + d.radius) {
                 nearestP.credits += d.credits; nearestP.xp += Math.round(d.xp * xpMultiplier);
                 if (d.matType) { userSave.materials[d.matType]++; saveGame(); }
@@ -1872,7 +2392,30 @@ function draw() {
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
     });
 
-    bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fillStyle = b.color; ctx.fill(); });
+    bullets.forEach(b => {
+        ctx.save();
+        
+        if (b.type === 'laser_thin' || b.type === 'laser_medium' || b.type === 'laser_heavy') {
+            ctx.beginPath();
+            let length = b.type === 'laser_heavy' ? 120 : (b.type === 'laser_medium' ? 60 : 30);
+            let angle = Math.atan2(b.vy, b.vx);
+            ctx.moveTo(b.x, b.y);
+            ctx.lineTo(b.x - Math.cos(angle) * length, b.y - Math.sin(angle) * length);
+            ctx.strokeStyle = b.color;
+            ctx.lineWidth = b.radius * 2;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = b.type === 'laser_heavy' ? 25 : 15;
+            ctx.shadowColor = b.color;
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fillStyle = b.color;
+            ctx.fill();
+        }
+        
+        ctx.restore();
+    });
     particles.forEach(p => { ctx.save(); ctx.globalAlpha = p.alpha; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill(); ctx.restore(); });
 
     enemies.forEach(e => {
@@ -1952,6 +2495,77 @@ function draw() {
             ctx.textAlign = 'left';
             ctx.restore();
             return;
+        }
+
+        if (p.isTurret) {
+            // Dibujar base de torreta (anclaje) - Más complejo
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius + 15, 0, Math.PI * 2);
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([12, 6, 3, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Garras de anclaje
+            ctx.fillStyle = '#00ffcc';
+            for (let i = 0; i < 4; i++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.fillRect(p.radius + 10, -4, 8, 8);
+            }
+            
+            // Aura de reducción de daño
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius + 8, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 255, 204, ${0.2 + Math.sin(Date.now()/200)*0.1})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Rayos eléctricos aleatorios si la minigun está caliente
+            if (p.minigunHeat > 100 && Math.random() < 0.4) {
+                ctx.beginPath();
+                let startAng = Math.random() * Math.PI * 2;
+                ctx.moveTo(Math.cos(startAng) * p.radius, Math.sin(startAng) * p.radius);
+                let targetAng = startAng + (Math.random() - 0.5) * 0.5;
+                ctx.lineTo(Math.cos(targetAng) * (p.radius + 15), Math.sin(targetAng) * (p.radius + 15));
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+            
+            // Dibujar calor de la minigun
+            if (p.minigunHeat > 0) {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.radius + 5, -Math.PI/2, -Math.PI/2 + (p.minigunHeat / 300) * Math.PI * 2);
+                ctx.strokeStyle = p.minigunOverheat ? '#ff0055' : '#ffff00';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Efecto de brillo por sobrecalentamiento
+                if (p.minigunOverheat) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius + 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 0, 85, ${0.15 + Math.sin(Date.now()/50)*0.1})`;
+                    ctx.lineWidth = 8;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        if (p.isChargingLaser) {
+            ctx.beginPath();
+            let radius = 20 + (p.laserCharge % 60) * 0.5; // El anillo crece
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = p.laserCharge >= 120 ? '#ff007f' : '#ffff00';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Texto de carga
+            ctx.font = "bold 12px 'Courier New'";
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.textAlign = 'center';
+            ctx.fillText(`CARGA: ${Math.min(3, Math.floor(p.laserCharge/60))}s`, 0, -p.radius - 15);
+            ctx.textAlign = 'left';
         }
 
         ctx.rotate(p.angle); ctx.beginPath();

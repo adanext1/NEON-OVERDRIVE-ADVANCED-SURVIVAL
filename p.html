@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.7.1</title>
+    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.8.2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -55,6 +55,21 @@
             <div style="margin-top:5px; font-size:11px; color:#aaa;">PULSO [E]:</div>
             <div class="cooldown-bar">
                 <div id="pulse-cd" class="cooldown-fill" style="background:#ff007f;"></div>
+            </div>
+
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">CÉLULA [Q]:</div>
+            <div class="cooldown-bar">
+                <div id="q-cd" class="cooldown-fill" style="background:#00ffaa;"></div>
+            </div>
+
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">CALOR MINIGUN:</div>
+            <div class="cooldown-bar">
+                <div id="minigun-heat-bar" class="cooldown-fill" style="background:#ffaa00; width: 0%;"></div>
+            </div>
+
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">MEGA-LÁSER [CLIC D]:</div>
+            <div class="cooldown-bar">
+                <div id="laser-cd" class="cooldown-fill" style="background:#ff00ff; width: 0%;"></div>
             </div>
 
             <div style="margin-top:10px; font-size:10px; color:#00ffcc; text-align:center;">[P] Pausa</div>
@@ -117,28 +132,34 @@
             </div>
         </div>
         <!-- Modal de Pausa con Sliders -->
-        <div id="pause-display" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 10, 15, 0.95); border: 2px solid #00ffcc; padding: 25px; color: #fff; z-index: 1000; text-align: center; width: 320px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); border-radius: 10px; font-family: inherit;">
-            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); margin-bottom: 20px; font-size: 20px;">=== PAUSA ===</h2>
+        <div id="pause-display" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(5, 5, 15, 0.95); backdrop-filter: blur(10px); border: 2px solid #ff007f; padding: 30px; color: #fff; z-index: 1000; text-align: center; width: 360px; box-shadow: 0 0 30px rgba(255, 0, 127, 0.4); border-radius: 12px; font-family: inherit; pointer-events: auto;">
+            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.7); margin-bottom: 25px; font-size: 24px; letter-spacing: 2px;">=== PAUSA ===</h2>
             
-            <div style="margin-bottom: 15px; text-align: left;">
-                <label style="display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; letter-spacing: 1px;">VOLUMEN MÚSICA</label>
-                <input type="range" id="music-volume" min="0" max="1" step="0.05" value="1" style="width: 100%; accent-color: #00ffcc;" oninput="updateMusicVolume(this.value)">
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 12px; letter-spacing: 1px;">
+                    <span>VOLUMEN MÚSICA</span>
+                    <span id="music-vol-val">100%</span>
+                </label>
+                <input type="range" id="music-volume" min="0" max="1" step="0.01" value="1" style="width: 100%; accent-color: #00ffcc; cursor: pointer;" oninput="updateMusicVolume(this.value); document.getElementById('music-vol-val').innerText = Math.round(this.value*100)+'%'">
             </div>
             
-            <div style="margin-bottom: 25px; text-align: left;">
-                <label style="display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; letter-spacing: 1px;">VOLUMEN EFECTOS</label>
-                <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="1" style="width: 100%; accent-color: #ff007f;" oninput="updateSFXVolume(this.value)">
+            <div style="margin-bottom: 30px; text-align: left;">
+                <label style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 12px; letter-spacing: 1px;">
+                    <span>VOLUMEN EFECTOS</span>
+                    <span id="sfx-vol-val">100%</span>
+                </label>
+                <input type="range" id="sfx-volume" min="0" max="1" step="0.01" value="1" style="width: 100%; accent-color: #ff007f; cursor: pointer;" oninput="updateSFXVolume(this.value); document.getElementById('sfx-vol-val').innerText = Math.round(this.value*100)+'%'">
             </div>
             
-            <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc;" onclick="togglePauseFromBtn()">REANUDAR</button>
+            <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc; margin: 0; padding: 12px;" onclick="togglePauseFromBtn()">REANUDAR</button>
         </div>
-        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,204,0.35);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.7.1</div>
+        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,204,0.35);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.8.2</div>
 
         <!-- Menú Principal Inicial -->
         <div id="main-menu">
             <h1>NEON OVERDRIVE</h1>
             <h2>ADVANCED SURVIVAL</h2>
-            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.7.1 &mdash; HOST AUTHORITY FOR XP</p>
+            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.8.2 &mdash; PROTOCOLO BASTIÓN &amp; ARMAMENTO PESADO</p>
             <p style="margin-bottom: 20px; color: #aaa; font-size: 12px;">Sistemas listos para inicialización de
                 combate.</p>
             <button class="shop-btn" onclick="startGameSimulation()">INICIAR SIMULACIÓN</button>
@@ -163,6 +184,9 @@
                     <h3 style="color: #00ffcc; margin-bottom: 10px;">Jugador 1</h3>
                     <button class="shop-btn" id="btn-up-hp" onclick="buyUpgrade('hp', players[0])">+25 HP Máxima - $50</button>
                     <button class="shop-btn" id="btn-up-dmg" onclick="buyUpgrade('dmg', players[0])">+20% Daño - $60</button>
+                    <button class="shop-btn" id="btn-up-laser" onclick="buyUpgrade('laser', players[0])">Potencia Láser - $200</button>
+                    <button class="shop-btn" id="btn-up-minigun" onclick="buyUpgrade('minigun', players[0])">Enfriamiento Minigun - $180</button>
+                    <button class="shop-btn" id="btn-up-q" onclick="buyUpgrade('q_cooldown', players[0])">Recarga Célula Q - $250</button>
                     <button class="shop-btn" id="btn-wep-shotgun" onclick="buyUpgrade('shotgun', players[0])">Escopeta - $150</button>
                     <button class="shop-btn" id="btn-wep-plasma" onclick="buyUpgrade('plasma', players[0])">Cañón Plasma - $300</button>
                 </div>
@@ -172,6 +196,9 @@
                     <h3 style="color: #ff007f; margin-bottom: 10px;">Jugador 2</h3>
                     <button class="shop-btn" id="btn-up-hp-p2" onclick="buyUpgrade('hp', players[1])">+25 HP Máxima - $50</button>
                     <button class="shop-btn" id="btn-up-dmg-p2" onclick="buyUpgrade('dmg', players[1])">+20% Daño - $60</button>
+                    <button class="shop-btn" id="btn-up-laser-p2" onclick="buyUpgrade('laser', players[1])">Potencia Láser - $200</button>
+                    <button class="shop-btn" id="btn-up-minigun-p2" onclick="buyUpgrade('minigun', players[1])">Enfriamiento Minigun - $180</button>
+                    <button class="shop-btn" id="btn-up-q-p2" onclick="buyUpgrade('q_cooldown', players[1])">Recarga Célula Q - $250</button>
                     <button class="shop-btn" id="btn-wep-shotgun-p2" onclick="buyUpgrade('shotgun', players[1])">Escopeta - $150</button>
                     <button class="shop-btn" id="btn-wep-plasma-p2" onclick="buyUpgrade('plasma', players[1])">Cañón Plasma - $300</button>
                 </div>
