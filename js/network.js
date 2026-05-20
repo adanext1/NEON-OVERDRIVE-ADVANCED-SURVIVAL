@@ -36,7 +36,8 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
                 id: 2, x: data.x, y: data.y, radius: 15, speed: 4, hp: 100, maxHp: 100,
                 credits: 0, level: 1, xp: 0, nextXp: 100, weapons: ['basic'], currentWeaponIndex: 0,
                 color: isHost ? '#ff007f' : '#00ffcc', shield: 0, maxShield: 40, aimMode: 'AUTO',
-                damageModifier: 1.0, overdriveTimer: 0, dashTimer: 0,
+                damageModifier: 1.0, overdriveTimer: 0, dashTimer: 0, invulnTimer: 0,
+                flashTicks: 0, damageFlashAlpha: 0,
                 weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
                 upgradeCounts: { hp: 0, dmg: 0 }
             });

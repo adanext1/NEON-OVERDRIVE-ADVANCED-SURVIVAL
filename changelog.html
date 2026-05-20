@@ -183,6 +183,86 @@
         <h1>NEON OVERDRIVE</h1>
         <h2>Historial de Sistemas y Actualizaciones</h2>
 
+        <!-- Versión 0.8.3 -->
+        <div class="version-box version-major">
+            <div class="version-header">
+                <span class="version-title">v0.8.3 - Resolución Adaptativa &amp; Balance de Combate</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Resolución Virtual Fija (1920×1080)</div>
+                        El motor de juego opera siempre en coordenadas lógicas de 1920×1080 sin importar el monitor, garantizando sincronización perfecta en el modo cooperativo online.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Pantalla Completa Adaptativa (Stretch)</div>
+                        El canvas se estira al 100% de la ventana del navegador sin bandas negras. El cursor queda mapeado con precisión a las coordenadas internas del juego.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Frames de Invulnerabilidad (I-Frames)</div>
+                        Al recibir daño, la nave entra en ~0.6s de invulnerabilidad para evitar muertes instantáneas por contacto continuo. La nave parpadea para indicar el estado.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Números de daño recibido</div>
+                        Aparece un texto flotante rojo en negrita con signo negativo (ej: <code>-10</code>, <code>-30</code>) al recibir impactos, indicando exactamente cuánto daño hizo cada fuente enemiga.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-balance">Balance</span>
+                    <div>
+                        <div style="color:#ffff00; font-weight:bold; margin-bottom:6px;">Rebalance de vida de enemigos</div>
+                        Reducción generalizada de HP para que la oleada 2 sea superable con el Blaster inicial:
+                        <ul style="margin-top:8px; padding-left:16px; list-style:none;">
+                            <li style="margin-bottom:4px;">· Común: 70 HP → <strong>42 HP</strong> (−40%) en Ol. 2</li>
+                            <li style="margin-bottom:4px;">· Kamikaze: 40 HP → <strong>26 HP</strong> (−35%) en Ol. 2</li>
+                            <li style="margin-bottom:4px;">· Escudado: 240 HP → <strong>130 HP</strong> (−46%) en Ol. 3</li>
+                            <li style="margin-bottom:4px;">· Elite Gold: 800 HP → <strong>400 HP</strong> (−50%) en Ol. 7</li>
+                            <li style="margin-bottom:4px;">· Jefe Core Guardian (Ol. 5): 7,500 HP → <strong>3,600 HP</strong> (−52%)</li>
+                            <li>· Jefe Vector Supreme (Ol. 10): 18,750 HP → <strong>8,500 HP</strong> (−55%)</li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Versión 0.8.2 -->
+        <div class="version-box">
+            <div class="version-header">
+                <span class="version-title">v0.8.2 - Cooperativo Online & Correcciones</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li><span class="tag tag-new">Nuevo</span> Modo cooperativo online vía WebSockets: sala compartida, sincronización de posición, balas y eventos de oleada entre host y cliente.</li>
+                <li><span class="tag tag-new">Nuevo</span> Sistema de revivir aliados caídos (mantener [R] cerca del compañero).</li>
+                <li><span class="tag tag-fix">Fix</span> Sincronización de XP y créditos con autoridad del host para evitar desincronizaciones.</li>
+                <li><span class="tag tag-fix">Fix</span> Corrección de desincronización de coordenadas en pantallas de diferente resolución.</li>
+            </ul>
+        </div>
+
+        <!-- Versión 0.8.1 -->
+        <div class="version-box">
+            <div class="version-header">
+                <span class="version-title">v0.8.1 - Mando & Accesibilidad</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li><span class="tag tag-new">Nuevo</span> Soporte completo para mando (Gamepad API): movimiento, dash, disparo y habilidades.</li>
+                <li><span class="tag tag-new">Nuevo</span> Modo cooperativo local (misma pantalla) con jugador 2 via gamepad.</li>
+                <li><span class="tag tag-fix">Fix</span> Corrección del apuntado automático en modo mando para que siempre priorice al enemigo más cercano.</li>
+            </ul>
+        </div>
+
         <!-- Versión 0.8.0 -->
         <div class="version-box version-major">
             <div class="version-header">

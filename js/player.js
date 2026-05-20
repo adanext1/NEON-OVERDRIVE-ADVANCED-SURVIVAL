@@ -3,9 +3,12 @@
 function takeDamage(pObj, amount) {
     if (amount <= 0) return;
     if (pObj.isDead) return; // Ya muerto, no recibir más daño
+    if ((pObj.invulnTimer || 0) > 0) return; // Invulnerable por i-frames
     
     if (pObj.isTurret) amount *= (1 - (pObj.turretDamageReduction || 0.3)); // 30% base
     
+    // Activar i-frames (35 frames ≈ 0.58 segundos a 60fps)
+    pObj.invulnTimer = 35;
     pObj.flashTicks = 6; pObj.damageFlashAlpha = 0.5;
     
     // Animación en el HUD
@@ -34,7 +37,8 @@ function takeDamage(pObj, amount) {
                 pObj.hp = 0;
                 createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
                 screenShake = 15;
-                spawnDamageText(pObj.x, pObj.y - 20, 'KO', 'hazard');
+                spawnDamageText(pObj.x, pObj.y, amount, 'player_hit');
+                spawnDamageText(pObj.x, pObj.y - 28, 'KO', 'hazard');
                 
                 // En solitario, Game Over directo e inmediato
                 if (!isCoop && !isOnline) {
@@ -51,7 +55,7 @@ function takeDamage(pObj, amount) {
                 }
             }
         } else {
-            spawnDamageText(pObj.x, pObj.y, amount, 'hazard'); createExplosion(pObj.x, pObj.y, '#ff0055', 12, 1.5);
+            spawnDamageText(pObj.x, pObj.y, amount, 'player_hit'); createExplosion(pObj.x, pObj.y, '#ff0055', 12, 1.5);
         }
     }
     updateUI();

@@ -133,7 +133,11 @@ window.addEventListener('keydown', e => {
     if (e.key >= '1' && e.key <= '3') { let idx = parseInt(e.key) - 1; if (players[0].weapons[idx]) players[0].currentWeaponIndex = idx; updateUI(); }
 });
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) * (canvas.width / (rect.width || 1));
+    mouse.y = (e.clientY - rect.top) * (canvas.height / (rect.height || 1));
+});
 window.addEventListener('mousedown', e => {
     if (e.button === 0 && gameStarted && !isPaused) mouse.isDown = true;
     if (e.button === 2 && gameStarted && !isPaused) {
@@ -239,6 +243,7 @@ function update() {
         if (p.flashTicks > 0) p.flashTicks--;
         if (p.damageFlashAlpha > 0) p.damageFlashAlpha -= 0.02;
         if (p.empTimer > 0) p.empTimer--;
+        if ((p.invulnTimer || 0) > 0) p.invulnTimer--;
         
         // Cooldowns v0.8.0
         if (p.laserCooldown > 0) p.laserCooldown -= cdRate;
@@ -803,6 +808,11 @@ function draw() {
     players.forEach(p => {
         ctx.save(); ctx.translate(p.x, p.y);
 
+        // Parpadeo visual durante i-frames (alternado cada ~80ms)
+        if ((p.invulnTimer || 0) > 0) {
+            ctx.globalAlpha = (Math.floor(Date.now() / 80) % 2 === 0) ? 0.3 : 0.9;
+        }
+
         if (p.isDead) {
             // Jugador muerto: dibujar como fantasma + texto KO
             ctx.globalAlpha = 0.3 + Math.sin(Date.now() * 0.005) * 0.1;
@@ -912,8 +922,13 @@ function draw() {
 
     damageTexts.forEach(dt => {
         ctx.save(); ctx.globalAlpha = dt.alpha;
-        if (dt.isCrit) { ctx.font = "bold 26px 'Courier New'"; ctx.shadowBlur = 15; ctx.shadowColor = '#ff00ff'; ctx.fillStyle = '#ffff00'; }
-        else { ctx.font = "bold 16px 'Courier New'"; ctx.fillStyle = dt.color; }
+        if (dt.isCrit) {
+            ctx.font = "bold 26px 'Courier New'"; ctx.shadowBlur = 15; ctx.shadowColor = '#ff00ff'; ctx.fillStyle = '#ffff00';
+        } else if (dt.isPlayerHit) {
+            ctx.font = "bold 24px 'Courier New'"; ctx.shadowBlur = 18; ctx.shadowColor = '#ff0000'; ctx.fillStyle = dt.color;
+        } else {
+            ctx.font = "bold 16px 'Courier New'"; ctx.fillStyle = dt.color;
+        }
         ctx.fillText(dt.text, dt.x, dt.y); ctx.restore();
     });
     ctx.restore();

@@ -13,5 +13,7 @@ function spawnDamageText(x, y, amount, type = 'normal') {
     if (type === 'crit') { textColor = '#ffff00'; isCritSize = true; decay = 0.008; vx *= 1.5; vy *= 1.5; }
     else if (type === 'hazard') { textColor = '#ff0055'; }
     else if (type === 'shield') { textColor = '#00aaff'; }
-    damageTexts.push({ x: x, y: y - 10, text: Math.floor(amount), isCrit: isCritSize, color: textColor, alpha: 1, vx: vx, vy: vy, decay: decay });
+    else if (type === 'player_hit') { textColor = '#ff2244'; isCritSize = false; decay = 0.010; vy = -3 - Math.random(); vx = (Math.random() - 0.5) * 1.5; }
+    let displayText = (type === 'player_hit') ? `-${Math.floor(amount)}` : Math.floor(amount);
+    damageTexts.push({ x: x, y: y - 10, text: displayText, isCrit: isCritSize, isPlayerHit: (type === 'player_hit'), color: textColor, alpha: 1, vx: vx, vy: vy, decay: decay });
 }

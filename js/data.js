@@ -1,7 +1,20 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+// --- SISTEMA DE RESOLUCIÓN VIRTUAL ---
+const VIRTUAL_WIDTH = 1920;
+const VIRTUAL_HEIGHT = 1080;
+
+function resizeCanvas() {
+    // Asignar resolución lógica interna del canvas
+    canvas.width = VIRTUAL_WIDTH;
+    canvas.height = VIRTUAL_HEIGHT;
+
+    // Asignar tamaño visual al 100% de la ventana (estiramiento completo)
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.marginTop = '0px';
+}
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
@@ -43,7 +56,7 @@ let players = [
         damageModifier: 1.0, weapons: ['basic'], currentWeaponIndex: 0,
         dashCooldown: 0, dashTimer: 0, dashVx: 0, dashVy: 0, pulseCooldown: 0,
         aimMode: 'AUTO', overdriveTimer: 0, color: '#00ffcc',
-        flashTicks: 0, damageFlashAlpha: 0,
+        flashTicks: 0, damageFlashAlpha: 0, invulnTimer: 0,
         weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
         upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 }
     }

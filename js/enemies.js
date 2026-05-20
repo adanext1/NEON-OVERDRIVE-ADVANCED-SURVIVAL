@@ -10,9 +10,9 @@ function spawnEnemy() {
     };
 
     if (isBoss) {
-        enemy.radius = 45; enemy.speed = 1.0; enemy.hp = 500 + (wave * 200); enemy.maxHp = enemy.hp;
+        enemy.radius = 45; enemy.speed = 1.0; enemy.hp = 350 + (wave * 120); enemy.maxHp = enemy.hp;
         enemy.color = '#ff0044'; enemy.credits = 150; enemy.xp = 200; enemy.isBoss = true; enemy.shootCooldown = 0; enemy.bossInvulnTimer = 90; enemy.dropType = 'crystal';
-        enemy.armor = 15 + (wave * 3);
+        enemy.armor = 10 + (wave * 2);
         
         // Propiedades específicas para el Jefe de la Oleada 5
         if (wave === 5) {
@@ -20,38 +20,44 @@ function spawnEnemy() {
             enemy.bossStateTimer = 120; // Tiempo antes del primer ataque
             enemy.bossLaserAngle = 0;
             enemy.isCoreGuardian = true;
-            enemy.hp = 7500;
+            enemy.hp = 3600;
             enemy.maxHp = enemy.hp;
             
         } else if (wave === 10) {
             enemy.isVectorSupreme = true;
             enemy.bossAttackState = 'idle';
             enemy.bossStateTimer = 120;
-            enemy.shield = 2000; enemy.maxShield = 2000; // Escudo regenerable
-            enemy.hp = 18750;
+            enemy.shield = 1500; enemy.maxShield = 1500; // Escudo regenerable
+            enemy.hp = 8500;
             enemy.maxHp = enemy.hp;
         }
     } else if (typeChance < 0.12 && wave >= 3) {
-        enemy.radius = 22; enemy.speed = 1.6; enemy.hp = 180 + (wave * 30); enemy.maxHp = enemy.hp;
+        // Escudado
+        enemy.radius = 22; enemy.speed = 1.6; enemy.hp = 100 + (wave * 15); enemy.maxHp = enemy.hp;
         enemy.color = '#ffaa00'; enemy.credits = 25; enemy.xp = 40; enemy.isShielded = true; enemy.dropType = 'crystal';
-        enemy.armor = 5 + (wave * 0.5);
+        enemy.armor = 3 + (wave * 0.4);
     } else if (typeChance < 0.22 && wave >= 2) {
-        enemy.radius = 12; enemy.speed = 4.2; enemy.hp = 30 + (wave * 5); enemy.maxHp = enemy.hp;
+        // Kamikaze
+        enemy.radius = 12; enemy.speed = 4.2; enemy.hp = 18 + (wave * 4); enemy.maxHp = enemy.hp;
         enemy.color = '#ff00ff'; enemy.credits = 15; enemy.xp = 15; enemy.isKamikaze = true; enemy.dropType = 'plate';
     } else if (typeChance < 0.27 && wave >= 4) {
-        enemy.radius = 25; enemy.speed = 1.0; enemy.hp = 300 + (wave * 50); enemy.maxHp = enemy.hp;
+        // Curador
+        enemy.radius = 25; enemy.speed = 1.0; enemy.hp = 160 + (wave * 25); enemy.maxHp = enemy.hp;
         enemy.color = '#00ffaa'; enemy.credits = 30; enemy.xp = 50; enemy.isHealer = true; enemy.shootCooldown = 0; enemy.dropType = 'crystal';
     } else if (typeChance < 0.32 && wave >= 6) {
-        enemy.radius = 16; enemy.speed = 2.0; enemy.hp = 100 + (wave * 15); enemy.maxHp = enemy.hp;
+        // EMP Stalker
+        enemy.radius = 16; enemy.speed = 2.0; enemy.hp = 70 + (wave * 10); enemy.maxHp = enemy.hp;
         enemy.color = '#ffffff'; enemy.credits = 20; enemy.xp = 30; enemy.isEMPStalker = true; enemy.isRevealed = false; enemy.dropType = 'core';
     } else if (typeChance < 0.35 && wave >= 7) {
-        enemy.radius = 35; enemy.speed = 0.5; enemy.hp = 600 + (wave * 100); enemy.maxHp = enemy.hp;
+        // Elite Gold
+        enemy.radius = 35; enemy.speed = 0.5; enemy.hp = 300 + (wave * 50); enemy.maxHp = enemy.hp;
         enemy.color = '#ffff00'; enemy.credits = 100; enemy.xp = 150; enemy.isEliteGold = true; enemy.shootCooldown = 0; enemy.dropType = 'crystal';
     } else if (typeChance < 0.40 && wave >= 8) {
-        enemy.radius = 18; enemy.speed = 2.5; enemy.hp = 120 + (wave * 20); enemy.maxHp = enemy.hp;
+        enemy.radius = 18; enemy.speed = 2.5; enemy.hp = 100 + (wave * 15); enemy.maxHp = enemy.hp;
         enemy.color = '#00ffff'; enemy.credits = 10; enemy.xp = 20; enemy.dropType = 'core';
     } else {
-        enemy.radius = 17; enemy.speed = 2.4 + (wave * 0.15); enemy.hp = 50 + (wave * 10); enemy.maxHp = enemy.hp;
+        // Enemigo común
+        enemy.radius = 17; enemy.speed = 2.2 + (wave * 0.12); enemy.hp = 30 + (wave * 6); enemy.maxHp = enemy.hp;
         enemy.color = '#9900ff'; enemy.credits = 7; enemy.xp = 12; enemy.dropType = Math.random() > 0.5 ? 'core' : 'plate';
     }
     enemies.push(enemy);
