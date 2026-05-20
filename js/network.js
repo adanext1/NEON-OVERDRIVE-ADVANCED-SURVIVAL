@@ -216,3 +216,40 @@ function sendChat() {
     
     input.value = '';
 }
+
+function spawnRemoteBullet(data) {
+    if (data.weaponType === 'single' || data.weaponType === 'plasma') {
+        bullets.push({ 
+            x: data.x, y: data.y, 
+            vx: Math.cos(data.angle) * data.speed, 
+            vy: Math.sin(data.angle) * data.speed, 
+            radius: data.weaponType === 'plasma' ? 9 : 5, 
+            color: data.bulletColor, 
+            damage: data.damage, 
+            type: data.weaponType, 
+            radiusAoE: 0 
+        });
+    } else if (data.weaponType === 'spread') {
+        // Simplificado: disparamos una sola bala en la dirección
+        bullets.push({ 
+            x: data.x, y: data.y, 
+            vx: Math.cos(data.angle) * data.speed, 
+            vy: Math.sin(data.angle) * data.speed, 
+            radius: 4, 
+            color: data.bulletColor, 
+            damage: data.damage, 
+            type: 'single' 
+        });
+    }
+}
+
+function updateRemoteEnemies(enemyData) {
+    enemyData.forEach(remoteEnemy => {
+        let localEnemy = enemies.find(e => e.id === remoteEnemy.id);
+        if (localEnemy) {
+            localEnemy.x = remoteEnemy.x;
+            localEnemy.y = remoteEnemy.y;
+            localEnemy.hp = remoteEnemy.hp;
+        }
+    });
+}

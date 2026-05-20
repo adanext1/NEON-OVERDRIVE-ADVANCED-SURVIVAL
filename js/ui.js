@@ -328,6 +328,21 @@ function toggleShop(show) {
     updateUI(); 
 }
 
+function togglePause() {
+    isPaused = !isPaused;
+    let disp = document.getElementById('pause-display');
+    if (disp) {
+        disp.style.display = isPaused ? 'block' : 'none';
+        if (isPaused) {
+            updateMenuSelection('pause-display');
+        }
+    }
+}
+
+function togglePauseFromBtn() {
+    togglePause();
+}
+
 function toggleCollection(show) {
     inCollectionMenu = show;
     isPaused = show || isGameOver;
