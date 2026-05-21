@@ -79,14 +79,77 @@ function resetGame() {
         p.dashCooldown = 0;
         p.pulseCooldown = 0;
         p.weaponUpgrades = { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } };
+        p.upgradeCounts = { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 };
+        p.laserDmgMod = 1.0;
+        p.minigunHeatMod = 1.0;
+        p.qCdMod = 1.0;
     });
     // En online, quitar al jugador remoto para que se re-cree cuando se reconecte
     if (typeof isOnline !== 'undefined' && isOnline) {
         players.splice(1);
     }
     
+    if (typeof resetShopUI !== 'undefined') {
+        resetShopUI();
+    }
+    
     document.getElementById('game-over-modal').style.display = 'none';
     startGameSimulation();
+}
+
+function returnToMainMenu() {
+    gameStarted = false;
+    isGameOver = false;
+    isPaused = false;
+    wave = 1;
+    enemies = [];
+    bullets = [];
+    drops = [];
+    hazards = [];
+    airDrops = [];
+    dynamicEvents = [];
+    helperDrones = [];
+    xpMultiplier = 1;
+    
+    players.forEach(p => {
+        p.credits = 0;
+        p.level = 1;
+        p.xp = 0;
+        p.nextXp = 100;
+        p.hp = p.maxHp || 100;
+        p.shield = 0;
+        p.weapons = ['basic'];
+        p.currentWeaponIndex = 0;
+        p.overdriveTimer = 0;
+        p.dashTimer = 0;
+        p.dashCooldown = 0;
+        p.pulseCooldown = 0;
+        p.weaponUpgrades = { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } };
+        p.upgradeCounts = { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 };
+        p.laserDmgMod = 1.0;
+        p.minigunHeatMod = 1.0;
+        p.qCdMod = 1.0;
+    });
+    
+    if (typeof isOnline !== 'undefined' && isOnline) {
+        players.splice(1);
+    }
+    
+    if (typeof resetShopUI !== 'undefined') {
+        resetShopUI();
+    }
+    
+    if (typeof playMusic !== 'undefined') {
+        playMusic('view_from_the_bridge.mp3');
+    }
+    
+    document.getElementById('game-over-modal').style.display = 'none';
+    document.getElementById('hud-box').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'block';
+    
+    if (typeof updateMenuSelection !== 'undefined') {
+        updateMenuSelection('main-menu');
+    }
 }
 
 // === FUNCIÓN processGamepadInput MOVIDA A player.js ===
@@ -510,6 +573,17 @@ function update() {
             
             if (dist < b.radius + e.radius) {
                 if (e.isBoss && e.bossInvulnTimer > 0) { createExplosion(b.x, b.y, '#ffffff', 5, 0.8); bullets.splice(i, 1); break; }
+                // Inmunidad frontal de Vector Supreme en Fase 1 (Matriz)
+                if (e.isVectorSupreme && e.bossPhase === 1) {
+                    let angleToB = Math.atan2(b.y - e.y, b.x - e.x);
+                    let diff = angleToB - e.matrixAngle;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    if (Math.abs(diff) < Math.PI / 3) { // ±60° frontal bloqueado
+                        createExplosion(b.x, b.y, '#00aaff', 5, 0.8);
+                        bullets.splice(i, 1); break;
+                    }
+                }
                 if (e.isShielded && b.type !== 'plasma') {
                     let angleToBullet = Math.atan2(b.y - e.y, b.x - e.x); let diff = Math.abs(angleToBullet - e.angle);
                     if (diff < 0.6 || diff > Math.PI * 2 - 0.6) { createExplosion(b.x, b.y, '#0088ff', 3, 0.4); bullets.splice(i, 1); break; }
@@ -556,12 +630,19 @@ function update() {
     // Actualizar barra de vida del jefe en HUD (si existe)
     let boss = enemies.find(e => e.isVectorSupreme || e.isCoreGuardian);
     let hpFill = document.getElementById('boss-hp-fill');
-    if (boss && hpFill) {
+    let hpCont = document.getElementById('boss-hp-container');
+    if (boss && hpFill && hpCont) {
+        if (hpCont.style.display !== 'block') {
+            hpCont.style.display = 'block';
+            let label = hpCont.querySelector('.boss-hp-label');
+            if (label) {
+                label.innerText = boss.isCoreGuardian ? 'GUARDIÁN DEL NÚCLEO' : 'VECTOR SUPREMO';
+            }
+        }
         let pct = Math.max(0, (boss.hp / boss.maxHp) * 100);
         hpFill.style.width = `${pct}%`;
-    } else if (!boss) {
-        let hpCont = document.getElementById('boss-hp-container');
-        if (hpCont && hpCont.style.display !== 'none') hpCont.style.display = 'none';
+    } else if (!boss && hpCont) {
+        if (hpCont.style.display !== 'none') hpCont.style.display = 'none';
     }
     // Balas enemigas vs Jugadores
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -739,6 +820,14 @@ function draw() {
             ctx.shadowBlur = b.type === 'laser_heavy' ? 25 : 15;
             ctx.shadowColor = b.color;
             ctx.stroke();
+        } else if (b.isSquare) {
+            // Proyectil cuadrado (Fase 1 Vector Supreme)
+            let angle = Math.atan2(b.vy, b.vx);
+            ctx.translate(b.x, b.y);
+            ctx.rotate(angle);
+            ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+            ctx.fillStyle = b.color;
+            ctx.fillRect(-b.radius, -b.radius, b.radius * 2, b.radius * 2);
         } else {
             ctx.beginPath();
             ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -752,7 +841,78 @@ function draw() {
 
     enemies.forEach(e => {
         ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.angle); ctx.beginPath();
-        if (e.isBoss) { for (let i = 0; i < 8; i++) { let a = (i * Math.PI / 4); let x = Math.cos(a) * e.radius; let y = Math.sin(a) * e.radius; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } }
+        let skipDefaultFill = false;
+        if (e.isCoreGuardian) {
+            skipDefaultFill = true;
+            // Dibujar el Núcleo del Guardián (Estética Premium)
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = e.color;
+            
+            // 1. Núcleo central
+            ctx.arc(0, 0, e.radius * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = e.flashTicks > 0 ? '#fff' : e.color;
+            ctx.fill();
+            
+            // 2. Anillo de energía interno
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 0.6, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 3. Paneles orbitales de escudo
+            let numPanels = 4;
+            let rotSpeed = e.bossPhase === 0 ? 0.025 : (e.bossPhase === 1 ? 0.05 : 0.09);
+            e.drawRotAngle = (e.drawRotAngle || 0) + rotSpeed;
+            
+            for (let k = 0; k < numPanels; k++) {
+                let angle = e.drawRotAngle + (k * Math.PI * 2 / numPanels);
+                ctx.beginPath();
+                ctx.arc(0, 0, e.radius * 0.9, angle - 0.35, angle + 0.35);
+                ctx.strokeStyle = e.color;
+                ctx.lineWidth = 5;
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * (e.radius * 0.4), Math.sin(angle) * (e.radius * 0.4));
+                ctx.lineTo(Math.cos(angle) * (e.radius * 0.9), Math.sin(angle) * (e.radius * 0.9));
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        else if (e.isVectorSupreme) {
+            skipDefaultFill = true;
+            // Dibujar Vector Supremo (Geometría Compleja y Futurista)
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = e.color;
+            
+            ctx.moveTo(0, -e.radius);
+            ctx.lineTo(e.radius * 0.3, -e.radius * 0.3);
+            ctx.lineTo(e.radius, 0);
+            ctx.lineTo(e.radius * 0.3, e.radius * 0.3);
+            ctx.lineTo(0, e.radius);
+            ctx.lineTo(-e.radius * 0.3, e.radius * 0.3);
+            ctx.lineTo(-e.radius, 0);
+            ctx.lineTo(-e.radius * 0.3, -e.radius * 0.3);
+            ctx.lineTo(0, -e.radius);
+            ctx.fillStyle = e.flashTicks > 0 ? '#fff' : e.color;
+            ctx.fill();
+            
+            e.drawRotAngle = (e.drawRotAngle || 0) + 0.03;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 1.2, e.drawRotAngle, e.drawRotAngle + Math.PI * 0.5);
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 1.2, e.drawRotAngle + Math.PI, e.drawRotAngle + Math.PI + Math.PI * 0.5);
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        else if (e.isBoss) { for (let i = 0; i < 8; i++) { let a = (i * Math.PI / 4); let x = Math.cos(a) * e.radius; let y = Math.sin(a) * e.radius; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } }
         else if (e.isKamikaze) { ctx.moveTo(e.radius * 1.4, 0); ctx.lineTo(0, -e.radius * 0.7); ctx.lineTo(-e.radius * 0.6, 0); ctx.lineTo(0, e.radius * 0.7); }
         else if (e.isEliteGold) { ctx.moveTo(e.radius * 1.5, 0); ctx.lineTo(0, -e.radius * 0.5); ctx.lineTo(-e.radius * 1.5, 0); ctx.lineTo(0, e.radius * 0.5); ctx.shadowBlur = 15; ctx.shadowColor = '#ffcc00'; }
         else if (e.isVortexNode) {
@@ -784,8 +944,17 @@ function draw() {
             ctx.lineTo(-e.radius * 0.7, e.radius * 0.7);
             ctx.globalAlpha = e.isRevealed ? 0.8 : 0.3;
         }
+        else if (e.isVectorFragment) {
+            // Fragmento: X de doble triángulo, rojo brillante
+            ctx.shadowBlur = 18; ctx.shadowColor = '#ff0000';
+            ctx.moveTo(0, -e.radius); ctx.lineTo(e.radius * 0.7, e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, e.radius * 0.7);
+            ctx.moveTo(0, e.radius); ctx.lineTo(e.radius * 0.7, -e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, -e.radius * 0.7);
+        }
         else { ctx.moveTo(e.radius * 1.2, 0); ctx.lineTo(-e.radius, -e.radius * 0.8); ctx.lineTo(-e.radius, e.radius * 0.8); }
-        ctx.closePath(); ctx.fillStyle = e.flashTicks > 0 ? '#fff' : e.color; ctx.fill();
+        
+        if (!skipDefaultFill) {
+            ctx.closePath(); ctx.fillStyle = e.flashTicks > 0 ? '#fff' : e.color; ctx.fill();
+        }
 
         if (e.isBoss && e.bossInvulnTimer > 0) { ctx.beginPath(); ctx.arc(0, 0, e.radius + 12, 0, Math.PI * 2); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke(); }
         else if (e.isShielded) { ctx.beginPath(); ctx.arc(0, 0, e.radius + 4, -0.6, 0.6); ctx.strokeStyle = '#0088ff'; ctx.lineWidth = 4; ctx.stroke(); }
@@ -797,6 +966,26 @@ function draw() {
             ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4; ctx.stroke();
         }
         ctx.restore();
+
+        // Render especial: Láser giratorio del Vector Supreme en Fase 1
+        if (e.isVectorSupreme && e.bossPhase === 1) {
+            ctx.save();
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 8;
+            ctx.shadowBlur = 30; ctx.shadowColor = '#ff007f';
+            ctx.globalAlpha = 0.6;
+            // Haz A
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y);
+            ctx.lineTo(e.x + Math.cos(e.bossLaserAngle) * canvas.width, e.y + Math.sin(e.bossLaserAngle) * canvas.width);
+            ctx.stroke();
+            // Haz B (opuesto)
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y);
+            ctx.lineTo(e.x + Math.cos(e.bossLaserAngle + Math.PI) * canvas.width, e.y + Math.sin(e.bossLaserAngle + Math.PI) * canvas.width);
+            ctx.stroke();
+            ctx.restore();
+        }
 
         if (e.hp < e.maxHp) {
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(e.x - e.radius, e.y - e.radius - 10, e.radius * 2, 5);

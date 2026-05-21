@@ -159,7 +159,7 @@
         <div id="main-menu">
             <h1>NEON OVERDRIVE</h1>
             <h2>ADVANCED SURVIVAL</h2>
-            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.8.3 &mdash; ACTUALIZACIÓN: RESOLUCIÓN ADAPTATIVA & BALANCE DE COMBATE</p>
+            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.8.4 &mdash; MODULARIZACIÓN DE ENEMIGOS &amp; REDISEÑO DE JEFES</p>
             <p style="margin-bottom: 20px; color: #aaa; font-size: 12px;">Sistemas listos para inicialización de
                 combate.</p>
             <button class="shop-btn" onclick="startGameSimulation()">INICIAR SIMULACIÓN</button>
@@ -235,8 +235,8 @@
             <div style="font-size: 16px; color: #00ffcc; margin-bottom: 20px;" id="game-over-stats">Oleada alcanzada: 1
             </div>
             <button class="shop-btn" onclick="resetGame()">REINICIAR SIMULACIÓN</button>
-            <button class="shop-btn" style="border-color:#ffff00; color:#ffff00;"
-                onclick="toggleCollection(true)">REVISAR ÁLBUM</button>
+            <button class="shop-btn" style="border-color:#ff5500; color:#ff5500;" onclick="returnToMainMenu()">VOLVER AL MENÚ</button>
+            <button class="shop-btn" style="border-color:#ffff00; color:#ffff00;" onclick="toggleCollection(true)">REVISAR ÁLBUM</button>
         </div>
 
         <!-- Chat Box -->
@@ -255,7 +255,18 @@
     <script src="js/data.js?v=0.6.3"></script>
     <script src="js/audio.js?v=0.8.2"></script>
     <script src="js/player.js?v=0.8.2"></script>
-    <script src="js/enemies.js?v=0.8.2"></script>
+    <script src="js/enemies/common.js?v=0.8.3"></script>
+    <script src="js/enemies/kamikaze.js?v=0.8.3"></script>
+    <script src="js/enemies/shielded.js?v=0.8.3"></script>
+    <script src="js/enemies/healer.js?v=0.8.3"></script>
+    <script src="js/enemies/stalker.js?v=0.8.3"></script>
+    <script src="js/enemies/elite_gold.js?v=0.8.3"></script>
+    <script src="js/enemies/vortex_node.js?v=0.8.3"></script>
+    <script src="js/enemies/helix_weaver.js?v=0.8.3"></script>
+    <script src="js/enemies/binary_aegis.js?v=0.8.3"></script>
+    <script src="js/enemies/boss_guardian.js?v=0.8.3"></script>
+    <script src="js/enemies/boss_vector.js?v=0.8.3"></script>
+    <script src="js/enemies.js?v=0.8.3"></script>
     <script src="js/weapons.js?v=0.8.2"></script>
     <script src="js/effects.js?v=0.8.2"></script>
     <script src="js/events.js?v=0.8.2"></script>

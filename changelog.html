@@ -183,6 +183,58 @@
         <h1>NEON OVERDRIVE</h1>
         <h2>Historial de Sistemas y Actualizaciones</h2>
 
+        <!-- Versión 0.8.4 -->
+        <div class="version-box">
+            <div class="version-header">
+                <span class="version-title">v0.8.4 - Modularización de Enemigos &amp; Rediseño de Jefes</span>
+                <span class="version-date">Mayo 2026</span>
+            </div>
+            <ul class="change-list">
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Arquitectura Modular de Enemigos</div>
+                        Toda la lógica de IA y comportamiento de los enemigos ha sido reestructurada en módulos individuales bajo <span style="color:#00ffcc;">js/enemies/</span>, mejorando drásticamente el rendimiento y la facilidad de mantenimiento.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Activación de Enemigos Avanzados</div>
+                        Se han integrado y balanceado los enemigos Helix Weaver (estelas láser), Binary Aegis (escudos rotativos orbitales) y Vortex Node (atracción gravitatoria y ralentización).
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-balance">Balance</span>
+                    <div>
+                        <div style="color:#ffff00; font-weight:bold; margin-bottom:3px;">Rediseño del Guardián del Núcleo (Jefe Oleada 5)</div>
+                        Rediseñado completamente en 3 fases de combate según comportamiento y color (Defensa Verde, Ataque Naranja, y Colapso Gravitatorio Rojo). Se redujo el spam excesivo de proyectiles y se añadieron embestidas telegiadas.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Presentación Visual y Banda Sonora de Jefes</div>
+                        Se añadió un cartel de advertencia de jefe ("boss-banner") con efecto de distorsión y sacudida de pantalla, barra de vida HUD persistente y sincronización de canciones oficiales (<em>red_hazard_zone.mp3</em> para el Guardián y <em>the_geometric_siege.mp3</em> para Vector Supremo).
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-fix">Solución</span>
+                    <div>
+                        <div style="color:#ffaa00; font-weight:bold; margin-bottom:3px;">Reinicio de Precios de Tienda al Morir</div>
+                        Se solucionó el error donde los costos acumulados de las mejoras de la tienda persistían al morir e iniciar una nueva simulación en Oleada 1.
+                    </div>
+                </li>
+                <li>
+                    <span class="tag tag-new">Nuevo</span>
+                    <div>
+                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Botón "Volver al Menú"</div>
+                        Añadida la opción en la pantalla de Game Over para salir al menú principal y limpiar correctamente el estado activo de la simulación.
+                    </div>
+                </li>
+            </ul>
+        </div>
+
         <!-- Versión 0.8.3 -->
         <div class="version-box version-major">
             <div class="version-header">

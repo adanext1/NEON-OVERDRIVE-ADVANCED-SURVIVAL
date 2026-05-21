@@ -407,24 +407,24 @@ function craftArtifact(key) {
 function buyUpgrade(type, pObj) {
     if (!pObj) pObj = players[0];
     
-    let hpPrice = Math.floor(50 * Math.pow(1.5, pObj.upgradeCounts.hp));
-    let dmgPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
-    let laserPrice = Math.floor(200 * Math.pow(1.5, pObj.upgradeCounts.laser || 0));
-    let minigunPrice = Math.floor(180 * Math.pow(1.5, pObj.upgradeCounts.minigun || 0));
-    let qPrice = Math.floor(250 * Math.pow(1.5, pObj.upgradeCounts.q_cooldown || 0));
+    let hpPrice = Math.floor(50 * Math.pow(1.3, pObj.upgradeCounts.hp));
+    let dmgPrice = Math.floor(60 * Math.pow(1.3, pObj.upgradeCounts.dmg));
+    let laserPrice = Math.floor(200 * Math.pow(1.3, pObj.upgradeCounts.laser || 0));
+    let minigunPrice = Math.floor(180 * Math.pow(1.3, pObj.upgradeCounts.minigun || 0));
+    let qPrice = Math.floor(250 * Math.pow(1.3, pObj.upgradeCounts.q_cooldown || 0));
 
     if (type === 'hp' && pObj.credits >= hpPrice) { 
         pObj.maxHp += 25; pObj.hp += 25; pObj.credits -= hpPrice; 
         pObj.upgradeCounts.hp++;
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-hp' : 'btn-up-hp-p2');
-        let nextPrice = Math.floor(50 * Math.pow(1.5, pObj.upgradeCounts.hp));
+        let nextPrice = Math.floor(50 * Math.pow(1.3, pObj.upgradeCounts.hp));
         if (btn) btn.innerText = `+25 HP Máxima - $${nextPrice}`;
     }
     else if (type === 'dmg' && pObj.credits >= dmgPrice) { 
         pObj.damageModifier += 0.20; pObj.credits -= dmgPrice; 
         pObj.upgradeCounts.dmg++;
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-dmg' : 'btn-up-dmg-p2');
-        let nextPrice = Math.floor(60 * Math.pow(1.5, pObj.upgradeCounts.dmg));
+        let nextPrice = Math.floor(60 * Math.pow(1.3, pObj.upgradeCounts.dmg));
         if (btn) btn.innerText = `+20% Daño - $${nextPrice}`;
     }
     else if (type === 'laser' && pObj.credits >= laserPrice) {
@@ -433,7 +433,7 @@ function buyUpgrade(type, pObj) {
         pObj.credits -= laserPrice;
         pObj.upgradeCounts.laser = (pObj.upgradeCounts.laser || 0) + 1;
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-laser' : 'btn-up-laser-p2');
-        let nextPrice = Math.floor(200 * Math.pow(1.5, pObj.upgradeCounts.laser));
+        let nextPrice = Math.floor(200 * Math.pow(1.3, pObj.upgradeCounts.laser));
         if (btn) btn.innerText = `Potencia Láser - $${nextPrice}`;
     }
     else if (type === 'minigun' && pObj.credits >= minigunPrice) {
@@ -442,7 +442,7 @@ function buyUpgrade(type, pObj) {
         pObj.credits -= minigunPrice;
         pObj.upgradeCounts.minigun = (pObj.upgradeCounts.minigun || 0) + 1;
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-minigun' : 'btn-up-minigun-p2');
-        let nextPrice = Math.floor(180 * Math.pow(1.5, pObj.upgradeCounts.minigun));
+        let nextPrice = Math.floor(180 * Math.pow(1.3, pObj.upgradeCounts.minigun));
         if (btn) btn.innerText = `Enfriamiento Minigun - $${nextPrice}`;
     }
     else if (type === 'q_cooldown' && pObj.credits >= qPrice) {
@@ -451,7 +451,7 @@ function buyUpgrade(type, pObj) {
         pObj.credits -= qPrice;
         pObj.upgradeCounts.q_cooldown = (pObj.upgradeCounts.q_cooldown || 0) + 1;
         let btn = document.getElementById(pObj.id === 1 ? 'btn-up-q' : 'btn-up-q-p2');
-        let nextPrice = Math.floor(250 * Math.pow(1.5, pObj.upgradeCounts.q_cooldown));
+        let nextPrice = Math.floor(250 * Math.pow(1.3, pObj.upgradeCounts.q_cooldown));
         if (btn) btn.innerText = `Recarga Célula Q - $${nextPrice}`;
     }
     else if (type === 'shotgun' && pObj.credits >= 150 && !pObj.weapons.includes('shotgun')) { pObj.weapons.push('shotgun'); pObj.credits -= 150; pObj.currentWeaponIndex = pObj.weapons.length - 1; }
@@ -472,4 +472,61 @@ function showNetworkMessage(text, duration = 3000) {
     
     if (el.timeoutId) clearTimeout(el.timeoutId);
     el.timeoutId = setTimeout(() => { el.style.display = 'none'; }, duration);
+}
+
+function triggerBossWarning(title, name, subtitle) {
+    let banner = document.getElementById('boss-banner');
+    if (!banner) return;
+    
+    let titleEl = banner.querySelector('.boss-title');
+    let nameEl = banner.querySelector('.boss-name');
+    let subtitleEl = banner.querySelector('.boss-subtitle');
+    
+    if (titleEl) titleEl.innerText = title;
+    if (nameEl) nameEl.innerText = name;
+    if (subtitleEl) subtitleEl.innerText = subtitle;
+    
+    banner.style.display = 'block';
+    
+    // Forzar reflow para la animación de transición CSS
+    banner.offsetHeight;
+    
+    banner.classList.add('active');
+    
+    // Screen Shake dramático al aparecer el jefe
+    screenShake = 30;
+    
+    setTimeout(() => {
+        banner.classList.remove('active');
+        setTimeout(() => {
+            banner.style.display = 'none';
+        }, 500);
+    }, 3500);
+}
+
+function resetShopUI() {
+    let btnHp = document.getElementById('btn-up-hp');
+    if (btnHp) btnHp.innerText = `+25 HP Máxima - $50`;
+    let btnHpP2 = document.getElementById('btn-up-hp-p2');
+    if (btnHpP2) btnHpP2.innerText = `+25 HP Máxima - $50`;
+
+    let btnDmg = document.getElementById('btn-up-dmg');
+    if (btnDmg) btnDmg.innerText = `+20% Daño - $60`;
+    let btnDmgP2 = document.getElementById('btn-up-dmg-p2');
+    if (btnDmgP2) btnDmgP2.innerText = `+20% Daño - $60`;
+
+    let btnLaser = document.getElementById('btn-up-laser');
+    if (btnLaser) btnLaser.innerText = `Potencia Láser - $200`;
+    let btnLaserP2 = document.getElementById('btn-up-laser-p2');
+    if (btnLaserP2) btnLaserP2.innerText = `Potencia Láser - $200`;
+
+    let btnMinigun = document.getElementById('btn-up-minigun');
+    if (btnMinigun) btnMinigun.innerText = `Enfriamiento Minigun - $180`;
+    let btnMinigunP2 = document.getElementById('btn-up-minigun-p2');
+    if (btnMinigunP2) btnMinigunP2.innerText = `Enfriamiento Minigun - $180`;
+
+    let btnQ = document.getElementById('btn-up-q');
+    if (btnQ) btnQ.innerText = `Recarga Célula Q - $250`;
+    let btnQP2 = document.getElementById('btn-up-q-p2');
+    if (btnQP2) btnQP2.innerText = `Recarga Célula Q - $250`;
 }

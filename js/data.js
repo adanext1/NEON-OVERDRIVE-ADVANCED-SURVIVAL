@@ -22,7 +22,8 @@ resizeCanvas();
 let userSave = JSON.parse(localStorage.getItem('neon_overdrive_save')) || {
     materials: { core: 0, plate: 0, crystal: 0 },
     artifacts: { hyperdrive: 0, shieldGen: 0, singularity: 0, shipHp: 0, shipDmg: 0 },
-    settings: { musicVolume: 0.7, sfxVolume: 0.7 }
+    settings: { musicVolume: 0.7, sfxVolume: 0.7 },
+    unlockedArtifacts: []
 };
 
 // Migración de guardado antiguo
@@ -34,7 +35,7 @@ if (typeof userSave.artifacts.hyperdrive === 'boolean') {
 if (userSave.artifacts.shipHp === undefined) userSave.artifacts.shipHp = 0;
 if (userSave.artifacts.shipDmg === undefined) userSave.artifacts.shipDmg = 0;
 if (userSave.settings === undefined) userSave.settings = { musicVolume: 0.7, sfxVolume: 0.7 };
-if (userSave.artifacts.shipDmg === undefined) userSave.artifacts.shipDmg = 0;
+if (userSave.unlockedArtifacts === undefined) userSave.unlockedArtifacts = [];
 
 const ARTIFACT_RECIPES = {
     hyperdrive: { name: "Motor Hiperimpulso", desc: "Reduce cooldown del Dash (5ms por nivel).", baseCost: { core: 5, plate: 2, crystal: 0 }, maxLevel: 5 },
