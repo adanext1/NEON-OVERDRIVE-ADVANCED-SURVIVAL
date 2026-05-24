@@ -14,6 +14,7 @@ function fireMegaLaser(pObj) {
         pObj.laserCooldown = 30; // 0.5s de cooldown
         pObj.maxLaserCooldown = 30;
         playLaserFireSound(0.5);
+        if (pObj.recoilEnabled) applyWeaponRecoil(pObj, targetAngle);
     }
     else if (charge >= 60 && charge < 120) {
         // Fase 2: Carga Óptima (1s a 2s)
@@ -22,6 +23,7 @@ function fireMegaLaser(pObj) {
         pObj.laserCooldown = 240; // 4s de cooldown
         pObj.maxLaserCooldown = 240;
         playLaserFireSound(1.0);
+        if (pObj.recoilEnabled) { applyWeaponRecoil(pObj, targetAngle); applyWeaponRecoil(pObj, targetAngle); }
     }
     else if (charge >= 120 && charge < 180) {
         // Fase 3: Carga Crítica (2s a 3s)
@@ -31,6 +33,13 @@ function fireMegaLaser(pObj) {
         pObj.maxLaserCooldown = 480;
         screenShake = 15;
         playLaserFireSound(2.0);
+        // Retroceso fuerte en fase crítica
+        if (pObj.recoilEnabled) {
+            applyWeaponRecoil(pObj, targetAngle);
+            applyWeaponRecoil(pObj, targetAngle);
+            applyWeaponRecoil(pObj, targetAngle);
+            screenShake = Math.max(screenShake, 18);
+        }
     }
     else {
         // Fase 4: El Castigo (Más de 3s)

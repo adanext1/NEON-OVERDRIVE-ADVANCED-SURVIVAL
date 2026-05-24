@@ -395,3 +395,451 @@ body {
     background: #0a0a15;
     box-shadow: 0 0 20px currentColor;
 }
+
+
+/* Registro de propiedad para animación de borde */
+@property --border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+/* ============================================================
+   MENÚ PRINCIPAL REDISEÑADO
+   ============================================================ */
+
+#main-menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    max-width: 95vw;
+    text-align: center;
+    pointer-events: auto;
+    border-radius: 16px;
+    background: rgba(3, 3, 18, 0.97);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow:
+        0 0 0 2px #ff007f,
+        0 0 40px rgba(255, 0, 127, 0.35),
+        0 0 80px rgba(0, 255, 204, 0.1),
+        inset 0 0 60px rgba(0, 0, 20, 0.8);
+    animation: menuAppear 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes menuAppear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Partículas flotantes */
+.menu-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.menu-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    animation: particleFloat linear infinite;
+    opacity: 0;
+}
+
+@keyframes particleFloat {
+    0%   { transform: translateY(100%) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-20px) translateX(var(--drift, 20px)); opacity: 0; }
+}
+
+/* Líneas de escaneo */
+.menu-scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 255, 204, 0.015) 3px,
+        rgba(0, 255, 204, 0.015) 4px
+    );
+    animation: scanMove 8s linear infinite;
+}
+
+@keyframes scanMove {
+    from { background-position: 0 0; }
+    to   { background-position: 0 100px; }
+}
+
+/* Contenido principal */
+.menu-content {
+    position: relative;
+    z-index: 2;
+    padding: 32px 30px 24px;
+}
+
+/* Wrapper del logo */
+.menu-logo-wrapper {
+    position: relative;
+    margin-bottom: 18px;
+}
+
+.menu-logo-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(0, 255, 204, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+    animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+    50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.menu-title {
+    color: #00ffcc;
+    font-size: 46px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    line-height: 1;
+    margin-bottom: 6px;
+    animation: titleGlow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+    from { text-shadow: 0 0 10px #00ffcc, 0 0 25px #00ffcc; }
+    to   { text-shadow: 0 0 20px #00ffcc, 0 0 50px #00ffcc, 0 0 80px rgba(0,255,204,0.4); }
+}
+
+.menu-subtitle {
+    color: #ff007f;
+    font-size: 14px;
+    letter-spacing: 6px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    animation: subtitleGlow 2.5s ease-in-out infinite alternate;
+    animation-delay: 0.5s;
+}
+
+@keyframes subtitleGlow {
+    from { text-shadow: 0 0 8px #ff007f; opacity: 0.85; }
+    to   { text-shadow: 0 0 18px #ff007f, 0 0 35px rgba(255,0,127,0.4); opacity: 1; }
+}
+
+/* Divisor decorativo */
+.menu-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0 0;
+}
+
+.divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #ff007f, transparent);
+    max-width: 120px;
+}
+
+.divider-icon {
+    color: #ff007f;
+    font-size: 14px;
+    animation: spinSlow 6s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spinSlow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Badge de versión */
+.menu-version-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #555;
+}
+
+.version-badge {
+    background: rgba(0, 255, 204, 0.1);
+    border: 1px solid rgba(0, 255, 204, 0.3);
+    color: #00ffcc;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.version-sep { color: #333; }
+
+.version-text {
+    color: #666;
+    letter-spacing: 1.5px;
+}
+
+/* Botones del menú */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-btn-row {
+    display: flex;
+    gap: 10px;
+}
+
+.menu-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 20px;
+    background: rgba(10, 10, 25, 0.8);
+    border: 1.5px solid currentColor;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition:
+        background 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.15s ease,
+        letter-spacing 0.2s ease;
+}
+
+.menu-btn-half {
+    flex: 1;
+}
+
+.menu-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    letter-spacing: 3px;
+}
+
+.menu-btn:active {
+    transform: translateY(0) scale(0.99);
+}
+
+/* Efecto de brillo al hover — wrapper con clip para no afectar el borde */
+.menu-btn .btn-shine-wrap {
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.btn-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        105deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 80%
+    );
+    transition: left 0.4s ease;
+    pointer-events: none;
+}
+
+.menu-btn:hover .btn-shine {
+    left: 150%;
+}
+
+.btn-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.menu-btn:hover .btn-icon {
+    transform: scale(1.2);
+}
+
+.btn-text {
+    flex: 1;
+    text-align: center;
+}
+
+/* Variantes de color */
+.menu-btn-primary {
+    color: #00ffcc;
+    border-color: #00ffcc;
+    box-shadow: 0 0 8px rgba(0, 255, 204, 0.15);
+}
+.menu-btn-primary:hover {
+    background: rgba(0, 255, 204, 0.12);
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.4), 0 4px 15px rgba(0, 255, 204, 0.2);
+}
+
+.menu-btn-yellow {
+    color: #ffff00;
+    border-color: #ffff00;
+    box-shadow: 0 0 8px rgba(255, 255, 0, 0.1);
+}
+.menu-btn-yellow:hover {
+    background: rgba(255, 255, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.35), 0 4px 15px rgba(255, 255, 0, 0.15);
+}
+
+.menu-btn-blue {
+    color: #00aaff;
+    border-color: #00aaff;
+    box-shadow: 0 0 8px rgba(0, 170, 255, 0.1);
+}
+.menu-btn-blue:hover {
+    background: rgba(0, 170, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 170, 255, 0.35), 0 4px 15px rgba(0, 170, 255, 0.15);
+}
+
+.menu-btn-pink {
+    color: #ff007f;
+    border-color: #ff007f;
+    box-shadow: 0 0 8px rgba(255, 0, 127, 0.1);
+}
+.menu-btn-pink:hover {
+    background: rgba(255, 0, 127, 0.1);
+    box-shadow: 0 0 20px rgba(255, 0, 127, 0.35), 0 4px 15px rgba(255, 0, 127, 0.15);
+}
+
+.menu-btn-purple {
+    color: #aa00ff;
+    border-color: #aa00ff;
+    box-shadow: 0 0 8px rgba(170, 0, 255, 0.1);
+}
+.menu-btn-purple:hover {
+    background: rgba(170, 0, 255, 0.1);
+    box-shadow: 0 0 20px rgba(170, 0, 255, 0.35), 0 4px 15px rgba(170, 0, 255, 0.15);
+}
+
+/* Footer del menú */
+.menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #333;
+    text-transform: uppercase;
+}
+
+.footer-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ff007f;
+    opacity: 0.5;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+.footer-dot:last-child {
+    animation-delay: 1s;
+}
+
+@keyframes dotPulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50%       { opacity: 0.8; transform: scale(1.4); }
+}
+
+/* Borde animado del menú */
+#main-menu::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: linear-gradient(
+        var(--border-angle, 0deg),
+        #ff007f,
+        #00ffcc,
+        #aa00ff,
+        #ff007f
+    );
+    z-index: -1;
+    animation: borderRotate 4s linear infinite;
+    opacity: 0.7;
+}
+
+@keyframes borderRotate {
+    to { --border-angle: 360deg; }
+}
+
+/* Fallback para navegadores sin @property */
+#main-menu::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 14px;
+    background: rgba(3, 3, 18, 0.97);
+    z-index: -1;
+}
+
+/* ============================================================
+   OVERLORD APEX — EFECTOS VISUALES DE FASE
+   ============================================================ */
+
+/* Tinte ámbar de Inversión Magnética (Fase 1) */
+body.magnetic-inversion #gameCanvas {
+    filter: sepia(0.25) saturate(1.2) hue-rotate(-10deg);
+    transition: filter 0.5s ease;
+}
+
+body.magnetic-inversion #hud-box {
+    border-color: #ffaa00;
+    box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);
+    animation: magneticPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes magneticPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(255, 170, 0, 0.3); }
+    50%       { box-shadow: 0 0 30px rgba(255, 170, 0, 0.7); }
+}
+
+/* Indicador de controles invertidos */
+body.magnetic-inversion #hud-wave::after {
+    content: ' ⚠ CONTROLES INVERTIDOS';
+    color: #ffaa00;
+    font-size: 10px;
+    letter-spacing: 1px;
+    animation: invertedBlink 0.8s step-end infinite;
+}
+
+@keyframes invertedBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}

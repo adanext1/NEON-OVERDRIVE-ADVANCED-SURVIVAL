@@ -65,6 +65,39 @@ function spawnEnemy() {
                 let label = hpCont.querySelector('.boss-hp-label');
                 if (label) label.innerText = 'VECTOR SUPREMO';
             }
+        } else if (wave === 15) {
+            enemy.isOverlordApex = true;
+            enemy.bossPhase = 0;
+            enemy.olTimer = 0;
+            enemy.olPillarsSpawned = false;
+            enemy.olPillarHealth = [0, 0, 0, 0];
+            enemy.olPillarAlive = [false, false, false, false];
+            enemy.olPillarPositions = null;
+            enemy.olPillarSpawnTimer = 120;
+            enemy.olCageCloseTimer = 600;
+            enemy.olSpiralAngle = 0;
+            enemy.olWallX = -20;
+            enemy.olWallSpeed = 0.8;
+            enemy.olPhase2Immune = false;
+            enemy.hp = 14000;
+            enemy.maxHp = enemy.hp;
+            enemy.radius = 50;
+            enemy.speed = 1.2;
+            enemy.armor = 15 + (wave * 2);
+            
+            // Visuales de Advertencia y Música
+            if (typeof triggerBossWarning !== 'undefined') {
+                triggerBossWarning('ALERTA DE AMENAZA CLASE TITÁN', 'OVERLORD APEX', 'THE KINETIC ARCHITECT');
+            }
+            if (typeof playMusic !== 'undefined') {
+                playMusic('final_boss_encounter.mp3');
+            }
+            let hpContOA = document.getElementById('boss-hp-container');
+            if (hpContOA) {
+                hpContOA.style.display = 'block';
+                let label = hpContOA.querySelector('.boss-hp-label');
+                if (label) label.innerText = 'OVERLORD APEX';
+            }
         }
     } else if (typeChance < 0.10 && wave >= 3) {
         // Escudado
@@ -104,6 +137,24 @@ function spawnEnemy() {
         // Enemigo Splitter (Se divide al morir)
         enemy.radius = 18; enemy.speed = 2.5; enemy.hp = 100 + (wave * 15); enemy.maxHp = enemy.hp;
         enemy.color = '#00ff88'; enemy.credits = 10; enemy.xp = 20; enemy.isSplitter = true; enemy.dropType = 'core';
+    } else if (typeChance < 0.53 && wave >= 11) {
+        // Flux Nullifier — Supresor de Torreta
+        enemy.radius = 20; enemy.speed = 1.5; enemy.hp = 140 + (wave * 18); enemy.maxHp = enemy.hp;
+        enemy.color = '#ffffff'; enemy.credits = 35; enemy.xp = 55; enemy.isFluxNullifier = true;
+        enemy.fnTimer = 0; enemy.fnBeamActive = false; enemy.fnBeamTimer = 0; enemy.fnGlitchCooldown = 0;
+        enemy.dropType = 'crystal';
+    } else if (typeChance < 0.57 && wave >= 12) {
+        // Glitch Weaver — Interferencia de Pantalla
+        enemy.radius = 16; enemy.speed = 2.0; enemy.hp = 90 + (wave * 14); enemy.maxHp = enemy.hp;
+        enemy.color = '#ff007f'; enemy.credits = 28; enemy.xp = 45; enemy.isGlitchWeaver = true;
+        enemy.gwTimer = 0; enemy.gwGlitchCooldown = 30; enemy.gwHudDistortActive = false;
+        enemy.dropType = 'core';
+    } else if (typeChance < 0.60 && wave >= 13) {
+        // Singularity Sentinel — Generador de Escudos Cruzados
+        enemy.radius = 26; enemy.speed = 1.0; enemy.hp = 200 + (wave * 22); enemy.maxHp = enemy.hp;
+        enemy.color = '#ffff00'; enemy.credits = 45; enemy.xp = 70; enemy.isSingularitySentinel = true;
+        enemy.ssTimer = 0; enemy.ssLinkTarget = null; enemy.ssLinkSearchCooldown = 60; enemy.ssOrbitAngle = 0;
+        enemy.dropType = 'crystal';
     } else {
         // Enemigo común
         enemy.radius = 17; enemy.speed = 2.2 + (wave * 0.12); enemy.hp = 30 + (wave * 6); enemy.maxHp = enemy.hp;
@@ -166,8 +217,24 @@ function updateEnemies() {
                 showNetworkMessage('🏆 LOGRO: ¡Derrotaste a Vector Supremo! Desbloqueaste Casco Pesado.', 5000);
                 saveGame();
             }
+            if (e.isOverlordApex && userSave && userSave.unlockedArtifacts && !userSave.unlockedArtifacts.includes('kinetic_core')) {
+                userSave.unlockedArtifacts.push('kinetic_core');
+                showNetworkMessage('🏆 LOGRO LEGENDARIO: ¡Derrotaste al OVERLORD APEX! Desbloqueaste Núcleo Cinético.', 7000);
+                saveGame();
+            }
             // Limpiar minions invocados por el boss para evitar trabarse
-            if (e.isBoss || e.isCoreGuardian || e.isVectorSupreme) {
+            if (e.isBoss || e.isCoreGuardian || e.isVectorSupreme || e.isOverlordApex) {
+                // Limpiar efectos especiales del Overlord Apex
+                if (e.isOverlordApex) {
+                    if (typeof players !== 'undefined') {
+                        players.forEach(p => {
+                            p.controlsInverted = false;
+                            p.recoilEnabled = false;
+                        });
+                    }
+                    document.body.classList.remove('magnetic-inversion');
+                    if (typeof _clearGlitchHudDistort !== 'undefined') _clearGlitchHudDistort();
+                }
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     if (enemies[j].isBossMinion) enemies.splice(j, 1);
                 }
@@ -199,6 +266,14 @@ function updateEnemies() {
             updateBossGuardian(e, dx, dy, dist, sx, sy, nearestPlayer);
         } else if (e.isVectorSupreme) {
             updateBossVector(e, dx, dy, dist, sx, sy, nearestPlayer);
+        } else if (e.isOverlordApex) {
+            updateBossOverlord(e, dx, dy, dist, sx, sy, nearestPlayer);
+        } else if (e.isFluxNullifier) {
+            updateFluxNullifier(e, dx, dy, dist, sx, sy, nearestPlayer);
+        } else if (e.isGlitchWeaver) {
+            updateGlitchWeaver(e, dx, dy, dist, sx, sy, nearestPlayer);
+        } else if (e.isSingularitySentinel) {
+            updateSingularitySentinel(e, dx, dy, dist, sx, sy, nearestPlayer);
         } else if (e.isHealer) {
             updateHealerEnemy(e, dx, dy, dist, sx, sy, nearestPlayer);
         } else if (e.isEMPStalker) {

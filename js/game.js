@@ -293,6 +293,7 @@ function startWave() {
 
 
 function update() {
+    if (menuNavCooldown > 0) menuNavCooldown--;
     processGamepadInput();
 
     if (!gameStarted || isPaused) return;
@@ -377,6 +378,8 @@ function update() {
                 let mx = 0; let my = 0;
                 if (keys['w'] || keys['arrowup']) my = -1; if (keys['s'] || keys['arrowdown']) my = 1;
                 if (keys['a'] || keys['arrowleft']) mx = -1; if (keys['d'] || keys['arrowright']) mx = 1;
+                // Inversión de controles (Fase 1 del Overlord Apex)
+                if (p.controlsInverted) { mx = -mx; my = -my; }
                 let currentSpeed = p.speed;
                 if (p.vortexPullCount >= 2) currentSpeed /= 2;
                 if (p.isChargingLaser) currentSpeed = 1.8;
@@ -573,6 +576,41 @@ function update() {
             
             if (dist < b.radius + e.radius) {
                 if (e.isBoss && e.bossInvulnTimer > 0) { createExplosion(b.x, b.y, '#ffffff', 5, 0.8); bullets.splice(i, 1); break; }
+
+                // Inmunidad Fase 2 del Overlord Apex: solo el Mega-Láser Crítico puede dañarlo
+                if (e.isOverlordApex && e.olPhase2Immune) {
+                    if (b.type !== 'laser_heavy') {
+                        createExplosion(b.x, b.y, '#d4af37', 4, 0.6);
+                        bullets.splice(i, 1); break;
+                    }
+                }
+
+                // Daño a pilares de la Jaula de Vectores (Fase 0 del Overlord)
+                if (e.isOverlordApex && e.bossPhase === 0 && e.olPillarsSpawned && e.olPillarPositions) {
+                    for (let pi = 0; pi < 4; pi++) {
+                        if (!e.olPillarAlive[pi]) continue;
+                        let pp = e.olPillarPositions[pi];
+                        let pillarDist = Math.hypot(b.x - pp.x, b.y - pp.y);
+                        if (pillarDist < 22) {
+                            let pillarDmg = b.damage * 0.5;
+                            damageOverlordPillar(e, pi, pillarDmg);
+                            spawnDamageText(pp.x, pp.y, Math.floor(pillarDmg), 'normal');
+                            bullets.splice(i, 1);
+                            break;
+                        }
+                    }
+                    if (i < 0 || (bullets[i] && bullets[i] !== b)) break;
+                }
+
+                // Enlace Cuántico del Singularity Sentinel: redirigir daño
+                if (e.isSingularitySentinel === false && typeof checkSentinelLinkRedirect !== 'undefined') {
+                    let redirected = checkSentinelLinkRedirect(e, b.damage);
+                    if (redirected) {
+                        createExplosion(b.x, b.y, '#ffff00', 5, 0.7);
+                        bullets.splice(i, 1); break;
+                    }
+                }
+
                 // Inmunidad frontal de Vector Supreme en Fase 1 (Matriz)
                 if (e.isVectorSupreme && e.bossPhase === 1) {
                     let angleToB = Math.atan2(b.y - e.y, b.x - e.x);
@@ -628,7 +666,7 @@ function update() {
     players.forEach(p => p.vortexPullCount = 0);
     updateEnemies();
     // Actualizar barra de vida del jefe en HUD (si existe)
-    let boss = enemies.find(e => e.isVectorSupreme || e.isCoreGuardian);
+    let boss = enemies.find(e => e.isVectorSupreme || e.isCoreGuardian || e.isOverlordApex);
     let hpFill = document.getElementById('boss-hp-fill');
     let hpCont = document.getElementById('boss-hp-container');
     if (boss && hpFill && hpCont) {
@@ -636,7 +674,7 @@ function update() {
             hpCont.style.display = 'block';
             let label = hpCont.querySelector('.boss-hp-label');
             if (label) {
-                label.innerText = boss.isCoreGuardian ? 'GUARDIÁN DEL NÚCLEO' : 'VECTOR SUPREMO';
+                label.innerText = boss.isCoreGuardian ? 'GUARDIÁN DEL NÚCLEO' : boss.isOverlordApex ? 'OVERLORD APEX' : 'VECTOR SUPREMO';
             }
         }
         let pct = Math.max(0, (boss.hp / boss.maxHp) * 100);
@@ -769,6 +807,21 @@ function draw() {
 
     // === RENDERIZAR DRONES ALIADOS ===
     drawHelperDrones();
+
+    // === RENDERIZAR OVERLORD APEX: PILARES Y MURO LÁSER ===
+    let overlordBoss = enemies.find(e => e.isOverlordApex);
+    if (overlordBoss) {
+        if (typeof drawOverlordPillars !== 'undefined') drawOverlordPillars(overlordBoss, ctx);
+        if (typeof drawOverlordWall !== 'undefined') drawOverlordWall(overlordBoss, ctx);
+    }
+
+    // === TINTE ÁMBAR DE INVERSIÓN MAGNÉTICA ===
+    if (players[0] && players[0].controlsInverted) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 140, 0, 0.07)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
 
 
     hazards.forEach(h => {
@@ -949,6 +1002,166 @@ function draw() {
             ctx.shadowBlur = 18; ctx.shadowColor = '#ff0000';
             ctx.moveTo(0, -e.radius); ctx.lineTo(e.radius * 0.7, e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, e.radius * 0.7);
             ctx.moveTo(0, e.radius); ctx.lineTo(e.radius * 0.7, -e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, -e.radius * 0.7);
+        }
+        else if (e.isFluxNullifier) {
+            skipDefaultFill = true;
+            // Pirámide invertida de Titanio Blanco
+            ctx.shadowBlur = 20; ctx.shadowColor = '#ffffff';
+            // Cuerpo: triángulo invertido
+            ctx.beginPath();
+            ctx.moveTo(-e.radius, -e.radius * 0.7);
+            ctx.lineTo(e.radius, -e.radius * 0.7);
+            ctx.lineTo(0, e.radius * 0.9);
+            ctx.closePath();
+            ctx.fillStyle = e.flashTicks > 0 ? '#ff0000' : (e.fnBeamActive ? '#ffff88' : '#e8e8e8');
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Pulso cónico de supresión si está activo
+            if (e.fnBeamActive) {
+                ctx.save();
+                ctx.globalAlpha = 0.25 + Math.sin(Date.now() * 0.015) * 0.1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, e.radius * 4, -0.5, 0.5);
+                ctx.closePath();
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        else if (e.isGlitchWeaver) {
+            skipDefaultFill = true;
+            // Entramado de líneas que vibran entre Magenta y Negro
+            ctx.shadowBlur = 15; ctx.shadowColor = '#ff007f';
+            let glitchColor = Math.random() < 0.5 ? '#ff007f' : '#cc0066';
+            ctx.strokeStyle = e.flashTicks > 0 ? '#ffffff' : glitchColor;
+            ctx.lineWidth = 2;
+            // Forma: cuadrícula distorsionada
+            let r = e.radius;
+            for (let gi = -1; gi <= 1; gi++) {
+                ctx.beginPath();
+                ctx.moveTo(-r + Math.random() * 4, gi * r * 0.5 + (Math.random() - 0.5) * 6);
+                ctx.lineTo(r + Math.random() * 4, gi * r * 0.5 + (Math.random() - 0.5) * 6);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(gi * r * 0.5 + (Math.random() - 0.5) * 6, -r);
+                ctx.lineTo(gi * r * 0.5 + (Math.random() - 0.5) * 6, r);
+                ctx.stroke();
+            }
+            // Núcleo parpadeante
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = glitchColor;
+            ctx.fill();
+        }
+        else if (e.isSingularitySentinel) {
+            skipDefaultFill = true;
+            // Anillo doble dorado con núcleo azul
+            ctx.shadowBlur = 22; ctx.shadowColor = '#ffff00';
+            e.ssOrbitAngle = (e.ssOrbitAngle || 0) + 0.02;
+            // Anillo exterior
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = e.flashTicks > 0 ? '#ffffff' : '#ffff00';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            // Anillo interior rotativo
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 0.65, e.ssOrbitAngle, e.ssOrbitAngle + Math.PI * 1.5);
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            // Núcleo azul
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = e.ssLinkTarget !== null ? '#00aaff' : '#0055aa';
+            ctx.shadowBlur = 15; ctx.shadowColor = '#00aaff';
+            ctx.fill();
+            // Línea de enlace cuántico al objetivo
+            if (e.ssLinkTarget !== null && typeof enemies !== 'undefined') {
+                let target = enemies.find(en => en.id === e.ssLinkTarget);
+                if (target) {
+                    ctx.restore();
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(255, 255, 0, ${0.5 + Math.sin(Date.now() * 0.01) * 0.3})`;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([8, 4]);
+                    ctx.shadowBlur = 10; ctx.shadowColor = '#ffff00';
+                    ctx.beginPath();
+                    ctx.moveTo(e.x, e.y);
+                    ctx.lineTo(target.x, target.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    // Aura de inmunidad sobre el objetivo
+                    ctx.beginPath();
+                    ctx.arc(target.x, target.y, target.radius + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 255, 0, ${0.3 + Math.sin(Date.now() * 0.015) * 0.2})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    ctx.rotate(e.angle);
+                }
+            }
+        }
+        else if (e.isOverlordApex) {
+            skipDefaultFill = true;
+            ctx.shadowBlur = 35; ctx.shadowColor = e.color;
+            e.drawRotAngle = (e.drawRotAngle || 0) + 0.018;
+
+            // Cuerpo principal: hexágono de Gris Corporativo
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                let a = (i * Math.PI / 3) + e.drawRotAngle * 0.3;
+                let x = Math.cos(a) * e.radius;
+                let y = Math.sin(a) * e.radius;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            let bodyColor = e.bossPhase === 2 ? '#ff2200' : '#888888';
+            ctx.fillStyle = e.flashTicks > 0 ? '#ffffff' : bodyColor;
+            ctx.fill();
+            ctx.strokeStyle = e.color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Anillos de Oro Líquido orbitales
+            for (let ri = 0; ri < 3; ri++) {
+                let ringRadius = e.radius * (0.7 + ri * 0.25);
+                let ringAngle = e.drawRotAngle * (ri % 2 === 0 ? 1 : -1) + ri * 1.2;
+                ctx.beginPath();
+                ctx.arc(0, 0, ringRadius, ringAngle, ringAngle + Math.PI * 0.6);
+                ctx.strokeStyle = e.color;
+                ctx.lineWidth = ri === 1 ? 4 : 2;
+                ctx.stroke();
+            }
+
+            // Núcleo central brillante
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 0.28, 0, Math.PI * 2);
+            ctx.fillStyle = e.bossPhase === 2 ? '#ff4400' : e.color;
+            ctx.shadowBlur = 20; ctx.shadowColor = e.color;
+            ctx.fill();
+
+            // Indicador de fase
+            if (e.bossPhase === 1) {
+                // Aura ámbar de inversión magnética
+                ctx.beginPath();
+                ctx.arc(0, 0, e.radius * 1.3, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 170, 0, ${0.2 + Math.sin(Date.now() * 0.008) * 0.15})`;
+                ctx.lineWidth = 6;
+                ctx.stroke();
+            } else if (e.bossPhase === 2) {
+                // Pulso rojo de emergencia
+                ctx.beginPath();
+                ctx.arc(0, 0, e.radius * 1.4, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 34, 0, ${0.3 + Math.sin(Date.now() * 0.02) * 0.2})`;
+                ctx.lineWidth = 8;
+                ctx.stroke();
+            }
         }
         else { ctx.moveTo(e.radius * 1.2, 0); ctx.lineTo(-e.radius, -e.radius * 0.8); ctx.lineTo(-e.radius, e.radius * 0.8); }
         

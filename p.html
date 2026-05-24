@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.8.3</title>
+    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.8.5</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -133,8 +133,24 @@
         </div>
         <!-- Modal de Pausa con Sliders -->
         <div id="pause-display" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(5, 5, 15, 0.95); backdrop-filter: blur(10px); border: 2px solid #ff007f; padding: 30px; color: #fff; z-index: 1000; text-align: center; width: 360px; box-shadow: 0 0 30px rgba(255, 0, 127, 0.4); border-radius: 12px; font-family: inherit; pointer-events: auto;">
-            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.7); margin-bottom: 25px; font-size: 24px; letter-spacing: 2px;">=== PAUSA ===</h2>
-            
+            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.7); margin-bottom: 6px; font-size: 24px; letter-spacing: 2px;">// PAUSA //</h2>
+            <p style="color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 3px; margin-bottom: 22px; text-transform: uppercase;">Simulación suspendida</p>
+
+            <!-- Referencia de controles -->
+            <div style="text-align: left; margin-bottom: 22px; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px 14px; background: rgba(255,255,255,0.02);">
+                <div style="font-size: 10px; letter-spacing: 3px; color: #ff007f; margin-bottom: 10px; font-weight: bold;">CONTROLES</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.7;">
+                    <span><span style="color:#00ffcc;">WASD</span> — Mover</span>
+                    <span><span style="color:#00ffcc;">Clic Izq.</span> — Disparar</span>
+                    <span><span style="color:#00ffcc;">Shift</span> — Dash</span>
+                    <span><span style="color:#00ffcc;">Clic Der.</span> — Mega-Láser</span>
+                    <span><span style="color:#00ffcc;">E</span> — Pulso</span>
+                    <span><span style="color:#00ffcc;">Espacio</span> — Torreta</span>
+                    <span><span style="color:#00ffcc;">Q</span> — Sobrecarga</span>
+                    <span><span style="color:#00ffcc;">P</span> — Pausa</span>
+                </div>
+            </div>
+
             <div style="margin-bottom: 20px; text-align: left;">
                 <label style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 12px; letter-spacing: 1px;">
                     <span>VOLUMEN MÚSICA</span>
@@ -143,34 +159,96 @@
                 <input type="range" id="music-volume" min="0" max="1" step="0.01" value="1" style="width: 100%; accent-color: #00ffcc; cursor: pointer;" oninput="updateMusicVolume(this.value); document.getElementById('music-vol-val').innerText = Math.round(this.value*100)+'%'">
             </div>
             
-            <div style="margin-bottom: 30px; text-align: left;">
+            <div style="margin-bottom: 22px; text-align: left;">
                 <label style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #aaa; font-size: 12px; letter-spacing: 1px;">
                     <span>VOLUMEN EFECTOS</span>
                     <span id="sfx-vol-val">100%</span>
                 </label>
                 <input type="range" id="sfx-volume" min="0" max="1" step="0.01" value="1" style="width: 100%; accent-color: #ff007f; cursor: pointer;" oninput="updateSFXVolume(this.value); document.getElementById('sfx-vol-val').innerText = Math.round(this.value*100)+'%'">
             </div>
-            
-            <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc; margin: 0; padding: 12px;" onclick="togglePauseFromBtn()">REANUDAR</button>
+
+            <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc; margin: 0; padding: 12px;" onclick="togglePauseFromBtn()">▶ REANUDAR SIMULACIÓN</button>
+            <p style="color: rgba(255,255,255,0.18); font-size: 10px; letter-spacing: 2px; margin-top: 14px;">[P] para reanudar</p>
         </div>
-        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,204,0.35);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.8.3</div>
+        <div style="position:fixed;bottom:8px;right:12px;color:rgba(212,175,55,0.5);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.9.0 — KINETIC COLLAPSE</div>
 
         <!-- Menú Principal Inicial -->
         <div id="main-menu">
-            <h1>NEON OVERDRIVE</h1>
-            <h2>ADVANCED SURVIVAL</h2>
-            <p style="margin-bottom: 4px; color: #00ffcc; font-size: 11px; letter-spacing: 2px;">v0.8.4 &mdash; MODULARIZACIÓN DE ENEMIGOS &amp; REDISEÑO DE JEFES</p>
-            <p style="margin-bottom: 20px; color: #aaa; font-size: 12px;">Sistemas listos para inicialización de
-                combate.</p>
-            <button class="shop-btn" onclick="startGameSimulation()">INICIAR SIMULACIÓN</button>
-            <button class="shop-btn" style="border-color: #00ffcc; color: #00ffcc;" onclick="createOnlineRoom()">CREAR SALA ONLINE</button>
-            <div style="display: flex; gap: 10px; margin: 10px 0;">
-                <input type="text" id="room-id-input" placeholder="CÓDIGO DE SALA" style="flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-family: inherit; font-size: 14px; text-transform: uppercase;">
-                <button class="shop-btn" style="width: auto; margin: 0; padding: 10px 20px;" onclick="joinOnlineRoom(document.getElementById('room-id-input').value)">UNIRSE</button>
+            <!-- Partículas de fondo -->
+            <div class="menu-particles" id="menu-particles"></div>
+
+            <!-- Líneas de escaneo -->
+            <div class="menu-scanlines"></div>
+
+            <!-- Contenido del menú -->
+            <div class="menu-content">
+                <!-- Logo animado -->
+                <div class="menu-logo-wrapper">
+                    <div class="menu-logo-glow"></div>
+                    <h1 class="menu-title">NEON OVERDRIVE</h1>
+                    <h2 class="menu-subtitle">ADVANCED SURVIVAL</h2>
+                    <div class="menu-divider">
+                        <span class="divider-line"></span>
+                        <span class="divider-icon">◈</span>
+                        <span class="divider-line"></span>
+                    </div>
+                </div>
+
+                <!-- Info de versión -->
+                <div class="menu-version-info">
+                    <span class="version-badge" style="color:#d4af37; border-color:#d4af37; text-shadow:0 0 8px rgba(212,175,55,0.6);">v0.9.0</span>
+                    <span class="version-sep">—</span>
+                    <span class="version-text" style="color:#d4af37; letter-spacing:3px;">KINETIC COLLAPSE</span>
+                </div>
+
+                <!-- Botones principales -->
+                <div class="menu-buttons">
+                    <button class="menu-btn menu-btn-primary" onclick="startGameSimulation()">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-text">INICIAR SIMULACIÓN</span>
+                        <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                    </button>
+
+                    <button class="menu-btn menu-btn-yellow" onclick="toggleCollection(true)">
+                        <span class="btn-icon">⬡</span>
+                        <span class="btn-text">MEJORAS PERMANENTES</span>
+                        <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                    </button>
+
+                    <div class="menu-btn-row">
+                        <button class="menu-btn menu-btn-blue menu-btn-half" onclick="window.location.href='bestiary.html'">
+                            <span class="btn-icon">☠</span>
+                            <span class="btn-text">AMENAZAS</span>
+                            <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                        </button>
+                        <button class="menu-btn menu-btn-pink menu-btn-half" onclick="window.location.href='changelog.html'">
+                            <span class="btn-icon">◎</span>
+                            <span class="btn-text">CHANGELOG</span>
+                            <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                        </button>
+                    </div>
+
+                    <button class="menu-btn menu-btn-purple" onclick="toggleMusic('view_from_the_bridge.mp3')">
+                        <span class="btn-icon">🎵</span>
+                        <span class="btn-text">REPRODUCIR / PAUSAR MÚSICA</span>
+                        <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                    </button>
+                </div>
+
+                <!-- Elementos ocultos de sala online (funcionalidad preservada) -->
+                <div style="display:none;">
+                    <button onclick="createOnlineRoom()">CREAR SALA ONLINE</button>
+                    <input type="text" id="room-id-input" placeholder="CÓDIGO DE SALA">
+                    <button onclick="joinOnlineRoom(document.getElementById('room-id-input').value)">UNIRSE</button>
+                </div>
+
+                <!-- Footer del menú -->
+                <div class="menu-footer">
+                    <span class="footer-dot"></span>
+                    <span>REGISTRO DE AMENAZAS &amp; CORRECCIONES</span>
+                    <span class="footer-dot"></span>
+                </div>
             </div>
-            <button class="shop-btn" style="border-color: #ffff00; color: #ffff00;" onclick="toggleCollection(true)">MEJORAS PERMANENTES</button>
-            <button class="shop-btn" style="border-color: #ff007f; color: #ff007f;" onclick="window.open('changelog.html', '_blank')">VER CAMBIOS (CHANGELOG)</button>
-            <button class="shop-btn" style="border-color: #aa00ff; color: #aa00ff;" onclick="toggleMusic('view_from_the_bridge.mp3')">🎵 REPRODUCIR/PAUSAR MÚSICA</button>
         </div>
 
         <!-- Tienda de Upgrades -->
@@ -251,6 +329,46 @@
         </div>
     </div>
 
+    <!-- Partículas del menú principal -->
+    <script>
+    (function() {
+        function spawnParticles() {
+            var container = document.getElementById('menu-particles');
+            if (!container) return;
+            var colors = ['#00ffcc', '#ff007f', '#aa00ff', '#ffff00', '#00aaff'];
+            for (var i = 0; i < 28; i++) {
+                (function(index) {
+                    var p = document.createElement('div');
+                    p.className = 'menu-particle';
+                    var color = colors[index % colors.length];
+                    var size = Math.random() * 2.5 + 1;
+                    var left = Math.random() * 100;
+                    var duration = Math.random() * 6 + 5;
+                    var delay = Math.random() * 8;
+                    var drift = (Math.random() - 0.5) * 60;
+                    p.style.cssText = [
+                        'background:' + color,
+                        'width:' + size + 'px',
+                        'height:' + size + 'px',
+                        'left:' + left + '%',
+                        'bottom:0',
+                        'animation-duration:' + duration + 's',
+                        'animation-delay:' + delay + 's',
+                        'box-shadow:0 0 4px ' + color,
+                        '--drift:' + drift + 'px'
+                    ].join(';');
+                    container.appendChild(p);
+                })(i);
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', spawnParticles);
+        } else {
+            spawnParticles();
+        }
+    })();
+    </script>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="js/data.js?v=0.6.3"></script>
     <script src="js/audio.js?v=0.8.2"></script>
@@ -266,6 +384,10 @@
     <script src="js/enemies/binary_aegis.js?v=0.8.3"></script>
     <script src="js/enemies/boss_guardian.js?v=0.8.3"></script>
     <script src="js/enemies/boss_vector.js?v=0.8.3"></script>
+    <script src="js/enemies/flux_nullifier.js?v=0.9.0"></script>
+    <script src="js/enemies/glitch_weaver.js?v=0.9.0"></script>
+    <script src="js/enemies/singularity_sentinel.js?v=0.9.0"></script>
+    <script src="js/enemies/boss_overlord.js?v=0.9.0"></script>
     <script src="js/enemies.js?v=0.8.3"></script>
     <script src="js/weapons.js?v=0.8.2"></script>
     <script src="js/effects.js?v=0.8.2"></script>

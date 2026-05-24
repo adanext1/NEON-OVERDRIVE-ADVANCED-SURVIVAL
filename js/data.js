@@ -81,6 +81,7 @@ let gameStarted = false; let isPaused = false; let inCollectionMenu = false; let
 let isGameOver = false;
 let selectedMenuItem = [0, 0];
 let lastGamepadButtons = [];
+let menuNavCooldown = 0;
 
 // --- EVENTOS DINÁMICOS ---
 let dynamicEvents = [];

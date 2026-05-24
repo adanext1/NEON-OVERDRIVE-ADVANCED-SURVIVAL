@@ -1,409 +1,1001 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE - Historial de Versiones</title>
+    <title>NEON OVERDRIVE - Historial de Versiones v0.9.0</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @property --border-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #05050d;
+            background: radial-gradient(ellipse at 50% 0%, #0e0e2a 0%, #03030a 60%);
             font-family: 'Courier New', Courier, monospace;
             color: #fff;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
-            background: radial-gradient(circle, #0e0e22 0%, #03030a 100%);
+            padding: 30px 20px 60px;
+            overflow-x: hidden;
+        }
+
+        /* Fondo animado */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 3px,
+                rgba(0,255,204,0.012) 3px, rgba(0,255,204,0.012) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+            animation: scanMove 10s linear infinite;
+        }
+        @keyframes scanMove {
+            from { background-position: 0 0; }
+            to   { background-position: 0 100px; }
         }
 
         .container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 800px;
-            background: rgba(5, 5, 20, 0.85);
-            backdrop-filter: blur(10px);
-            border: 2px solid #ff007f;
-            box-shadow: 0 0 25px rgba(255, 0, 127, 0.3);
-            border-radius: 12px;
-            padding: 30px;
-            margin: 20px auto;
+            max-width: 820px;
+            margin: 0 auto;
         }
 
-        h1 {
-            color: #00ffcc;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.7);
-            font-size: 36px;
+        /* ── HEADER ── */
+        .page-header {
             text-align: center;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            margin-bottom: 40px;
+            animation: fadeDown 0.6s ease forwards;
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        h2 {
-            color: #ffff00;
-            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 30px;
+        .page-title {
+            font-size: 42px;
+            font-weight: bold;
             letter-spacing: 4px;
+            color: #00ffcc;
+            animation: titleGlow 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 10px #00ffcc, 0 0 25px #00ffcc; }
+            to   { text-shadow: 0 0 20px #00ffcc, 0 0 50px #00ffcc, 0 0 80px rgba(0,255,204,0.4); }
+        }
+
+        .page-subtitle {
+            color: #ff007f;
+            font-size: 12px;
+            letter-spacing: 6px;
+            margin-top: 6px;
             text-transform: uppercase;
+            animation: subtitleGlow 2.5s ease-in-out infinite alternate;
+            animation-delay: 0.5s;
+        }
+        @keyframes subtitleGlow {
+            from { text-shadow: 0 0 8px #ff007f; opacity: 0.8; }
+            to   { text-shadow: 0 0 18px #ff007f, 0 0 35px rgba(255,0,127,0.4); opacity: 1; }
         }
 
-        .version-box {
-            border: 1px solid #00ffcc;
-            background: rgba(0, 255, 204, 0.03);
-            padding: 20px;
+        .header-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .header-divider span:first-child,
+        .header-divider span:last-child {
+            flex: 1;
+            max-width: 200px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #ff007f, transparent);
+        }
+        .header-divider .icon {
+            color: #ff007f;
+            font-size: 14px;
+            animation: spinSlow 6s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spinSlow {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── BOTÓN VOLVER ── */
+        .btn-back {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 260px;
+            margin: 0 auto 40px;
+            padding: 14px 20px;
+            background: rgba(10,10,25,0.8);
+            border: 1.5px solid #00ffcc;
+            color: #00ffcc;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-decoration: none;
             border-radius: 8px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: background 0.25s, box-shadow 0.25s, transform 0.15s, letter-spacing 0.2s;
+            animation: fadeDown 0.6s ease 0.2s both;
         }
+        .btn-back::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.08) 50%, transparent 80%);
+            transition: left 0.4s ease;
+        }
+        .btn-back:hover::after { left: 150%; }
+        .btn-back:hover {
+            background: rgba(0,255,204,0.1);
+            box-shadow: 0 0 20px rgba(0,255,204,0.4), 0 4px 15px rgba(0,255,204,0.2);
+            transform: translateY(-2px);
+            letter-spacing: 3px;
+        }
+        .btn-back:active { transform: translateY(0) scale(0.99); }
 
+        /* ── VERSION BOX BASE ── */
+        .version-box {
+            position: relative;
+            background: rgba(5, 5, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(0,255,204,0.25);
+            box-shadow: 0 0 0 0 transparent;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            animation: fadeUp 0.5s ease both;
+            overflow: hidden;
+        }
+        .version-box::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: #00ffcc;
+            border-radius: 12px 0 0 12px;
+            box-shadow: 0 0 8px #00ffcc;
+        }
         .version-box:hover {
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
-            background: rgba(0, 255, 204, 0.05);
+            box-shadow: 0 0 20px rgba(0,255,204,0.15), 0 4px 20px rgba(0,0,0,0.4);
+            border-color: rgba(0,255,204,0.5);
+            transform: translateX(3px);
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        .version-box.version-major {
-            border: 1px solid #ffff00;
-            background: rgba(255, 255, 0, 0.03);
+        /* ── VERSION MAJOR (0.x.0) ── */
+        .version-major {
+            border-color: rgba(255,215,0,0.4);
+            background: rgba(8, 7, 3, 0.92);
+            box-shadow: 0 0 15px rgba(255,215,0,0.08);
         }
-        .version-box.version-major:hover {
-            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2);
-            background: rgba(255, 255, 0, 0.05);
+        .version-major::before {
+            background: linear-gradient(to bottom, #ffdd00, #ff8800);
+            box-shadow: 0 0 12px #ffdd00;
+            width: 4px;
         }
-        .version-box.version-major .version-title {
-            color: #ffff00;
-            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        .version-major:hover {
+            box-shadow: 0 0 25px rgba(255,215,0,0.2), 0 4px 20px rgba(0,0,0,0.5);
+            border-color: rgba(255,215,0,0.7);
+        }
+        .version-major .version-title { color: #ffdd00; }
+        .version-major .version-title-glow {
+            text-shadow: 0 0 10px rgba(255,221,0,0.6), 0 0 25px rgba(255,136,0,0.3);
         }
 
+        /* Etiqueta MAJOR */
+        .major-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, rgba(255,221,0,0.15), rgba(255,136,0,0.1));
+            border: 1px solid rgba(255,221,0,0.5);
+            color: #ffdd00;
+            font-size: 9px;
+            letter-spacing: 2px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+            vertical-align: middle;
+            animation: majorPulse 2s ease-in-out infinite;
+        }
+        @keyframes majorPulse {
+            0%,100% { box-shadow: 0 0 4px rgba(255,221,0,0.3); }
+            50%      { box-shadow: 0 0 10px rgba(255,221,0,0.6); }
+        }
+
+        /* ── VERSION HEADER ── */
         .version-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(0, 255, 204, 0.3);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            flex-wrap: wrap;
+            gap: 8px;
         }
-
         .version-title {
             color: #00ffcc;
-            font-size: 20px;
+            font-size: 17px;
             font-weight: bold;
+            letter-spacing: 1px;
         }
-
         .version-date {
-            color: #aaa;
-            font-size: 12px;
+            color: #555;
+            font-size: 11px;
+            letter-spacing: 1px;
         }
 
-        .change-list {
-            list-style: none;
-        }
-
+        /* ── CHANGE LIST ── */
+        .change-list { list-style: none; }
         .change-list li {
-            margin-bottom: 10px;
-            font-size: 14px;
-            line-height: 1.6;
             display: flex;
             align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.65;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.2s, border-color 0.2s;
         }
+        .change-list li:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.08);
+        }
+        .change-list li:last-child { margin-bottom: 0; }
 
-        .change-list li::before {
-            content: ">>";
-            color: #ff007f;
-            margin-right: 10px;
+        /* ── HIGHLIGHT GAMEPLAY ── */
+        .change-list li.highlight-gameplay {
+            background: rgba(0,255,204,0.04);
+            border: 1px solid rgba(0,255,204,0.18);
+            position: relative;
+        }
+        .change-list li.highlight-gameplay::after {
+            content: '★ GAMEPLAY';
+            position: absolute;
+            top: 6px; right: 8px;
+            font-size: 8px;
+            letter-spacing: 2px;
+            color: #00ffcc;
+            opacity: 0.5;
             font-weight: bold;
         }
+        .change-list li.highlight-gameplay:hover {
+            background: rgba(0,255,204,0.07);
+            border-color: rgba(0,255,204,0.35);
+            box-shadow: 0 0 10px rgba(0,255,204,0.08);
+        }
 
+        /* ── TAGS ── */
         .tag {
-            display: inline-block;
-            padding: 2px 6px;
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-right: 8px;
+            letter-spacing: 1px;
             border: 1px solid currentColor;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 2px;
         }
+        .tag-new      { color: #00ffcc; background: rgba(0,255,204,0.08); }
+        .tag-fix      { color: #ffaa00; background: rgba(255,170,0,0.08); }
+        .tag-balance  { color: #ffff00; background: rgba(255,255,0,0.08); }
+        .tag-improved { color: #aa88ff; background: rgba(170,136,255,0.08); }
 
-        .tag-new { color: #00ffcc; }
-        .tag-fix { color: #ffaa00; }
-        .tag-balance { color: #ffff00; }
-
-        .btn-back {
-            display: block;
-            width: 200px;
-            margin: 30px auto 0;
-            padding: 12px;
-            background: #111;
-            border: 2px solid #00ffcc;
-            color: #00ffcc;
+        /* ── ENTRY CONTENT ── */
+        .entry-title {
             font-weight: bold;
-            text-decoration: none;
-            text-align: center;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            font-family: inherit;
+            margin-bottom: 3px;
         }
+        .entry-title.c-cyan  { color: #00ffcc; }
+        .entry-title.c-gold  { color: #ffaa00; }
+        .entry-title.c-yellow{ color: #ffff00; }
+        .entry-title.c-purple{ color: #aa88ff; }
 
-        .btn-back:hover {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 15px #00ffcc;
-            cursor: pointer;
+        /* ── LOST RECORD ── */
+        .version-lost {
+            border-color: rgba(255,0,127,0.3);
+            background: rgba(255,0,127,0.02);
         }
+        .version-lost::before { background: #ff007f; box-shadow: 0 0 8px #ff007f; }
+        .version-lost .version-title { color: #ff007f; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #05050d;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #ff007f;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #ff0055;
-        }
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #03030a; }
+        ::-webkit-scrollbar-thumb { background: #ff007f; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff0055; }
     </style>
 </head>
-
 <body>
+<div class="container">
 
-    <div class="container">
-        <h1>NEON OVERDRIVE</h1>
-        <h2>Historial de Sistemas y Actualizaciones</h2>
-
-        <!-- Versión 0.8.4 -->
-        <div class="version-box">
-            <div class="version-header">
-                <span class="version-title">v0.8.4 - Modularización de Enemigos &amp; Rediseño de Jefes</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Arquitectura Modular de Enemigos</div>
-                        Toda la lógica de IA y comportamiento de los enemigos ha sido reestructurada en módulos individuales bajo <span style="color:#00ffcc;">js/enemies/</span>, mejorando drásticamente el rendimiento y la facilidad de mantenimiento.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Activación de Enemigos Avanzados</div>
-                        Se han integrado y balanceado los enemigos Helix Weaver (estelas láser), Binary Aegis (escudos rotativos orbitales) y Vortex Node (atracción gravitatoria y ralentización).
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-balance">Balance</span>
-                    <div>
-                        <div style="color:#ffff00; font-weight:bold; margin-bottom:3px;">Rediseño del Guardián del Núcleo (Jefe Oleada 5)</div>
-                        Rediseñado completamente en 3 fases de combate según comportamiento y color (Defensa Verde, Ataque Naranja, y Colapso Gravitatorio Rojo). Se redujo el spam excesivo de proyectiles y se añadieron embestidas telegiadas.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Presentación Visual y Banda Sonora de Jefes</div>
-                        Se añadió un cartel de advertencia de jefe ("boss-banner") con efecto de distorsión y sacudida de pantalla, barra de vida HUD persistente y sincronización de canciones oficiales (<em>red_hazard_zone.mp3</em> para el Guardián y <em>the_geometric_siege.mp3</em> para Vector Supremo).
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-fix">Solución</span>
-                    <div>
-                        <div style="color:#ffaa00; font-weight:bold; margin-bottom:3px;">Reinicio de Precios de Tienda al Morir</div>
-                        Se solucionó el error donde los costos acumulados de las mejoras de la tienda persistían al morir e iniciar una nueva simulación en Oleada 1.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Botón "Volver al Menú"</div>
-                        Añadida la opción en la pantalla de Game Over para salir al menú principal y limpiar correctamente el estado activo de la simulación.
-                    </div>
-                </li>
-            </ul>
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-title">NEON OVERDRIVE</div>
+        <div class="page-subtitle">Historial de Sistemas &amp; Actualizaciones</div>
+        <div class="header-divider">
+            <span></span>
+            <span class="icon">◈</span>
+            <span></span>
         </div>
-
-        <!-- Versión 0.8.3 -->
-        <div class="version-box version-major">
-            <div class="version-header">
-                <span class="version-title">v0.8.3 - Resolución Adaptativa &amp; Balance de Combate</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Resolución Virtual Fija (1920×1080)</div>
-                        El motor de juego opera siempre en coordenadas lógicas de 1920×1080 sin importar el monitor, garantizando sincronización perfecta en el modo cooperativo online.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Pantalla Completa Adaptativa (Stretch)</div>
-                        El canvas se estira al 100% de la ventana del navegador sin bandas negras. El cursor queda mapeado con precisión a las coordenadas internas del juego.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Frames de Invulnerabilidad (I-Frames)</div>
-                        Al recibir daño, la nave entra en ~0.6s de invulnerabilidad para evitar muertes instantáneas por contacto continuo. La nave parpadea para indicar el estado.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-new">Nuevo</span>
-                    <div>
-                        <div style="color:#00ffcc; font-weight:bold; margin-bottom:3px;">Números de daño recibido</div>
-                        Aparece un texto flotante rojo en negrita con signo negativo (ej: <code>-10</code>, <code>-30</code>) al recibir impactos, indicando exactamente cuánto daño hizo cada fuente enemiga.
-                    </div>
-                </li>
-                <li>
-                    <span class="tag tag-balance">Balance</span>
-                    <div>
-                        <div style="color:#ffff00; font-weight:bold; margin-bottom:6px;">Rebalance de vida de enemigos</div>
-                        Reducción generalizada de HP para que la oleada 2 sea superable con el Blaster inicial:
-                        <ul style="margin-top:8px; padding-left:16px; list-style:none;">
-                            <li style="margin-bottom:4px;">· Común: 70 HP → <strong>42 HP</strong> (−40%) en Ol. 2</li>
-                            <li style="margin-bottom:4px;">· Kamikaze: 40 HP → <strong>26 HP</strong> (−35%) en Ol. 2</li>
-                            <li style="margin-bottom:4px;">· Escudado: 240 HP → <strong>130 HP</strong> (−46%) en Ol. 3</li>
-                            <li style="margin-bottom:4px;">· Elite Gold: 800 HP → <strong>400 HP</strong> (−50%) en Ol. 7</li>
-                            <li style="margin-bottom:4px;">· Jefe Core Guardian (Ol. 5): 7,500 HP → <strong>3,600 HP</strong> (−52%)</li>
-                            <li>· Jefe Vector Supreme (Ol. 10): 18,750 HP → <strong>8,500 HP</strong> (−55%)</li>
-                        </ul>
-                    </div>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.8.2 -->
-        <div class="version-box">
-            <div class="version-header">
-                <span class="version-title">v0.8.2 - Cooperativo Online & Correcciones</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Modo cooperativo online vía WebSockets: sala compartida, sincronización de posición, balas y eventos de oleada entre host y cliente.</li>
-                <li><span class="tag tag-new">Nuevo</span> Sistema de revivir aliados caídos (mantener [R] cerca del compañero).</li>
-                <li><span class="tag tag-fix">Fix</span> Sincronización de XP y créditos con autoridad del host para evitar desincronizaciones.</li>
-                <li><span class="tag tag-fix">Fix</span> Corrección de desincronización de coordenadas en pantallas de diferente resolución.</li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.8.1 -->
-        <div class="version-box">
-            <div class="version-header">
-                <span class="version-title">v0.8.1 - Mando & Accesibilidad</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Soporte completo para mando (Gamepad API): movimiento, dash, disparo y habilidades.</li>
-                <li><span class="tag tag-new">Nuevo</span> Modo cooperativo local (misma pantalla) con jugador 2 via gamepad.</li>
-                <li><span class="tag tag-fix">Fix</span> Corrección del apuntado automático en modo mando para que siempre priorice al enemigo más cercano.</li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.8.0 -->
-        <div class="version-box version-major">
-            <div class="version-header">
-                <span class="version-title">v0.8.0 - Protocolo Bastión & Armamento Pesado</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Mega-Láser de Carga Cuántica (Clic Derecho): Daño masivo y penetrante de 4 fases según el tiempo de carga. Cuidado con el Overheat.</li>
-                <li><span class="tag tag-new">Nuevo</span> Modo Torreta (Barra Espaciadora): Ancla la nave, reduce el daño recibido un 30% y activa la Minigun Vulkan de alta cadencia.</li>
-                <li><span class="tag tag-new">Nuevo</span> Célula de Sobrecarga (Tecla Q): Reinicia cooldowns y activa el modo Turbo-Procesador (recarga 300% más rápida por 4s).</li>
-                <li><span class="tag tag-new">Nuevo</span> Sistema de Calor e Inercia: La minigun se traba por calor y reduce la velocidad de giro de la nave cuando está caliente.</li>
-                <li><span class="tag tag-new">Nuevo</span> Descarga Trasera: Pulso automático detrás de la nave cada 1.5s en modo torreta.</li>
-                <li><span class="tag tag-new">Nuevo</span> Barra de recarga visual para el Mega-Láser en el HUD.</li>
-                <li><span class="tag tag-improved">Mejora</span> Mejoras en la tienda entre oleadas para el Láser, Minigun y Célula Q.</li>
-                <li><span class="tag tag-improved">Mejora</span> Expansión del pool de cartas de nivel con 6 nuevas opciones (Vampirismo, Drones, Segunda Oportunidad, etc.).</li>
-                <li><span class="tag tag-improved">Mejora</span> Selección de armas cíclica con la rueda del ratón (Scroll).</li>
-                <li><span class="tag tag-fix">Fix</span> Corregido el apuntado automático que se encasquillaba en modo torreta.</li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.7.1 -->
-        <div class="version-box">
-            <div class="version-header">
-                <span class="version-title">v0.7.1 - Audio, Balance & Rediseño de Jefes</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Sistema de sonido sintetizado para disparos, explosiones e impactos.</li>
-                <li><span class="tag tag-new">Nuevo</span> Música dinámica para jefes y gameplay normal.</li>
-                <li><span class="tag tag-new">Nuevo</span> Menú de Pausa interactivo con Sliders para controlar volumen de música y SFX.</li>
-                <li><span class="tag tag-new">Nuevo</span> Visualización de Daño y Multiplicador en el HUD.</li>
-                <li><span class="tag tag-improved">Mejora</span> Renombrado el botón de Álbum a **"Mejoras Permanentes"** y añadido botón para reproducir música de menú.</li>
-                <li><span class="tag tag-improved">Mejora</span> **Rediseño de Vector Supreme (Ol. 10):** Ahora tiene 3 fases únicas (Anillos, Láseres y Clones Kamikaze).</li>
-                <li><span class="tag tag-improved">Mejora</span> **Balance de Tienda:** Los precios de Vida y Daño escalan un 50% con cada compra.</li>
-                <li><span class="tag tag-improved">Mejora</span> **Sistema de Armadura:** Enemigos pesados reducen el daño por impacto.</li>
-                <li><span class="tag tag-improved">Mejora</span> Balance de vida de enemigos (escalado duplicado).</li>
-                <li><span class="tag tag-fix">Fix</span> Corregido error de NaN en los textos de daño al golpear ciertos enemigos.</li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.7.0 -->
-        <div class="version-box version-major">
-            <div class="version-header">
-                <span class="version-title">v0.7.0 - Actualización de Enemigos</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Jefe de la Oleada 5 mejorado con máquina de estados (Dash, Láser y Esbirros).</li>
-                <li><span class="tag tag-new">Nuevo</span> Enemigo "Vortex Node" (Atracción y ralentización).</li>
-                <li><span class="tag tag-new">Nuevo</span> Enemigo "Helix Weaver" (Barreras láser de daño crítico).</li>
-                <li><span class="tag tag-new">Nuevo</span> Enemigo "Binary Aegis" (Escudos rotativos que bloquean balas).</li>
-                <li><span class="tag tag-new">Nuevo</span> Enemigo "EMP Stalker" (Invisibilidad e inhabilitación de habilidades).</li>
-                <li><span class="tag tag-new">Nuevo</span> Jefe Final de la Oleada 10 "Vector Supreme" con 3 fases de combate.</li>
-                <li><span class="tag tag-balance">Balance</span> Progresión de aparición de enemigos según la dificultad de la oleada.</li>
-            </ul>
-        </div>
-
-        <!-- Versión 0.6.3 -->
-        <div class="version-box">
-            <div class="version-header">
-                <span class="version-title">v0.6.3 - Estado Actual</span>
-                <span class="version-date">Mayo 2026</span>
-            </div>
-            <ul class="change-list">
-                <li><span class="tag tag-new">Nuevo</span> Sistema de autoridad del Host para la experiencia (XP).</li>
-                <li><span class="tag tag-new">Nuevo</span> Sistema de chat integrado para el modo cooperativo online.</li>
-                <li><span class="tag tag-new">Nuevo</span> Eventos dinámicos en oleadas (Extractor, Sobrecarga, Portales, Bloqueo y Anomalía).</li>
-                <li><span class="tag tag-fix">Mejora</span> Sistema de subida de nivel optimizado con temporizador de 15s y selección automática.</li>
-                <li><span class="tag tag-new">Nuevo</span> Mecánica de reanimación de aliados caídos manteniendo pulsada la tecla [R] o botón del mando.</li>
-                <li><span class="tag tag-fix">Mejora</span> Auto-revivir a jugadores caídos al terminar la oleada con 1 HP.</li>
-                <li><span class="tag tag-balance">Balance</span> Ajustes en el daño del Cañón Plasma y radio de efecto (AoE).</li>
-            </ul>
-        </div>
-
-        <!-- Registro de perdida -->
-        <div class="version-box" style="border-color: rgba(255, 0, 127, 0.5); background: rgba(255, 0, 127, 0.02);">
-            <div class="version-header" style="border-color: rgba(255, 0, 127, 0.3);">
-                <span class="version-title" style="color: #ff007f;">v0.6.2 y anteriores</span>
-                <span class="version-date">Datos Perdidos</span>
-            </div>
-            <ul class="change-list">
-                <li style="color: #888;">El historial de cambios detallado de las versiones anteriores a la 0.6.3 no fue registrado en este archivo.</li>
-                <li style="color: #888;">A partir de este punto, registraremos aquí todos los cambios futuros para llevar un control estricto del desarrollo.</li>
-            </ul>
-        </div>
-
-        <a href="p.html" class="btn-back">VOLVER AL SIMULADOR</a>
     </div>
 
-</body>
+    <!-- Botón volver -->
+    <a href="p.html" class="btn-back">
+        <span>◀</span>
+        <span>VOLVER AL SIMULADOR</span>
+    </a>
 
+    <!-- ══════════════════════════════════════════════════════
+         v0.9.0  (MAJOR) — KINETIC COLLAPSE
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-major" style="animation-delay:0.0s; border-color:rgba(212,175,55,0.5); background:rgba(6,5,2,0.95); box-shadow:0 0 20px rgba(212,175,55,0.1);">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(to bottom,#d4af37,#ff8800);border-radius:12px 0 0 12px;box-shadow:0 0 14px #d4af37;"></div>
+        <div class="version-header">
+            <span class="version-title version-title-glow" style="color:#d4af37; text-shadow:0 0 12px rgba(212,175,55,0.7), 0 0 28px rgba(255,136,0,0.3);">
+                v0.9.0 — KINETIC COLLAPSE
+                <span class="major-badge" style="border-color:rgba(212,175,55,0.6); color:#d4af37; background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(255,136,0,0.1));">◈ ACTUALIZACIÓN MAYOR</span>
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+
+            <!-- OVERLORD APEX -->
+            <li class="highlight-gameplay" style="background:rgba(212,175,55,0.05); border-color:rgba(212,175,55,0.25);">
+                <span class="tag tag-new" style="color:#d4af37; background:rgba(212,175,55,0.1); border-color:#d4af37;">Nuevo</span>
+                <div>
+                    <div class="entry-title" style="color:#d4af37;">OVERLORD APEX — The Kinetic Architect (Jefe Oleada 15)</div>
+                    El titán definitivo. 14,000 HP, 3 fases mecánicas únicas que exigen el dominio total del arsenal:
+                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                        <li style="margin-bottom:4px;">⬡ <strong style="color:#d4af37;">Fase 1 — La Jaula de Vectores:</strong> Clava 4 pilares en las esquinas conectados por láseres rojos. Destruye los pilares con la Minigun en Modo Torreta antes de que la jaula se cierre (10s).</li>
+                        <li style="margin-bottom:4px;">⬡ <strong style="color:#ffaa00;">Fase 2 — Inversión Magnética:</strong> Controles completamente invertidos. Cada disparo genera retroceso físico real. Usa el Dash para contrarrestar el empuje de tus propias armas.</li>
+                        <li>⬡ <strong style="color:#ff2200;">Fase 3 — Muro de Ejecución:</strong> Inmune a balas normales. Un muro láser avanza desde la izquierda acelerando. Solo el Mega-Láser Crítico (3s de carga) puede dañarlo. El mando vibra al máximo.</li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Flux Nullifier -->
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Flux Nullifier — Supresor de Torreta (Oleada 11+)</div>
+                    Pirámide invertida de Titanio Blanco que orbita a 280px. Detecta si el jugador está anclado en Modo Torreta y proyecta un <strong>Haz de Supresión</strong> que triplica la acumulación de calor de la Minigun. Contramedida: Dash [Shift] para salir del cono y destruirlo en movimiento.
+                </div>
+            </li>
+
+            <!-- Glitch Weaver -->
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Glitch Weaver — Interferencia de Pantalla (Oleada 12+)</div>
+                    Entramado magenta que se teletransporta a micro-distancias cada 0.4–0.75s, burlando el auto-apuntado. Mientras esté vivo, el HUD parpadea y falla: barras de HP, retícula y cooldowns desaparecen temporalmente. Requiere Apuntado Manual para predecir su reaparición.
+                </div>
+            </li>
+
+            <!-- Singularity Sentinel -->
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Singularity Sentinel — Escudo Cuántico (Oleada 13+)</div>
+                    Anillo doble dorado que proyecta un <strong>Enlace Cuántico</strong> al enemigo con más HP en pantalla. El objetivo enlazado es 100% inmune y el daño recibido se redirige al Sentinel. Drop garantizado de Cristal. Contramedida: Pulso [E] para despejar la horda y Mega-Láser Crítico para romper el enlace.
+                </div>
+            </li>
+
+            <!-- Mecánicas de fase -->
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Inversión de Controles — Sistema de Física Dinámica</div>
+                    Durante la Fase 2 del Overlord Apex, los controles de movimiento se invierten globalmente (W=abajo, A=derecha). La pantalla se tiñe de ámbar y el HUD muestra el indicador <code>⚠ CONTROLES INVERTIDOS</code>. El retroceso de armas empuja físicamente la nave en dirección opuesta al disparo.
+                </div>
+            </li>
+
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Muro Láser Dinámico — Render de Fase Final</div>
+                    El Muro de Ejecución es un gradiente vertical de plasma que avanza desde el borde izquierdo acelerando cada ciclo. Daño continuo al contacto. Se renderiza con glow y línea central blanca sobre todos los elementos del canvas.
+                </div>
+            </li>
+
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Pilares de la Jaula — Objetos Destructibles en Mapa</div>
+                    4 rombos dorados en las esquinas con HP individual (400 cada uno) y barra de vida propia. Las líneas láser entre pilares vivos se renderizan en tiempo real. Al destruir el último pilar se activa la transición de fase con explosión masiva.
+                </div>
+            </li>
+
+            <!-- Vibración gamepad -->
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Vibración de Mando en Fase Final (Gamepad API)</div>
+                    La Fase 3 del Overlord Apex activa vibración dual-rumble máxima (strongMagnitude: 1.0) en el mando cada segundo, escalando la tensión del combate.
+                </div>
+            </li>
+
+            <!-- Bestiario actualizado -->
+            <li>
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Bestiario — Secciones V y VI añadidas</div>
+                    Nuevas secciones en <code>bestiary.html</code>: <em>Protocolo Post-Vector</em> (Flux Nullifier, Glitch Weaver, Singularity Sentinel) y <em>Clase Titán</em> (Overlord Apex). Cada entrada incluye canvas animado, estadísticas, mecánicas y lore forense completo.
+                </div>
+            </li>
+
+            <!-- Logro -->
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Logro Legendario — Núcleo Cinético</div>
+                    Derrotar al Overlord Apex desbloquea el artefacto permanente <strong>Núcleo Cinético</strong> y muestra el mensaje de logro legendario en pantalla.
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.5
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.05s">
+        <div class="version-header">
+            <span class="version-title">
+                v0.8.5 — Registro de Amenazas &amp; Correcciones
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Bestiario — Registro de Amenazas</div>
+                    Nueva página <code>bestiary.html</code> accesible desde el menú. Muestra todos los enemigos con representación visual animada en canvas, estadísticas completas (HP, velocidad, daño, XP, créditos, drops), descripción de mecánicas y lore forense expandible.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Botón "Registro de Amenazas" en el Menú Principal</div>
+                    Acceso directo al bestiario desde el menú de inicio, abre en nueva pestaña para no interrumpir la sesión.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Navegación de menús con mando corregida</div>
+                    <code>menuNavCooldown</code> no estaba declarada ni decrementándose, causando que el cursor saltara múltiples opciones con un solo movimiento del stick. Ahora se inicializa en <code>data.js</code> y se decrementa cada frame.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Cooldown del Dash escala correctamente con Hiperimpulso</div>
+                    El Motor Hiperimpulso ahora reduce el cooldown del Dash en 5 frames por nivel (máx. nivel 5: 65→40 frames), tanto en teclado como en mando.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Escudo del Jugador 2 se recarga al inicio de cada oleada</div>
+                    En modo cooperativo, el escudo del J2 no se recargaba si el artefacto Generador de Matriz estaba activo. Corregido para ambos jugadores.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Variable global <code>lastShot</code> eliminada</div>
+                    Remanente de versión anterior en <code>data.js</code>. Cada jugador ya gestiona su propio <code>pObj.lastShot</code> internamente.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.4
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.1s">
+        <div class="version-header">
+            <span class="version-title">v0.8.4 — Modularización de Enemigos &amp; Rediseño de Jefes</span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Arquitectura Modular de Enemigos</div>
+                    Toda la lógica de IA se reestructuró en módulos individuales bajo <code>js/enemies/</code>, mejorando rendimiento y mantenimiento.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Activación de Enemigos Avanzados</div>
+                    Integrados y balanceados: <strong>Helix Weaver</strong> (estelas láser), <strong>Binary Aegis</strong> (escudos rotativos orbitales) y <strong>Vortex Node</strong> (atracción gravitatoria y ralentización).
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-balance">Balance</span>
+                <div>
+                    <div class="entry-title c-yellow">Rediseño del Guardián del Núcleo (Jefe Oleada 5)</div>
+                    Rediseñado en 3 fases de combate: Defensa Verde, Ataque Naranja y Colapso Gravitatorio Rojo. Se redujo el spam de proyectiles y se añadieron embestidas teledirigidas.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Presentación Visual y Banda Sonora de Jefes</div>
+                    Cartel de advertencia ("boss-banner") con distorsión y sacudida de pantalla, barra de vida HUD persistente y música sincronizada por jefe.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Reinicio de Precios de Tienda al Morir</div>
+                    Los costos acumulados de mejoras ya no persisten al iniciar una nueva simulación.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Botón "Volver al Menú" en Game Over</div>
+                    Opción para salir al menú principal limpiando correctamente el estado de la simulación.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.3  (MAJOR)
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-major" style="animation-delay:0.15s">
+        <div class="version-header">
+            <span class="version-title version-title-glow">
+                v0.8.3 — Resolución Adaptativa &amp; Balance de Combate
+                <span class="major-badge">◈ ACTUALIZACIÓN</span>
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Resolución Virtual Fija (1920×1080)</div>
+                    El motor opera siempre en coordenadas lógicas de 1920×1080, garantizando sincronización perfecta en cooperativo online.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Pantalla Completa Adaptativa (Stretch)</div>
+                    El canvas se estira al 100% de la ventana sin bandas negras. El cursor queda mapeado con precisión a las coordenadas internas.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Frames de Invulnerabilidad (I-Frames)</div>
+                    Al recibir daño, la nave entra en ~0.6s de invulnerabilidad para evitar muertes instantáneas por contacto continuo. La nave parpadea para indicar el estado.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Números de Daño Recibido</div>
+                    Texto flotante rojo en negrita (ej: <code>-10</code>, <code>-30</code>) al recibir impactos, indicando exactamente cuánto daño hizo cada fuente enemiga.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-balance">Balance</span>
+                <div>
+                    <div class="entry-title c-yellow">Rebalance General de Vida de Enemigos</div>
+                    Reducción generalizada de HP para que la oleada 2 sea superable con el Blaster inicial:
+                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                        <li style="margin-bottom:3px;">· Común: 70 → <strong style="color:#fff">42 HP</strong> (−40%) en Ol. 2</li>
+                        <li style="margin-bottom:3px;">· Kamikaze: 40 → <strong style="color:#fff">26 HP</strong> (−35%) en Ol. 2</li>
+                        <li style="margin-bottom:3px;">· Escudado: 240 → <strong style="color:#fff">130 HP</strong> (−46%) en Ol. 3</li>
+                        <li style="margin-bottom:3px;">· Elite Gold: 800 → <strong style="color:#fff">400 HP</strong> (−50%) en Ol. 7</li>
+                        <li style="margin-bottom:3px;">· Core Guardian (Ol. 5): 7,500 → <strong style="color:#fff">3,600 HP</strong> (−52%)</li>
+                        <li>· Vector Supreme (Ol. 10): 18,750 → <strong style="color:#fff">8,500 HP</strong> (−55%)</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.2
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.2s">
+        <div class="version-header">
+            <span class="version-title">v0.8.2 — Cooperativo Online &amp; Correcciones</span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Modo Cooperativo Online (WebSockets)</div>
+                    Sala compartida, sincronización de posición, balas y eventos de oleada entre host y cliente en tiempo real.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Sistema de Revivir Aliados</div>
+                    Mantén <code>[R]</code> cerca del compañero caído para reanimarlo durante el combate.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Sincronización de XP y Créditos</div>
+                    Autoridad del host para evitar desincronizaciones de progresión entre jugadores.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Desincronización de Coordenadas</div>
+                    Corregida la desincronización en pantallas de diferente resolución.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.1
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.25s">
+        <div class="version-header">
+            <span class="version-title">v0.8.1 — Mando &amp; Accesibilidad</span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Soporte Completo para Mando (Gamepad API)</div>
+                    Movimiento, dash, disparo y habilidades especiales totalmente mapeados al gamepad.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Cooperativo Local (Misma Pantalla)</div>
+                    Jugador 2 puede unirse con un gamepad en la misma máquina sin necesidad de conexión online.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Apuntado Automático en Modo Mando</div>
+                    Corregido para que siempre priorice al enemigo más cercano correctamente.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.8.0  (MAJOR)
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-major" style="animation-delay:0.3s">
+        <div class="version-header">
+            <span class="version-title version-title-glow">
+                v0.8.0 — Protocolo Bastión &amp; Armamento Pesado
+                <span class="major-badge">◈ ACTUALIZACIÓN MAYOR</span>
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Mega-Láser de Carga Cuántica (Clic Derecho)</div>
+                    Daño masivo y penetrante en 4 fases según el tiempo de carga. Cuidado con el Overheat.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Modo Torreta (Barra Espaciadora)</div>
+                    Ancla la nave, reduce el daño recibido un 30% y activa la Minigun Vulkan de alta cadencia.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Célula de Sobrecarga (Tecla Q)</div>
+                    Reinicia todos los cooldowns y activa el modo Turbo-Procesador (recarga 300% más rápida por 4s).
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Sistema de Calor e Inercia</div>
+                    La minigun se traba por calor y reduce la velocidad de giro de la nave cuando está sobrecalentada.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Descarga Trasera Automática</div>
+                    Pulso automático detrás de la nave cada 1.5s mientras el modo torreta está activo.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Barra de Recarga del Mega-Láser en HUD</div>
+                    Indicador visual de cooldown del láser integrado en el panel de estado.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Expansión del Pool de Cartas de Nivel</div>
+                    6 nuevas opciones de mejora al subir de nivel: Vampirismo, Drones, Segunda Oportunidad y más.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Selección de Armas con Rueda del Ratón</div>
+                    Cambia de arma cíclicamente usando el scroll del ratón durante el combate.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Apuntado Automático en Modo Torreta</div>
+                    Corregido el encasquillamiento del apuntado al activar el modo torreta.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.7.1
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.35s">
+        <div class="version-header">
+            <span class="version-title">v0.7.1 — Audio, Balance &amp; Rediseño de Jefes</span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Sistema de Sonido Sintetizado</div>
+                    Efectos de sonido para disparos, explosiones e impactos generados proceduralmente.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Música Dinámica</div>
+                    Pistas diferenciadas para jefes y gameplay normal con transiciones automáticas.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Menú de Pausa con Control de Volumen</div>
+                    Sliders independientes para música y efectos de sonido accesibles con <code>[P]</code>.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Visualización de Daño y Multiplicador en HUD</div>
+                    El panel muestra el daño base actual y el multiplicador activo en tiempo real.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Rediseño de Vector Supreme (Ol. 10)</div>
+                    Ahora tiene 3 fases únicas: Anillos de Plasma, Láseres Giratorios y Clones Kamikaze.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Sistema de Armadura en Enemigos Pesados</div>
+                    Los enemigos de tipo pesado reducen el daño por impacto, requiriendo estrategia de arma.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Balance de Tienda — Precios Escalables</div>
+                    Los precios de Vida y Daño escalan un 50% con cada compra para evitar snowball.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.7.0  (MAJOR)
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-major" style="animation-delay:0.4s">
+        <div class="version-header">
+            <span class="version-title version-title-glow">
+                v0.7.0 — Actualización de Enemigos
+                <span class="major-badge">◈ ACTUALIZACIÓN MAYOR</span>
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Jefe Oleada 5 — Máquina de Estados</div>
+                    Rediseñado con comportamientos de Dash, Láser y Convocación de Esbirros según fase de vida.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Enemigo: Vortex Node</div>
+                    Genera un campo gravitatorio que atrae al jugador y ralentiza sus movimientos.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Enemigo: Helix Weaver</div>
+                    Despliega barreras láser helicoidales de daño crítico que cruzan el campo de batalla.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Enemigo: Binary Aegis</div>
+                    Porta escudos rotativos orbitales que bloquean proyectiles desde ciertos ángulos.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Enemigo: EMP Stalker</div>
+                    Se vuelve invisible y deshabilita las habilidades especiales del jugador al contacto.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Jefe Final: Vector Supreme (Oleada 10)</div>
+                    Jefe final con 3 fases de combate completamente diferenciadas y banda sonora propia.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-balance">Balance</span>
+                <div>
+                    <div class="entry-title c-yellow">Progresión de Aparición de Enemigos</div>
+                    Cada tipo de enemigo se introduce gradualmente según la dificultad de la oleada actual.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.6.3
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box" style="animation-delay:0.45s">
+        <div class="version-header">
+            <span class="version-title">v0.6.3 — Eventos Dinámicos &amp; Cooperativo</span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Eventos Dinámicos en Oleadas</div>
+                    Cinco tipos de eventos aleatorios durante el combate: Extractor, Sobrecarga, Portales, Bloqueo y Anomalía.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Mecánica de Reanimación de Aliados</div>
+                    Mantén <code>[R]</code> o el botón del mando cerca del aliado caído para reanimarlo con HP parcial.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Chat Integrado para Cooperativo Online</div>
+                    Sistema de mensajes en tiempo real entre jugadores durante la partida.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-new">Nuevo</span>
+                <div>
+                    <div class="entry-title c-cyan">Autoridad del Host para XP</div>
+                    El host controla la distribución de experiencia para evitar desincronizaciones.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Sistema de Subida de Nivel Optimizado</div>
+                    Temporizador de 15s con selección automática si el jugador no elige a tiempo.
+                </div>
+            </li>
+            <li>
+                <span class="tag tag-improved">Mejora</span>
+                <div>
+                    <div class="entry-title c-purple">Auto-Revivir al Terminar Oleada</div>
+                    Los jugadores caídos se reaniman automáticamente con 1 HP al inicio de la siguiente oleada.
+                </div>
+            </li>
+            <li class="highlight-gameplay">
+                <span class="tag tag-balance">Balance</span>
+                <div>
+                    <div class="entry-title c-yellow">Ajustes del Cañón Plasma</div>
+                    Daño y radio de efecto (AoE) rebalanceados para que sea viable sin dominar el meta.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.6.2 y anteriores
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-lost" style="animation-delay:0.5s">
+        <div class="version-header">
+            <span class="version-title">v0.6.2 y anteriores — Datos Perdidos</span>
+            <span class="version-date">Sin registro</span>
+        </div>
+        <ul class="change-list">
+            <li>
+                <span class="tag tag-fix">Nota</span>
+                <div style="color:#666;">
+                    El historial detallado de versiones anteriores a la 0.6.3 no fue registrado. A partir de este punto se lleva control estricto de todos los cambios.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Botón volver (abajo también) -->
+    <a href="p.html" class="btn-back" style="margin-top:10px;">
+        <span>◀</span>
+        <span>VOLVER AL SIMULADOR</span>
+    </a>
+
+</div>
+</body>
 </html>

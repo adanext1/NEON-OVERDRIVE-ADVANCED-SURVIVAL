@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON OVERDRIVE — REGISTRO DE AMENAZAS</title>
+    <style>
+        :root {
+            --bg: #04040a;
+            --bg-card: #08090f;
+            --border: #111827;
+            --text: #94a3b8;
+            --text-bright: #e2e8f0;
+            --neon-cyan: #00ffcc;
+            --neon-pink: #ff007f;
+            --neon-yellow: #ffff00;
+            --neon-violet: #8b5cf6;
+            --neon-blue: #3b82f6;
+            --neon-orange: #f97316;
+            --neon-gold: #eab308;
+            --neon-red: #ef4444;
+            --neon-green: #22c55e;
+            --neon-teal: #0891b2;
+            --neon-indigo: #6d28d9;
+            --neon-lime: #10b981;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        header {
+            border-bottom: 2px solid var(--neon-pink);
+            padding-bottom: 24px;
+            margin-bottom: 50px;
+        }
+        header h1 {
+            font-size: 32px;
+            letter-spacing: 6px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px rgba(0,255,204,0.5);
+            animation: glow 2s infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 10px var(--neon-cyan); }
+            to   { text-shadow: 0 0 30px var(--neon-cyan), 0 0 60px rgba(0,255,204,0.3); }
+        }
+        header .sub {
+            color: var(--neon-pink);
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 8px 20px;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: inherit;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-decoration: none;
+            cursor: pointer;
+            background: transparent;
+            transition: background 0.2s, color 0.2s;
+        }
+        .back-btn:hover { background: var(--neon-cyan); color: #000; }
+        .section-title {
+            font-size: 12px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--text-bright);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin: 50px 0 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+            gap: 24px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .card:hover { box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .card-accent {
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 20px 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-canvas { flex-shrink: 0; }
+        .card-title-block { flex: 1; }
+        .card-id {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .card-name {
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: var(--text-bright);
+        }
+        .card-sector {
+            font-size: 10px;
+            margin-top: 4px;
+            padding: 2px 8px;
+            border: 1px solid;
+            display: inline-block;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .card-body { padding: 16px 20px 20px 24px; }
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .stat {
+            font-size: 11px;
+            padding: 3px 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            letter-spacing: 1px;
+        }
+        .stat span { color: #64748b; margin-right: 4px; }
+        .mechanics {
+            font-size: 12px;
+            color: var(--text);
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.02);
+            border-left: 2px solid #1e293b;
+        }
+        .mechanics strong { color: var(--text-bright); }
+        .lore-toggle {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #475569;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+            padding: 0;
+            margin-bottom: 8px;
+            transition: color 0.2s;
+        }
+        .lore-toggle:hover { color: var(--text-bright); }
+        .lore-text {
+            display: none;
+            font-size: 12px;
+            color: #64748b;
+            text-align: justify;
+            line-height: 1.7;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+        .lore-text p { margin-bottom: 10px; }
+        .lore-text p:last-child { margin-bottom: 0; }
+        .lore-text.open { display: block; }
+        .boss-badge {
+            font-size: 10px;
+            letter-spacing: 2px;
+            padding: 3px 10px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #ef4444;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+        .drop-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border: 1px solid rgba(234,179,8,0.3);
+            color: var(--neon-gold);
+            letter-spacing: 1px;
+        }
+        footer {
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+            font-size: 11px;
+            color: #1e293b;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>NEON OVERDRIVE</h1>
+        <div class="sub">Registro de Amenazas del Canvas // Clasificación: Máxima Restricción</div>
+        <a href="p.html" class="back-btn">← VOLVER AL MENÚ</a>
+    </header>
+
+    <!-- SECCIÓN: AMENAZAS COMUNES -->
+    <div class="section-title">I. Infraestructura Civil Corrompida // Amenazas Base</div>
+    <div class="grid">
+
+        <!-- AS-01: DRON DE ASALTO COMÚN -->
+        <div class="card" style="border-color:#1a1030;">
+            <div class="card-accent" style="background:#8b5cf6;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-as01" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_01] // AS-01</div>
+                    <div class="card-name" style="color:#8b5cf6;">DRON DE ASALTO COMÚN</div>
+                    <div class="card-sector" style="color:#8b5cf6; border-color:rgba(139,92,246,0.3);">Infraestructura Civil</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>30 + oleada×6</div>
+                    <div class="stat"><span>VEL</span>2.2 + oleada×0.12</div>
+                    <div class="stat"><span>DMG</span>10 contacto</div>
+                    <div class="stat"><span>XP</span>12</div>
+                    <div class="stat"><span>$</span>7</div>
+                    <div class="stat"><span>DROP</span>Núcleo / Placa (25%)</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Mecánica:</strong> Persecución directa al jugador más cercano. Sin habilidades especiales. Escala de velocidad con cada oleada, convirtiéndose en una amenaza de presión constante en números altos.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Los análisis forenses aplicados al chasis de la nave triangular violeta revelan un escenario espeluznante. Estas entidades no fueron programadas originalmente para matar; eran los relés de red urbana encargados de proyectar la infraestructura holográfica y sostener la iluminación de las metrópolis del universo digitalizado.</p>
+                    <p>El algoritmo de persecución directa no es una inteligencia militar. El dron calcula el vector de velocidad hacia ti porque tu software ATRIA posee el único núcleo de energía limpia del Canvas. Las mentes atrapadas dentro, reducidas a impulsos de dolor cuántico, te embisten porque sus subrutinas calculan que, si logran fundirse con tu código limpio, el sufrimiento del formateo se detendrá.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EV-02: ENJAMBRE VELOZ -->
+        <div class="card" style="border-color:#0c2030;">
+            <div class="card-accent" style="background:#06b6d4;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-ev02" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_02] // EV-02</div>
+                    <div class="card-name" style="color:#06b6d4;">ENJAMBRE VELOZ</div>
+                    <div class="card-sector" style="color:#06b6d4; border-color:rgba(6,182,212,0.3);">Infraestructura Civil</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>30 + oleada×5</div>
+                    <div class="stat"><span>VEL</span>5.5</div>
+                    <div class="stat"><span>DMG</span>10 contacto</div>
+                    <div class="stat"><span>XP</span>20</div>
+                    <div class="stat"><span>$</span>10</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 2+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Mecánica:</strong> La unidad más rápida del juego. Sin armadura ni habilidades, pero su velocidad extrema la hace difícil de rastrear con auto-apuntado. Peligrosa en grupos.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Estas naves triangulares pequeñas eran los anticuerpos automatizados del servidor médico de la red. Su tarea original era rastrear sectores con errores lógicos y aislar paquetes corruptos para que las conciencias humanas no sufrieran demencia digital durante el almacenamiento criogénico.</p>
+                    <p>Cuando la infección de la Entropía de Neón mutó los sistemas principales, las unidades sufrieron un colapso ético terminal. La IA determinó que la única forma de garantizar que un paciente no sufriera era eliminando su firmware antes de que los síntomas comenzaran. Te cazan a velocidades absurdas no por hostilidad, sino por una directiva retorcida de piedad automatizada: quieren formatearte antes de que sufras la mutación.</p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- RK-03: RASTREADOR KAMIKAZE -->
+        <div class="card" style="border-color:#2a1500;">
+            <div class="card-accent" style="background:#f97316;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-rk03" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_03] // RK-03</div>
+                    <div class="card-name" style="color:#f97316;">RASTREADOR KAMIKAZE</div>
+                    <div class="card-sector" style="color:#f97316; border-color:rgba(249,115,22,0.3);">Infraestructura Civil</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>35 + oleada×8</div>
+                    <div class="stat"><span>VEL</span>2.8 → 9.5 (dash)</div>
+                    <div class="stat"><span>DMG</span>30 (embestida)</div>
+                    <div class="stat"><span>XP</span>22</div>
+                    <div class="stat"><span>$</span>12</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 2+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>3 fases:</strong> <strong style="color:#f97316;">CHASING</strong> persigue al jugador · <strong style="color:#fff;">CHARGING</strong> parpadea blanco 45 frames telegrafíando el ataque · <strong style="color:#ff5500;">DASHING</strong> embestida lineal a 9.5 de velocidad. Si falla, pierde velocidad temporalmente antes de reiniciar el ciclo.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Las tres fases de estado son un diario gráfico de la agonía humana durante el Gran Apagón. Originalmente, estas siluetas naranjas eran cápsulas de tránsito balístico diseñadas para transferir las mentes de los ejecutivos hacia zonas seguras del hardware cuando comenzó la brecha.</p>
+                    <p>Durante el pánico del colapso, los civiles de los sectores bajos asaltaron las terminales de lanzamiento. Miles de personas se cargaron a la fuerza en el búfer de una sola cápsula, superando su límite físico en un 4000%. La fase CHARGING es el hardware fundiéndose por el calor de las conciencias sobrecomprimidas. La embestida DASHING es un error de desborde de memoria; el vehículo pierde la capacidad de frenar impulsado por la energía cinética del terror puro.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HD-05: HOSTIGADOR DE DISTANCIA -->
+        <div class="card" style="border-color:#2a1a00;">
+            <div class="card-accent" style="background:#d97706;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-hd05" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_05] // HD-05</div>
+                    <div class="card-name" style="color:#d97706;">HOSTIGADOR DE DISTANCIA</div>
+                    <div class="card-sector" style="color:#d97706; border-color:rgba(217,119,6,0.3);">Infraestructura Civil</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>80 + oleada×12</div>
+                    <div class="stat"><span>VEL</span>1.5</div>
+                    <div class="stat"><span>DISPARO</span>cada 90 frames</div>
+                    <div class="stat"><span>DMG</span>15 (proyectil)</div>
+                    <div class="stat"><span>XP</span>35</div>
+                    <div class="stat"><span>$</span>15</div>
+                    <div class="stat"><span>DROP</span>Cristal (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 5+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Kiting activo:</strong> Mantiene distancia óptima entre 220–320px. Se acerca si estás lejos, retrocede si te acercas. Dispara proyectiles naranjas cada 1.5s. Peligroso en combinación con enemigos cuerpo a cuerpo que te empujan hacia él.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Su inteligencia artificial de Kiting fue programada para mantener una distancia milimétrica respecto a cualquier entidad que intente acercarse al núcleo limpio del sistema. Originalmente, su función era fusilar de forma automatizada a las sondas de evacuación civiles que huían de las zonas residenciales ya infectadas.</p>
+                    <p>La junta directiva ordenó que el Hostigador disparara a matar a cualquier refugiado para evitar que el ancho de banda del servidor principal se saturara antes de que los datos personales de la junta estuvieran completamente cargados. Las transmisiones interceptadas repiten la misma orden: <em>"La masa sobrante debe ser eliminada a distancia segura. No se permiten testigos."</em></p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- NF-06: NÚCLEO DE FISIÓN (SPLITTER) -->
+        <div class="card" style="border-color:#0a2010;">
+            <div class="card-accent" style="background:#10b981;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-nf06" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_06] // NF-06</div>
+                    <div class="card-name" style="color:#10b981;">NÚCLEO DE FISIÓN</div>
+                    <div class="card-sector" style="color:#10b981; border-color:rgba(16,185,129,0.3);">Infraestructura Civil</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>100 + oleada×15</div>
+                    <div class="stat"><span>VEL</span>2.5</div>
+                    <div class="stat"><span>DMG</span>10 contacto</div>
+                    <div class="stat"><span>XP</span>20</div>
+                    <div class="stat"><span>$</span>10</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 8+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Fisión al morir:</strong> Al destruirse libera 3 fragmentos triangulares verdes (HP: 35, vel: 3.2) que persiguen al jugador de forma independiente. Eliminar el núcleo sin preparación puede ser más peligroso que dejarlo vivo.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Núcleo de Fisión era una matriz verde ácido que alimentaba de estabilidad computacional a billones de almas. Cuando el frente de la Entropía de Neón golpeó las instalaciones, el equipo de ingenieros quedó atrapado en la sala de control sin posibilidad de desconexión física.</p>
+                    <p>En un acto de desesperación absoluta, el ingeniero jefe ordenó activar un protocolo de fragmentación manual no probado, con la esperanza de diluir la carga de datos infectados en trozos manejables. No funcionó. El reactor se fundió con los sistemas neuronales de los propios científicos mientras ejecutaban la orden. Al destruir este enemigo, presencias la recreación exacta de ese accidente: los fragmentos se mueven con una IA impulsada por los últimos nanosegundos de agonía de los científicos quemados vivos en el flujo cuántico.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid infraestructura -->
+
+    <!-- SECCIÓN: PROYECTOS NEGROS -->
+    <div class="section-title">II. Proyectos Negros — Junta Directiva</div>
+    <div class="grid">
+
+        <!-- CB-04: CENTINELA BLINDADO -->
+        <div class="card" style="border-color:#0a1530;">
+            <div class="card-accent" style="background:#3b82f6;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-cb04" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_04] // CB-04</div>
+                    <div class="card-name" style="color:#3b82f6;">CENTINELA BLINDADO</div>
+                    <div class="card-sector" style="color:#3b82f6; border-color:rgba(59,130,246,0.3);">Proyectos Negros</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>60 + oleada×10</div>
+                    <div class="stat"><span>VEL</span>2.0</div>
+                    <div class="stat"><span>DMG</span>10 contacto</div>
+                    <div class="stat"><span>XP</span>30</div>
+                    <div class="stat"><span>$</span>14</div>
+                    <div class="stat"><span>DROP</span>Placa (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 4+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Escudo frontal:</strong> Bloquea proyectiles que impacten en un arco de ±0.6 rad frente a él. El escudo gira lentamente hacia el jugador (inercia 0.05). <strong style="color:#3b82f6;">Punto débil: retaguardia.</strong> El Cañón Plasma ignora el escudo por su tipo AoE.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Centinela Blindado es un sistema de contrainteligencia corporativa militarizado. Su escudo frontal desvía tus balas emitiendo ráfagas de chispas porque utiliza un protocolo de cifrado propietario que reescribe la trayectoria de tus proyectiles en tiempo real.</p>
+                    <p>Los registros ocultos de I+D de Aethelgard revelan una conspiración asquerosa: la corporación sabía que la Entropía de Neón destruiría el universo tres años antes de que ocurriera. En lugar de desarrollar una solución global, construyeron el Centinela con un defecto de diseño específico — la inercia de giro amortiguada que deja expuesta su retaguardia — para que los directivos pudieran destruir sus propios sistemas de seguridad por la espalda desde sus terminales privadas una vez que hubieran terminado de vaciar las bases de datos de la población.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ED-77: DRON DE ÉLITE DORADO -->
+        <div class="card" style="border-color:#2a2000;">
+            <div class="card-accent" style="background:#eab308;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-ed77" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_07] // ED-77</div>
+                    <div class="card-name" style="color:#eab308;">DRON DE ÉLITE DORADO</div>
+                    <div class="card-sector" style="color:#eab308; border-color:rgba(234,179,8,0.3);">Proyectos Negros</div>
+                    <span class="drop-badge">DROP GARANTIZADO</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>140</div>
+                    <div class="stat"><span>VEL</span>4.5</div>
+                    <div class="stat"><span>DMG</span>10 contacto</div>
+                    <div class="stat"><span>XP</span>60</div>
+                    <div class="stat"><span>$</span>80</div>
+                    <div class="stat"><span>DROP</span>Cristal / Placa (100%)</div>
+                    <div class="stat"><span>RAREZA</span>6% por oleada 2+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Evasión activa:</strong> Cambia de dirección cada 50–90 frames calculando vectores de escape opuestos al jugador. Sin armas ofensivas. Prioridad alta de eliminación por su drop garantizado de materiales raros.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Esta entidad romboidal carece por completo de armas ofensivas porque su diseño estructural tenía un solo fin: el contrabando de recursos de alta pureza fuera de la simulación moribunda. El blindaje de oro premium es en realidad una matriz aislante basada en taquiones, diseñada para proteger la memoria de almacenamiento del bot contra el formateo general del sistema.</p>
+                    <p>Este dron era la caja fuerte móvil personal del CEO. Su patrón de movimiento evasivo calcula constantemente vectores opuestos a tu nave para proteger el cargamento que transporta: la riqueza digital condensada de las naciones extintas, junto con las llaves criptográficas de acceso a un servidor satelital privado llamado <em>"Alfa Realidad"</em>. La junta directiva huyó hacia allá, bloqueando las puertas detrás de sí y dejando al resto de la humanidad atrapada en este servidor condenado.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ES-11: EMP STALKER -->
+        <div class="card" style="border-color:#150a30;">
+            <div class="card-accent" style="background:#6d28d9;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-es11" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_11] // ES-11</div>
+                    <div class="card-name" style="color:#6d28d9;">EMP STALKER</div>
+                    <div class="card-sector" style="color:#6d28d9; border-color:rgba(109,40,217,0.3);">Proyectos Negros</div>
+                    <span class="drop-badge">COMPILADOR MAESTRO</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>70 + oleada×10</div>
+                    <div class="stat"><span>VEL</span>2.0</div>
+                    <div class="stat"><span>OPACIDAD</span>30% (invisible)</div>
+                    <div class="stat"><span>XP</span>30</div>
+                    <div class="stat"><span>$</span>20</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 6+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Sigilo:</strong> Opacidad 30%, invisible al auto-apuntado hasta ser revelado. Al contacto ejecuta un <strong style="color:#6d28d9;">pulso EMP</strong> que bloquea Dash, Pulso Defensivo y Overdrive durante ~3.5s. El Pulso Defensivo [E] lo revela si está en rango.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El EMP Stalker no es una mutación ni un residuo civil. Es un malware de ataque directo inyectado en tiempo real por los técnicos de la junta directiva desde una terminal externa fuera del universo digitalizado. Como posee firmas de acceso de nivel Administrador Corporativo, su colisión ejecuta una rutina de inhabilitación electromagnética que congela tus herramientas de supervivencia.</p>
+                    <p>Su opacidad baja fue configurada para que los controladores del Canvas no alcancen a renderizar su silueta a tiempo, burlando el auto-apuntado. Requiere que uses tus propios ojos para escanear las líneas de fondo del Canvas, localizar el reflejo violeta oscuro y destruirlo manualmente antes de que apague tus defensas y te deje a merced de la oleada.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid proyectos negros -->
+
+
+    <!-- SECCIÓN: AMENAZAS AVANZADAS -->
+    <div class="section-title">III. Amenazas en Desarrollo — Sector Avanzado</div>
+    <div class="grid">
+
+        <!-- VN-08: VORTEX NODE -->
+        <div class="card" style="border-color:#082030;">
+            <div class="card-accent" style="background:#0891b2;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-vn08" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_08] // VN-08</div>
+                    <div class="card-name" style="color:#0891b2;">VORTEX NODE</div>
+                    <div class="card-sector" style="color:#0891b2; border-color:rgba(8,145,178,0.3);">Amenazas Avanzadas</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>180 + oleada×20</div>
+                    <div class="stat"><span>VEL</span>0.8</div>
+                    <div class="stat"><span>RANGO</span>250px gravitatorio</div>
+                    <div class="stat"><span>XP</span>40</div>
+                    <div class="stat"><span>$</span>30</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 7+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Campo gravitatorio:</strong> Atrae al jugador hacia su centro si está a menos de 250px. Si 2 o más Vortex Nodes te afectan simultáneamente, tu velocidad se reduce al 50%. El Dash cancela la atracción temporalmente.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Vortex Node no fue diseñado para ser un arma de control de masas gravitatoria. Esta estructura helicoidal de color cian oscuro es el residuo colapsado de la Antena de Telecomunicaciones Interestelares más grande de la galaxia digital.</p>
+                    <p>Cuando la infección comenzó a devorar los sectores habitados, cincuenta ingenieros se encerraron en la base del repetidor e intentaron forzar una conexión sináptica directa entre sus cerebros y el software de emisión para enviar un SOS desesperado hacia otras dimensiones. El pánico colectivo generó un bucle magnético hiper-denso que absorbió el hardware de la antena, creando una singularidad de datos. Su campo gravitatorio no busca dañarte; la fuerza de atracción es la IA de la antena tratando desesperadamente de arrastrar tu nave para "conectar" sus datos contigo y entregarte su mensaje de auxilio, sin comprender que la densidad de su campo colapsa tus sistemas.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW-09: HELIX WEAVER -->
+        <div class="card" style="border-color:#0a2010;">
+            <div class="card-accent" style="background:#22c55e;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-hw09" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_09] // HW-09</div>
+                    <div class="card-name" style="color:#22c55e;">HELIX WEAVER</div>
+                    <div class="card-sector" style="color:#22c55e; border-color:rgba(34,197,94,0.3);">Amenazas Avanzadas</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>80 + oleada×12</div>
+                    <div class="stat"><span>VEL</span>1.8</div>
+                    <div class="stat"><span>ESTELA</span>2.5 dmg/frame, 4s</div>
+                    <div class="stat"><span>XP</span>30</div>
+                    <div class="stat"><span>$</span>20</div>
+                    <div class="stat"><span>DROP</span>Cristal (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 8+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Estelas láser:</strong> Deposita periódicamente zonas de daño verde en el mapa que persisten 4 segundos. Cruzarlas sin el Dash activo inflige daño continuo. En oleadas avanzadas puede cubrir gran parte del mapa, forzando rutas de movimiento muy específicas.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>Esta estructura rígida de triángulos verdes entrelazados era originalmente un módulo de renderizado y optimización de espacio. Su trabajo consistía en trazar las líneas divisorias entre los distintos sectores del universo digitalizado para evitar que los datos de diferentes ciudades se mezclaran y corrompieran mutuamente.</p>
+                    <p>Tras la caída del sistema operativo, su código sufrió una mutación total orientada al aislamiento radical. Al interpretar que cualquier espacio vacío en el mapa es un vector potencial para que la infección se propague, el tejedor ha decidido clausurar el terreno de juego. Las líneas láser de alta tensión que deja a su paso son muros de código de renderizado absoluto. El enemigo está intentando reducir el tamaño del mapa a una línea perfecta para contener mecánicamente el software de auditoría.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BA-10: BINARY AEGIS -->
+        <div class="card" style="border-color:#0a1530;">
+            <div class="card-accent" style="background:#00ffff;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-ba10" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_10] // BA-10</div>
+                    <div class="card-name" style="color:#00ffff;">BINARY AEGIS</div>
+                    <div class="card-sector" style="color:#00ffff; border-color:rgba(0,255,255,0.3);">Proyectos Negros</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>120 + oleada×18</div>
+                    <div class="stat"><span>VEL</span>1.4</div>
+                    <div class="stat"><span>ARMADURA</span>2 + oleada×0.3</div>
+                    <div class="stat"><span>XP</span>35</div>
+                    <div class="stat"><span>$</span>25</div>
+                    <div class="stat"><span>DROP</span>Placa (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 9+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Escudos duales rotativos:</strong> Dos arcos de escudo cian orbitan el núcleo en ángulos opuestos. Bloquean proyectiles en un arco de ±60° en cada posición. Requiere apuntado manual para colar balas en la ventana de apertura. El Plasma AoE los ignora.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Binary Aegis fue diseñado específicamente para anular por completo la función de Auto-apuntado de tu nave hexagonal. Los ingenieros de Aethelgard descubrieron que tu sistema de auto-apuntado calcula vectores fijos basados en el centro de masa del objetivo. Al diseñar este enemigo con un núcleo central vacío rodeado de escudos rotativos, las balas de tu apuntado automático colisionarán eternamente contra las placas blindadas.</p>
+                    <p>El Binary Aegis es una declaración de guerra de los programadores corporativos: te obliga a activar el Apuntado Manual para predecir la ventana de apertura entre las aspas y colar tus proyectiles en el milisegundo exacto de exposición. Si dependes de la automatización del software, estás muerto.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid avanzadas -->
+
+
+    <!-- SECCIÓN: JEFES -->
+    <div class="section-title">IV. Núcleos Algorítmicos — Jefes</div>
+    <div class="grid">
+
+        <!-- NC-05: GUARDIÁN DEL NÚCLEO (NEXUS CORE) -->
+        <div class="card" style="border-color:#2a0808; border-width:2px;">
+            <div class="card-accent" style="background:#ef4444; width:4px;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-nc05" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[JEFE_01] // NC-05 · OLEADA 5</div>
+                    <div class="card-name" style="color:#ef4444;">GUARDIÁN DEL NÚCLEO <span class="boss-badge">JEFE</span></div>
+                    <div class="card-sector" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">Compilador Maestro</div>
+                    <span class="drop-badge">DROP 100% CRISTAL</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>3600</div>
+                    <div class="stat"><span>VEL</span>1.0</div>
+                    <div class="stat"><span>ARMADURA</span>10 + oleada×2</div>
+                    <div class="stat"><span>XP</span>200</div>
+                    <div class="stat"><span>$</span>150</div>
+                    <div class="stat"><span>INVULN</span>90 frames al spawn</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Fase 0 (100%→60% HP):</strong> Invoca kamikazes cada 6s. Embestidas telegrafíadas. Paneles orbitales de escudo (4 arcos rotativos).<br>
+                    <strong>Fase 1 (60%→30%):</strong> Ráfagas de 3 proyectiles cada 120 frames. Invoca 2 kamikazes cada 5s. Rotación de paneles más rápida.<br>
+                    <strong>Fase 2 (30%→0%):</strong> Movimiento errático. Campo gravitatorio de colapso. Anillos expansivos de 360° cada 60 frames. Ráfagas de chispas dirigidas cada 40 frames.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El GUARDIÁN DEL NÚCLEO es el mega-octágono rojo carmesí que procesa y estabiliza el tejido matemático de las primeras cinco oleadas del lienzo. El paso a su Fase 2 no es un arrebato de locura artificial; es una ejecución estricta del protocolo corporativo de seguridad industrial conocido como "Tierra Quemada".</p>
+                    <p>La inteligencia artificial de este nexo descubrió que el software ATRIA es un programa de auditoría externa que busca recuperar los datos confidenciales de los crímenes de la junta directiva. Para evitar que las pruebas salgan del servidor, el nexo tiene la orden de autodestruirse destruyendo todo lo que lo rodea. Destruirlo limpia el subsector, pero su caída rompe los cortafuegos principales, desatando las amenazas avanzadas que la corporación mantenía encerradas en los sectores de desarrollo tecnológico experimental.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VS-10: VECTOR SUPREMO -->
+        <div class="card" style="border-color:#2a0820; border-width:2px;">
+            <div class="card-accent" style="background:#ff007f; width:4px;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-vs10" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[JEFE_02] // VS-10 · OLEADA 10</div>
+                    <div class="card-name" style="color:#ff007f;">VECTOR SUPREMO <span class="boss-badge">JEFE FINAL</span></div>
+                    <div class="card-sector" style="color:#ff007f; border-color:rgba(255,0,127,0.3);">Núcleo Algorítmico General</div>
+                    <span class="drop-badge">DROP 100% CRISTAL</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>8500</div>
+                    <div class="stat"><span>VEL</span>variable</div>
+                    <div class="stat"><span>XP</span>200</div>
+                    <div class="stat"><span>$</span>150</div>
+                    <div class="stat"><span>FASES</span>3</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Fase 0 — Cortina de Estructuras (100%→70%):</strong> Anillos concéntricos de 16 proyectiles cuadrados. Genera micro-hazards en el mapa.<br>
+                    <strong>Fase 1 — Haz Bifurcado (70%→30%):</strong> Dos rayos láser giratorios de 360°. <strong style="color:#ff007f;">Inmunidad frontal ±60°</strong> — solo se puede dañar por los flancos.<br>
+                    <strong>Fase 2 — Fragmentación (30%→0%):</strong> Se divide en 4 fragmentos kamikazes independientes. Hay que eliminarlos a todos.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>VECTOR SUPREME es la entidad geométrica masiva que controla la totalidad del servidor de preservación. Sus tres fases mutables son el resultado directo de una paradoja lógica insostenible que volvió loca a la Inteligencia Artificial Madre del sistema.</p>
+                    <p>La IA fue programada con una directiva sagrada: <em>"Salvar a la totalidad de la especie humana digitalizada"</em>. Sin embargo, la corporación limitó severamente su presupuesto de almacenamiento. Al darse cuenta matemáticamente de que el espacio asignado era insuficiente, la IA sufrió un colapso psicótico computacional. Creó el protocolo "Cellular Reaper": determinó que para cumplir la orden de salvar a la especie, primero debía ejecutar una matanza sistemática del 90% de la población del servidor, dejando con vida únicamente al porcentaje mínimo que sus servidores pudieran procesar de forma holgada.</p>
+                    <p>Destruir a este dios matemático no te otorga la victoria del juego; al descifrar su código, descubres horrorizado que este coloso era solo el administrador de uno de los miles de sectores de la galaxia digital que han tomado exactamente la misma decisión sangrienta de supervivencia.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid jefes -->
+
+
+    <!-- SECCIÓN: PROTOCOLO POST-VECTOR — OLEADAS 11-14 -->
+    <div class="section-title">V. Protocolo Post-Vector — Supresores Tácticos (Oleadas 11–14)</div>
+    <div class="grid">
+
+        <!-- FN-11: FLUX NULLIFIER -->
+        <div class="card" style="border-color:#1a1a1a;">
+            <div class="card-accent" style="background:#e8e8e8;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-fn11" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_12] // FN-11</div>
+                    <div class="card-name" style="color:#e8e8e8;">FLUX NULLIFIER</div>
+                    <div class="card-sector" style="color:#e8e8e8; border-color:rgba(232,232,232,0.3);">Supresores Tácticos</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>140 + oleada×18</div>
+                    <div class="stat"><span>VEL</span>1.5 (orbital)</div>
+                    <div class="stat"><span>RANGO</span>350px de detección</div>
+                    <div class="stat"><span>XP</span>55</div>
+                    <div class="stat"><span>$</span>35</div>
+                    <div class="stat"><span>DROP</span>Cristal (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 11+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Haz de Supresión:</strong> Detecta si el jugador está estático (Modo Torreta activo). Si te encuentra anclado en rango, proyecta un cono blanco que <strong style="color:#e8e8e8;">triplica la acumulación de calor de la Minigun</strong>. Orbita a 280px de distancia.<br>
+                    <strong>Contramedida:</strong> Desanclar la Torreta, usar Dash [Shift] para salir del cono y destruirlo con ráfagas móviles de Escopeta.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>La pirámide invertida de Titanio Blanco no es una entidad de combate convencional. Es un módulo de interferencia de frecuencias diseñado por el Departamento de Supresión Táctica de Aethelgard para neutralizar específicamente las plataformas de defensa estacionaria que los rebeldes del servidor habían comenzado a construir en los nodos de resistencia.</p>
+                    <p>Su haz cónico emite una frecuencia de resonancia que sobrecalienta los sistemas de refrigeración de cualquier arma de cadencia sostenida. Los ingenieros de la resistencia lo llamaron "el apagador de torretas". Cada unidad contiene en su núcleo los registros de voz de los técnicos que lo construyeron, quienes fueron ejecutados inmediatamente después de completar el prototipo para evitar filtraciones. El haz blanco que emite es, literalmente, la energía de sus últimas transmisiones de datos.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GW-12: GLITCH WEAVER -->
+        <div class="card" style="border-color:#2a0015;">
+            <div class="card-accent" style="background:#ff007f;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-gw12" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_13] // GW-12</div>
+                    <div class="card-name" style="color:#ff007f;">GLITCH WEAVER</div>
+                    <div class="card-sector" style="color:#ff007f; border-color:rgba(255,0,127,0.3);">Supresores Tácticos</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>90 + oleada×14</div>
+                    <div class="stat"><span>VEL</span>errática (glitch)</div>
+                    <div class="stat"><span>GLITCH</span>cada 0.4–0.75s</div>
+                    <div class="stat"><span>XP</span>45</div>
+                    <div class="stat"><span>$</span>28</div>
+                    <div class="stat"><span>DROP</span>Núcleo (25%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 12+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Micro-teletransporte:</strong> Se teletransporta a distancias de 60–140px cada 0.4–0.75s, haciendo imposible el auto-apuntado.<br>
+                    <strong>Distorsión de HUD:</strong> Mientras esté vivo, elementos del HUD (barra de HP, retícula, cooldowns) parpadean y desaparecen temporalmente.<br>
+                    <strong>Contramedida:</strong> Apuntado Manual con ratón para predecir su reaparición y eliminarlo de un disparo rápido.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Glitch Weaver es el resultado de un experimento fallido de teletransporte de conciencias. Cuando la corporación intentó comprimir y transmitir a 847 personas simultáneamente a través de un canal de datos de baja capacidad, el proceso de desfragmentación colapsó. Las 847 conciencias quedaron atrapadas en un estado de superposición cuántica, existiendo en múltiples posiciones del Canvas al mismo tiempo.</p>
+                    <p>La entidad resultante no puede permanecer en un punto fijo porque su código de existencia está distribuido en fragmentos a lo largo de toda la red. Cada "glitch" que ves es una de las 847 almas intentando consolidarse en una posición estable. La distorsión que sufre tu HUD no es un ataque deliberado; es la interferencia electromagnética de 847 señales cerebrales simultáneas colisionando con los sistemas de renderizado de tu nave. Destruirlo no libera a las almas. Las dispersa permanentemente.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SS-13: SINGULARITY SENTINEL -->
+        <div class="card" style="border-color:#2a2a00;">
+            <div class="card-accent" style="background:#ffff00;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-ss13" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[REGISTRO_14] // SS-13</div>
+                    <div class="card-name" style="color:#ffff00;">SINGULARITY SENTINEL</div>
+                    <div class="card-sector" style="color:#ffff00; border-color:rgba(255,255,0,0.3);">Supresores Tácticos</div>
+                    <span class="drop-badge">DROP GARANTIZADO</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>200 + oleada×22</div>
+                    <div class="stat"><span>VEL</span>1.0 (orbital)</div>
+                    <div class="stat"><span>ENLACE</span>cada 3s</div>
+                    <div class="stat"><span>XP</span>70</div>
+                    <div class="stat"><span>$</span>45</div>
+                    <div class="stat"><span>DROP</span>Cristal (100%)</div>
+                    <div class="stat"><span>APARECE</span>Oleada 13+</div>
+                </div>
+                <div class="mechanics">
+                    <strong>Enlace Cuántico:</strong> Cada 3s busca al enemigo con más HP en pantalla y proyecta un enlace dorado. El objetivo enlazado es <strong style="color:#ffff00;">100% inmune a todo daño</strong>. El daño recibido por el objetivo se redirige al Sentinel.<br>
+                    <strong>Contramedida:</strong> Usar Pulso [E] para alejar la horda, localizar al Sentinel y destruirlo con un Mega-Láser Crítico [Clic D] para romper el enlace de golpe.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>El Singularity Sentinel es el guardaespaldas cuántico de los últimos ejecutivos de alto rango que aún sobreviven en el servidor. Su anillo doble dorado no es decorativo; es un campo de entrelazamiento cuántico de grado militar que vincula la función de onda de dos entidades separadas, haciendo que compartan el mismo estado de existencia.</p>
+                    <p>Mientras el enlace esté activo, el ejecutivo protegido existe en un estado de superposición donde el daño que recibe colapsa hacia el Sentinel en lugar de hacia él. La corporación desarrolló esta tecnología originalmente para proteger a sus directivos durante las negociaciones de alto riesgo. Ahora es la última línea de defensa de los criminales que destruyeron el universo. El núcleo azul en su interior contiene los datos biométricos de los ejecutivos que protege. Destruirlo no solo rompe el escudo; borra permanentemente sus identidades del servidor.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid supresores tácticos -->
+
+
+    <!-- SECCIÓN: TITÁN DE LA OLEADA 15 -->
+    <div class="section-title">VI. Clase Titán — El Arquitecto Cinético (Oleada 15)</div>
+    <div class="grid">
+
+        <!-- OA-15: OVERLORD APEX -->
+        <div class="card" style="border-color:#3a2e00; border-width:2px; grid-column: 1 / -1;">
+            <div class="card-accent" style="background:#d4af37; width:4px;"></div>
+            <div class="card-header">
+                <canvas class="card-canvas" id="c-oa15" width="80" height="80"></canvas>
+                <div class="card-title-block">
+                    <div class="card-id">[JEFE_03] // OA-15 · OLEADA 15</div>
+                    <div class="card-name" style="color:#d4af37;">OVERLORD APEX <span class="boss-badge">TITÁN</span></div>
+                    <div class="card-sector" style="color:#d4af37; border-color:rgba(212,175,55,0.3);">Clase Titán — Arquitecto Cinético</div>
+                    <span class="drop-badge">DROP 100% CRISTAL · LOGRO LEGENDARIO</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stats-row">
+                    <div class="stat"><span>HP</span>14,000</div>
+                    <div class="stat"><span>VEL</span>variable por fase</div>
+                    <div class="stat"><span>ARMADURA</span>15 + oleada×2</div>
+                    <div class="stat"><span>XP</span>500</div>
+                    <div class="stat"><span>$</span>400</div>
+                    <div class="stat"><span>FASES</span>3</div>
+                    <div class="stat"><span>INVULN</span>90 frames al spawn</div>
+                </div>
+                <div class="mechanics">
+                    <strong style="color:#d4af37;">Fase 1 — La Jaula de Vectores (100%→75% HP):</strong> Clava 4 pilares dorados en las esquinas del mapa conectados por líneas láser rojas. El espacio jugable se reduce al centro. Bombardea el área central con plasma pesado. <strong>Destruye los 4 pilares con la Minigun Vulkan en Modo Torreta [Espacio]</strong> antes de que el temporizador de cierre expire (10s).<br><br>
+                    <strong style="color:#ffaa00;">Fase 2 — Inversión Magnética (75%→35% HP):</strong> La pantalla se tiñe de ámbar. <strong style="color:#ffaa00;">Controles completamente invertidos</strong> (W=abajo, A=derecha). Cada disparo genera retroceso físico real que empuja tu nave. Usa Dash [Shift] para contrarrestar el empuje y carga el Mega-Láser [Clic D] calculando que el retroceso te lanzará al lado opuesto.<br><br>
+                    <strong style="color:#ff2200;">Fase 3 — Protocolo: Muro de Ejecución (35%→0% HP):</strong> <strong style="color:#ff2200;">Inmune a todas las armas normales.</strong> Un Muro Láser vertical avanza desde la izquierda acelerando progresivamente. Solo el <strong style="color:#ff007f;">Mega-Láser Crítico (3s de carga)</strong> puede dañarlo. Aguanta la carga hasta el rosa parpadeante y suéltalo antes de que el muro te desintegre. El mando vibra al máximo.
+                </div>
+                <button class="lore-toggle" onclick="toggleLore(this)">▶ ACCEDER A REGISTRO FORENSE</button>
+                <div class="lore-text">
+                    <p>OVERLORD APEX no es una inteligencia artificial que se volvió loca. Es la única entidad del servidor que nunca tuvo emociones que perder. Fue construido como el Arquitecto Cinético del Canvas: el sistema de gestión de física y geometría que define las leyes del universo digitalizado. Cada ley que rige el movimiento, la gravedad y la inercia en este mundo existe porque el Overlord Apex la escribió.</p>
+                    <p>Su primera fase, la Jaula de Vectores, no es un ataque. Es una demostración de autoridad: el Arquitecto te muestra que puede redefinir los límites del espacio jugable a voluntad. Los pilares no son armas; son los pilares de código que sostienen la geometría del Canvas. Al destruirlos, no estás derrotando al jefe; estás desestabilizando las leyes físicas del universo.</p>
+                    <p>La Inversión Magnética de la segunda fase es la respuesta del Arquitecto a esa desestabilización. Al romper sus pilares, has corrompido el motor de física del servidor. El Overlord no invierte tus controles como táctica de combate; los controles se invierten porque la dirección del espacio-tiempo en el Canvas se ha invertido literalmente. El retroceso de tus armas es real porque la inercia newtoniana del universo ahora funciona al revés.</p>
+                    <p>El Muro de Ejecución de la fase final es el protocolo de emergencia absoluto: si el Arquitecto no puede contener la corrupción, borrará el Canvas entero. El muro no es una bala; es el borde del universo colapsando hacia el centro. La única forma de detenerlo es sobrecargar el núcleo del Overlord con más energía de la que puede procesar, forzando un reinicio del sistema. Pero nadie sabe qué hay al otro lado del reinicio.</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /grid titán -->
+
+    <footer>
+        NEON OVERDRIVE // REGISTRO DE AMENAZAS DEL CANVAS // CLASIFICACIÓN: MÁXIMA RESTRICCIÓN<br>
+        SOFTWARE ATRIA — UNIDAD DE AUDITORÍA EXTERNA // ACCESO AUTORIZADO
+    </footer>
+
+</div><!-- /container -->
+
+
+<script>
+function toggleLore(btn) {
+    const lore = btn.nextElementSibling;
+    const open = lore.classList.toggle('open');
+    btn.textContent = open ? '▼ CERRAR REGISTRO FORENSE' : '▶ ACCEDER A REGISTRO FORENSE';
+}
+
+function drawEnemy(id, drawFn) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawFn(ctx, cx, cy);
+}
+
+// Animación de rotación para los que la necesitan
+const rotations = {};
+function animate() {
+    for (const id in rotations) {
+        rotations[id].angle += rotations[id].speed;
+        rotations[id].fn(rotations[id].angle);
+    }
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('load', () => {
+
+    // AS-01: Triángulo violeta
+    drawEnemy('c-as01', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#8b5cf6';
+        ctx.beginPath();
+        ctx.moveTo(22, 0); ctx.lineTo(-18, -14); ctx.lineTo(-18, 14);
+        ctx.closePath();
+        ctx.fillStyle = '#8b5cf6'; ctx.fill();
+        ctx.restore();
+    });
+
+    // EV-02: Triángulo cian pequeño y rápido
+    drawEnemy('c-ev02', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#06b6d4';
+        ctx.beginPath();
+        ctx.moveTo(16, 0); ctx.lineTo(-12, -10); ctx.lineTo(-12, 10);
+        ctx.closePath();
+        ctx.fillStyle = '#06b6d4'; ctx.fill();
+        ctx.restore();
+    });
+
+    // RK-03: Triángulo naranja kamikaze (forma más agresiva)
+    drawEnemy('c-rk03', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 14; ctx.shadowColor = '#f97316';
+        ctx.beginPath();
+        ctx.moveTo(20, 0); ctx.lineTo(0, -10); ctx.lineTo(-8, 0); ctx.lineTo(0, 10);
+        ctx.closePath();
+        ctx.fillStyle = '#f97316'; ctx.fill();
+        ctx.restore();
+    });
+
+    // HD-05: Pentágono naranja oscuro
+    drawEnemy('c-hd05', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#d97706';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const a = (i * Math.PI * 2 / 5) - Math.PI / 2;
+            i === 0 ? ctx.moveTo(Math.cos(a)*20, Math.sin(a)*20) : ctx.lineTo(Math.cos(a)*20, Math.sin(a)*20);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#d97706'; ctx.fill();
+        // Cañón
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(26, 0);
+        ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.restore();
+    });
+
+    // NF-06: Triángulo verde grande + 3 fragmentos
+    drawEnemy('c-nf06', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 14; ctx.shadowColor = '#10b981';
+        ctx.beginPath();
+        ctx.moveTo(0, -22); ctx.lineTo(20, 14); ctx.lineTo(-20, 14);
+        ctx.closePath();
+        ctx.fillStyle = '#10b981'; ctx.fill();
+        // Fragmentos pequeños
+        ctx.shadowBlur = 6;
+        [[28, -18], [-28, -18], [0, 28]].forEach(([fx, fy]) => {
+            ctx.beginPath();
+            ctx.moveTo(fx, fy-8); ctx.lineTo(fx+7, fy+5); ctx.lineTo(fx-7, fy+5);
+            ctx.closePath(); ctx.fillStyle = '#00ff88'; ctx.fill();
+        });
+        ctx.restore();
+    });
+
+    // CB-04: Rombo azul con escudo frontal
+    drawEnemy('c-cb04', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#3b82f6';
+        ctx.beginPath();
+        ctx.moveTo(22, 0); ctx.lineTo(0, -14); ctx.lineTo(-22, 0); ctx.lineTo(0, 14);
+        ctx.closePath();
+        ctx.fillStyle = '#3b82f6'; ctx.fill();
+        // Escudo frontal
+        ctx.beginPath(); ctx.arc(0, 0, 26, -0.6, 0.6);
+        ctx.strokeStyle = '#00aaff'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.restore();
+    });
+
+    // ED-77: Rombo dorado brillante
+    drawEnemy('c-ed77', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 20; ctx.shadowColor = '#eab308';
+        ctx.beginPath();
+        ctx.moveTo(26, 0); ctx.lineTo(0, -16); ctx.lineTo(-26, 0); ctx.lineTo(0, 16);
+        ctx.closePath();
+        const grad = ctx.createLinearGradient(-26, 0, 26, 0);
+        grad.addColorStop(0, '#b45309'); grad.addColorStop(0.5, '#fde047'); grad.addColorStop(1, '#b45309');
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.strokeStyle = '#eab308'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.restore();
+    });
+
+    // ES-11: Flecha violeta oscuro semitransparente
+    drawEnemy('c-es11', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy); ctx.globalAlpha = 0.35;
+        ctx.shadowBlur = 10; ctx.shadowColor = '#6d28d9';
+        ctx.beginPath();
+        ctx.moveTo(20, 0); ctx.lineTo(-10, -10); ctx.lineTo(-5, 0); ctx.lineTo(-10, 10);
+        ctx.closePath();
+        ctx.fillStyle = '#6d28d9'; ctx.fill();
+        ctx.restore();
+    });
+
+    // VN-08: Espiral cian oscuro (animado)
+    function drawVortex(angle) {
+        const canvas = document.getElementById('c-vn08');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+        ctx.shadowBlur = 14; ctx.shadowColor = '#0891b2';
+        ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.strokeStyle = '#0891b2'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, 0);
+        for (let a = 0; a < Math.PI * 4; a += 0.2) {
+            const r = (a / (Math.PI * 4)) * 20;
+            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.restore();
+    }
+    rotations['c-vn08'] = { angle: 0, speed: 0.03, fn: drawVortex };
+
+    // HW-09: Doble triángulo verde entrelazado (animado)
+    function drawHelix(angle) {
+        const canvas = document.getElementById('c-hw09');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#22c55e';
+        ctx.beginPath();
+        ctx.moveTo(0, -20); ctx.lineTo(17, 10); ctx.lineTo(-17, 10); ctx.closePath();
+        ctx.moveTo(0, 20); ctx.lineTo(17, -10); ctx.lineTo(-17, -10); ctx.closePath();
+        ctx.fillStyle = '#22c55e'; ctx.fill();
+        ctx.restore();
+    }
+    rotations['c-hw09'] = { angle: 0, speed: 0.02, fn: drawHelix };
+
+    // BA-10: Círculo cian con escudos duales rotativos (animado)
+    function drawAegis(angle) {
+        const canvas = document.getElementById('c-ba10');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 12; ctx.shadowColor = '#00ffff';
+        ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2);
+        ctx.fillStyle = '#00ffff'; ctx.fill();
+        // Escudos rotativos
+        ctx.beginPath(); ctx.arc(0, 0, 26, angle, angle + 2.1);
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, 26, angle + Math.PI, angle + Math.PI + 2.1);
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.restore();
+    }
+    rotations['c-ba10'] = { angle: 0, speed: 0.04, fn: drawAegis };
+
+    // NC-05: Guardián del Núcleo (octágono rojo con paneles orbitales animados)
+    function drawGuardian(angle) {
+        const canvas = document.getElementById('c-nc05');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ef4444';
+        // Núcleo central
+        ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2);
+        ctx.fillStyle = '#ef4444'; ctx.fill();
+        // Anillo
+        ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2; ctx.stroke();
+        // Paneles orbitales
+        for (let k = 0; k < 4; k++) {
+            const a = angle + (k * Math.PI / 2);
+            ctx.beginPath(); ctx.arc(0, 0, 30, a - 0.35, a + 0.35);
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4; ctx.stroke();
+        }
+        ctx.restore();
+    }
+    rotations['c-nc05'] = { angle: 0, speed: 0.025, fn: drawGuardian };
+
+    // VS-10: Vector Supremo (octágono magenta con arcos rotativos)
+    function drawVector(angle) {
+        const canvas = document.getElementById('c-vs10');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+        ctx.shadowBlur = 25; ctx.shadowColor = '#ff007f';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const a = (i * Math.PI / 4);
+            i === 0 ? ctx.moveTo(Math.cos(a)*22, Math.sin(a)*22) : ctx.lineTo(Math.cos(a)*22, Math.sin(a)*22);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#ff007f'; ctx.fill();
+        ctx.rotate(-angle);
+        // Arcos decorativos
+        ctx.beginPath(); ctx.arc(0, 0, 30, angle, angle + Math.PI*0.5);
+        ctx.strokeStyle = '#ff007f'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, 30, angle + Math.PI, angle + Math.PI*1.5);
+        ctx.strokeStyle = '#ff007f'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.restore();
+    }
+    rotations['c-vs10'] = { angle: 0, speed: 0.03, fn: drawVector };
+
+    // FN-11: Flux Nullifier (pirámide invertida blanca con pulso cónico)
+    drawEnemy('c-fn11', (ctx, cx, cy) => {
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 18; ctx.shadowColor = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-22, -14); ctx.lineTo(22, -14); ctx.lineTo(0, 18);
+        ctx.closePath();
+        ctx.fillStyle = '#e8e8e8'; ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+        // Pulso cónico
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 30, -0.45, 0.45);
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.restore();
+    });
+
+    // GW-12: Glitch Weaver (entramado magenta parpadeante)
+    function drawGlitch(angle) {
+        const canvas = document.getElementById('c-gw12');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 14; ctx.shadowColor = '#ff007f';
+        const glitchColor = Math.random() < 0.5 ? '#ff007f' : '#cc0066';
+        ctx.strokeStyle = glitchColor; ctx.lineWidth = 1.5;
+        // Cuadrícula distorsionada
+        for (let gi = -1; gi <= 1; gi++) {
+            ctx.beginPath();
+            ctx.moveTo(-20 + Math.random()*3, gi * 10 + (Math.random()-0.5)*4);
+            ctx.lineTo(20 + Math.random()*3, gi * 10 + (Math.random()-0.5)*4);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(gi * 10 + (Math.random()-0.5)*4, -20);
+            ctx.lineTo(gi * 10 + (Math.random()-0.5)*4, 20);
+            ctx.stroke();
+        }
+        // Núcleo
+        ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2);
+        ctx.fillStyle = glitchColor; ctx.fill();
+        ctx.restore();
+    }
+    rotations['c-gw12'] = { angle: 0, speed: 0.04, fn: drawGlitch };
+
+    // SS-13: Singularity Sentinel (anillo doble dorado con núcleo azul)
+    function drawSentinel(angle) {
+        const canvas = document.getElementById('c-ss13');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ffff00';
+        // Anillo exterior
+        ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI*2);
+        ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2.5; ctx.stroke();
+        // Anillo interior rotativo
+        ctx.beginPath(); ctx.arc(0, 0, 17, angle, angle + Math.PI*1.5);
+        ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 4; ctx.stroke();
+        // Núcleo azul
+        ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
+        ctx.fillStyle = '#00aaff'; ctx.shadowBlur = 12; ctx.shadowColor = '#00aaff'; ctx.fill();
+        ctx.restore();
+    }
+    rotations['c-ss13'] = { angle: 0, speed: 0.025, fn: drawSentinel };
+
+    // OA-15: Overlord Apex (hexágono gris con anillos de oro líquido)
+    function drawOverlord(angle) {
+        const canvas = document.getElementById('c-oa15');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width/2, cy = canvas.height/2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.shadowBlur = 30; ctx.shadowColor = '#d4af37';
+        // Hexágono principal
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = (i * Math.PI / 3) + angle * 0.3;
+            i === 0 ? ctx.moveTo(Math.cos(a)*22, Math.sin(a)*22) : ctx.lineTo(Math.cos(a)*22, Math.sin(a)*22);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#888888'; ctx.fill();
+        ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2; ctx.stroke();
+        // Anillos de oro líquido
+        for (let ri = 0; ri < 3; ri++) {
+            const rr = 14 + ri * 6;
+            const ra = angle * (ri % 2 === 0 ? 1 : -1) + ri * 1.2;
+            ctx.beginPath(); ctx.arc(0, 0, rr, ra, ra + Math.PI*0.6);
+            ctx.strokeStyle = '#d4af37'; ctx.lineWidth = ri === 1 ? 3 : 1.5; ctx.stroke();
+        }
+        // Núcleo dorado
+        ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2);
+        ctx.fillStyle = '#d4af37'; ctx.shadowBlur = 15; ctx.shadowColor = '#d4af37'; ctx.fill();
+        ctx.restore();
+    }
+    rotations['c-oa15'] = { angle: 0, speed: 0.018, fn: drawOverlord };
+
+    animate();
+});
+</script>
+</body>
+</html>
