@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE - Historial de Versiones v0.10.1</title>
+    <title>NEON OVERDRIVE - Historial de Versiones v0.11.0</title>
     <style>
         @property --border-angle {
             syntax: '<angle>';
@@ -330,6 +330,45 @@
         .version-lost::before { background: #ff007f; box-shadow: 0 0 8px #ff007f; }
         .version-lost .version-title { color: #ff007f; }
 
+        /* ── DETAILS COLLAPSIBLE ── */
+        details {
+            margin-top: 8px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            padding-top: 8px;
+            width: 100%;
+        }
+        summary {
+            color: #00ffcc;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        summary:hover {
+            color: #ff007f;
+            text-shadow: 0 0 5px #ff007f;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::before {
+            content: '▶';
+            font-size: 9px;
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+        details[open] summary::before {
+            transform: rotate(90deg);
+        }
+
         /* ── SCROLLBAR ── */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #03030a; }
@@ -356,6 +395,97 @@
         <span>◀</span>
         <span>VOLVER AL SIMULADOR</span>
     </a>
+
+    <!-- ══════════════════════════════════════════════════════
+         v0.11.0  (MAJOR) — ONLINE, LOCAL AND MOBILE
+    ══════════════════════════════════════════════════════ -->
+    <div class="version-box version-major" style="animation-delay:0.0s; border-color:rgba(0,255,204,0.6); background:rgba(0,8,12,0.97); box-shadow:0 0 30px rgba(0,255,204,0.12);">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(to bottom,#00ffcc,#00aaff);border-radius:12px 0 0 12px;box-shadow:0 0 18px #00ffcc;"></div>
+        <div class="version-header">
+            <span class="version-title version-title-glow" style="color:#00ffcc; text-shadow:0 0 14px rgba(0,255,204,0.8), 0 0 32px rgba(0,170,255,0.4);">
+                v0.11.0 — ONLINE, LOCAL AND MOBILE
+                <span class="major-badge" style="border-color:rgba(0,255,204,0.7); color:#00ffcc; background:linear-gradient(135deg,rgba(0,255,204,0.15),rgba(0,170,255,0.1));">◈ ACTUALIZACIÓN MAYOR</span>
+            </span>
+            <span class="version-date">Mayo 2026</span>
+        </div>
+        <ul class="change-list">
+
+            <!-- COOPERATIVO LOCAL -->
+            <li class="highlight-gameplay" style="background:rgba(0,255,204,0.06); border-color:rgba(0,255,204,0.3);">
+                <span class="tag tag-new" style="color:#00ffcc; background:rgba(0,255,204,0.12); border-color:#00ffcc;">MAYOR</span>
+                <div>
+                    <div class="entry-title" style="color:#00ffcc;">Modo Cooperativo Local (2-4 Jugadores) — Integración de Mandos Completa</div>
+                    Implementación completa de cooperativo local offline para hasta 4 jugadores con slots e interfaces individuales:
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Perfiles Independientes:</strong> Carga y guardado independiente en <code>playerSaves[]</code> de créditos, materiales y niveles del Nexus.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Unión de Controles Dinámica:</strong> Entrada/salida en el menú usando los botones A/Start y B, impidiendo colisiones con la navegación del Jugador 1.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Nexus Dividido (Multi-Panel):</strong> Interfaz de mejoras dividida en hasta 4 columnas paralelas con navegación por mando, auto-scroll inteligente diferido por frame y suavizado analógico por cooldown.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Economía Sincronizada:</strong> Recolección compartida en tiempo real de XP, Créditos y Materiales raros. Desbloqueo simultáneo de logros y artefactos al derrotar Jefes.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Navegación de Tienda Aislada:</strong> En el menú de tienda, cada jugador controla únicamente su columna y visualiza su selección mediante resaltados de color distintivos (Cyan, Rosa, Amarillo, Púrpura).</li>
+                            <li>⬡ <strong style="color:#00ffcc;">Subida de Nivel Secuencial:</strong> Gestión ordenada en cola local al subir de nivel en cooperativo, permitiendo que cada jugador elija su carta consecutivamente.</li>
+                        </ul>
+                    </details>
+                </div>
+            </li>
+
+            <!-- MULTIJUGADOR ONLINE -->
+            <li class="highlight-gameplay" style="background:rgba(0,170,255,0.06); border-color:rgba(0,170,255,0.3);">
+                <span class="tag tag-new" style="color:#00aaff; background:rgba(0,170,255,0.12); border-color:#00aaff;">NUEVO</span>
+                <div>
+                    <div class="entry-title" style="color:#00aaff;">Optimización y Conectividad Multijugador Online (Socket.io)</div>
+                    Arquitectura autoritativa para sincronizar la experiencia online y mantener estabilidad en red:
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00aaff;">Host Autoritativo:</strong> Sincronización en red de enemigos, daños flotantes, drops, eventos activos e inicio de oleadas controlado por el Host.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00aaff;">Sincronización de Perfiles:</strong> Emisión de cambios de estadísticas (<code>player-upgrade</code>) y replicación instantánea de armas y mejoras en clientes remotos.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00aaff;">Mecánicas de Pausa y Cola:</strong> Eventos <code>level-up-pause</code> y <code>level-up-resume</code> para detener la simulación del juego ordenadamente mientras un aliado selecciona sus cartas.</li>
+                            <li>⬡ <strong style="color:#00aaff;">Canales de Chat e Identificadores:</strong> Soporte de chat por sala integrado en el simulador y actualización visual de colores de slots de red.</li>
+                        </ul>
+                    </details>
+                </div>
+            </li>
+
+            <!-- CONTROLES TÁCTILES COMPLETOS -->
+            <li class="highlight-gameplay" style="background:rgba(255,0,127,0.06); border-color:rgba(255,0,127,0.3);">
+                <span class="tag tag-improved" style="color:#ff007f; background:rgba(255,0,127,0.12); border-color:#ff007f;">MEJORA</span>
+                <div>
+                    <div class="entry-title" style="color:#ff007f;">Interfaz Móvil y Controles Táctiles Adaptativos</div>
+                    Rediseño completo de la interfaz de juego y controles para pantallas táctiles y dispositivos móviles:
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#ff007f;">Joysticks y Botones Rediseñados:</strong> Diámetros reducidos un 50% (70px joysticks) y botones al 70% (45px) para mayor visibilidad y ergonomía táctil.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#ff007f;">Auto-Disparo Inteligente:</strong> El movimiento del joystick de apuntado activa automáticamente el disparo (<code>mouse.isDown = true</code>) y se detiene dinámicamente al soltarlo.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#ff007f;">Cooldowns Integrados:</strong> Superposición visual directa de recarga (overlays con color representativo) sobre los botones táctiles en lugar de barras del HUD.</li>
+                            <li>⬡ <strong style="color:#ff007f;">Resoluciones Adaptativas:</strong> Breakpoints responsivos progresivos (&lt;900px, &lt;600px, &lt;500px) que ajustan diámetros de modales y ocultan elementos redundantes.</li>
+                        </ul>
+                    </details>
+                </div>
+            </li>
+
+            <!-- FIX DISPARO JOYSTICK -->
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Corrección de Disparo con Joystick de Apuntado</div>
+                    El sistema de auto-disparo al mover el joystick derecho fallaba en ciertos navegadores móviles. Implementado un flag interno `fireBtnPressed` que se actualiza directamente en los eventos touch, reemplazando la dependencia del pseudo-selector `:active` que no funcionaba de forma confiable en Edge Android.
+                </div>
+            </li>
+
+            <!-- FIX FULLSCREEN -->
+            <li>
+                <span class="tag tag-fix">Fix</span>
+                <div>
+                    <div class="entry-title c-gold">Botón de Pantalla Completa Robusto para Edge Android</div>
+                    El botón de fullscreen ahora implementa fallbacks múltiples: primero intenta fullscreen en el canvas (mejor comportamiento en móviles), luego en `document.documentElement`. Soporta prefijos webkit (`webkitRequestFullscreen`, `webkitExitFullscreen`) y ms para máxima compatibilidad con navegadores móviles.
+                </div>
+            </li>
+
+        </ul>
+    </div>
 
     <!-- ══════════════════════════════════════════════════════
          v0.10.1  (MINOR) — QUANTUM EVOLUTION
