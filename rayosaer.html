@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>High-Voltage Needle Beam</title>
+    <style>
+        body {
+            margin: 0;
+            background: #030005;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="laserCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('laserCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let frame = 0;
+        let particles = [];
+
+        const COLORS = {
+            core: "#ffffff",
+            crimson: "#ff0033",
+            darkPurple: "#2b004d",
+            lightningGlow: "rgba(255, 0, 50, 0.6)"
+        };
+
+        class PlasmaParticle {
+            constructor(x, y, color) {
+                this.x = x + (Math.random() - 0.5) * 20;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = -(Math.random() * 25 + 10);
+                this.life = 1.0;
+                this.size = Math.random() * 3 + 1;
+                this.color = color;
+            }
+            update() {
+                this.y += this.vy;
+                this.x += this.vx;
+                this.life -= 0.04;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Rayos más gruesos y con "cuerpo"
+        function drawHeavyLightning(startX, startY, endX, endY) {
+            ctx.save();
+
+            let currentX = startX;
+            let currentY = startY;
+            const segments = 12;
+            const points = [[startX, startY]];
+
+            for (let i = 1; i <= segments; i++) {
+                currentX += (endX - startX) / segments + (Math.random() - 0.5) * 80;
+                currentY += (endY - startY) / segments + (Math.random() - 0.5) * 60;
+                points.push([currentX, currentY]);
+            }
+
+            // Capa 1: Brillo exterior grueso (Morado/Rojo)
+            ctx.beginPath();
+            ctx.moveTo(points[0][0], points[0][1]);
+            points.forEach(p => ctx.lineTo(p[0], p[1]));
+            ctx.strokeStyle = COLORS.crimson;
+            ctx.lineWidth = 8 + Math.random() * 4;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = COLORS.crimson;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Capa 2: Núcleo blanco interno
+            ctx.beginPath();
+            ctx.moveTo(points[0][0], points[0][1]);
+            points.forEach(p => ctx.lineTo(p[0], p[1]));
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function render() {
+            ctx.fillStyle = "rgba(3, 0, 5, 0.2)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            // LÁSER MÁS DELGADO (Ajuste de 100px a 25px)
+            const beamWidth = 25 + Math.sin(frame * 0.8) * 5;
+
+            ctx.save();
+
+            // 1. GRADIENTE SUTIL (Transición suave Rojo-Morado)
+            const auraGrd = ctx.createLinearGradient(centerX - 50, 0, centerX + 50, 0);
+            auraGrd.addColorStop(0, "rgba(43, 0, 77, 0)");
+            auraGrd.addColorStop(0.5, "rgba(255, 0, 51, 0.15)");
+            auraGrd.addColorStop(1, "rgba(43, 0, 77, 0)");
+            ctx.fillStyle = auraGrd;
+            ctx.fillRect(centerX - 100, 0, 200, canvas.height);
+
+            // 2. CUERPO DEL LÁSER DELGADO
+            ctx.fillStyle = COLORS.crimson;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = COLORS.crimson;
+            ctx.fillRect(centerX - beamWidth / 2, 0, beamWidth, canvas.height);
+
+            // NÚCLEO BLANCO FILOSO
+            ctx.fillStyle = COLORS.core;
+            ctx.shadowBlur = 10;
+            ctx.fillRect(centerX - 2, 0, 4, canvas.height);
+
+            // 3. RAYOS GRUESOS AGRESIVOS
+            if (frame % 2 === 0) {
+                let yPos = Math.random() * canvas.height;
+                // Rayos que envuelven el láser
+                drawHeavyLightning(
+                    centerX, yPos,
+                    centerX + (Math.random() - 0.5) * 150, yPos + (Math.random() - 0.5) * 300
+                );
+            }
+
+            // 4. PARTÍCULAS
+            if (frame % 1 === 0) {
+                for (let i = 0; i < 4; i++) {
+                    particles.push(new PlasmaParticle(centerX, canvas.height, COLORS.crimson));
+                }
+            }
+
+            particles.forEach((p, i) => {
+                p.update();
+                p.draw();
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+
+            ctx.restore();
+            frame++;
+            requestAnimationFrame(render);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        render();
+    </script>
+</body>
+
+</html>

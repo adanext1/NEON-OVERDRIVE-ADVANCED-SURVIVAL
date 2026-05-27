@@ -14,6 +14,11 @@ function spawnDamageText(x, y, amount, type = 'normal') {
     else if (type === 'hazard') { textColor = '#ff0055'; }
     else if (type === 'shield') { textColor = '#00aaff'; }
     else if (type === 'player_hit') { textColor = '#ff2244'; isCritSize = false; decay = 0.010; vy = -3 - Math.random(); vx = (Math.random() - 0.5) * 1.5; }
-    let displayText = (type === 'player_hit') ? `-${Math.floor(amount)}` : Math.floor(amount);
+    else if (type === 'heal') { textColor = '#00ff88'; decay = 0.010; }
+    
+    let displayText = amount;
+    if (typeof amount === 'number') {
+        displayText = (type === 'player_hit') ? `-${Math.floor(amount)}` : Math.floor(amount);
+    }
     damageTexts.push({ x: x, y: y - 10, text: displayText, isCrit: isCritSize, isPlayerHit: (type === 'player_hit'), color: textColor, alpha: 1, vx: vx, vy: vy, decay: decay });
 }

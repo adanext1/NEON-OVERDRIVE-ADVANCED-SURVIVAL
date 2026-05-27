@@ -6,12 +6,12 @@ function spawnEnemy() {
     let isBoss = (wave % 5 === 0) && enemiesToSpawn === 1; let typeChance = Math.random();
     let enemy = { 
         id: Date.now() + Math.random(), 
-        x: x, y: y, angle: 0, flashTicks: 0, vx: 0, vy: 0, isShielded: false, isKamikaze: false, isEliteGold: false, bossPhase: 0, bossInvulnTimer: 0, hazardHitTimer: 0, armor: 0 
+        x: x, y: y, angle: 0, flashTicks: 0, vx: 0, vy: 0, isShielded: false, isKamikaze: false, isEliteGold: false, bossPhase: 0, bossInvulnTimer: 0, hazardHitTimer: 0, armor: 0, stunTimer: 0 
     };
 
     if (isBoss) {
         enemy.radius = 45; enemy.speed = 1.0; enemy.hp = 350 + (wave * 120); enemy.maxHp = enemy.hp;
-        enemy.color = '#ff0044'; enemy.credits = 150; enemy.xp = 200; enemy.isBoss = true; enemy.shootCooldown = 0; enemy.bossInvulnTimer = 90; enemy.dropType = 'crystal';
+        enemy.color = '#ff0044'; enemy.credits = 150; enemy.xp = 200; enemy.isBoss = true; enemy.shootCooldown = 0; enemy.bossInvulnTimer = 90; enemy.dropType = 'bossRelic';
         enemy.armor = 10 + (wave * 2);
         
         // Propiedades específicas para el Jefe de la Oleada 5
@@ -48,6 +48,7 @@ function spawnEnemy() {
             enemy.ringTimer = 0;
             enemy.crossTimer = 0;
             enemy.matrixAngle = 0;
+            enemy.shieldFlashTicks = 0;
             enemy.fragmentsSpawned = false;
             enemy.hp = 8500;
             enemy.maxHp = enemy.hp;
@@ -107,7 +108,7 @@ function spawnEnemy() {
     } else if (typeChance < 0.18 && wave >= 2) {
         // Kamikaze
         enemy.radius = 12; enemy.speed = 4.2; enemy.hp = 18 + (wave * 4); enemy.maxHp = enemy.hp;
-        enemy.color = '#ff00ff'; enemy.credits = 15; enemy.xp = 15; enemy.isKamikaze = true; enemy.dropType = 'plate';
+        enemy.color = '#f97316'; enemy.credits = 15; enemy.xp = 15; enemy.isKamikaze = true; enemy.dropType = 'plate';
     } else if (typeChance < 0.23 && wave >= 4) {
         // Curador
         enemy.radius = 25; enemy.speed = 1.0; enemy.hp = 160 + (wave * 25); enemy.maxHp = enemy.hp;
@@ -169,7 +170,25 @@ function spawnEnemy() {
 
 function updateEnemies() {
     for (let i = enemies.length - 1; i >= 0; i--) {
-        let e = enemies[i]; if (e.bossInvulnTimer > 0) e.bossInvulnTimer--;
+        let e = enemies[i]; 
+        if (e.bossInvulnTimer > 0) e.bossInvulnTimer--;
+        if (e.stunTimer > 0) {
+            e.stunTimer--;
+            if (e.isVectorFragment && Math.random() < 0.15) {
+                let a = Math.random() * Math.PI * 2;
+                let r = Math.random() * e.radius;
+                particles.push({
+                    x: e.x + Math.cos(a) * r,
+                    y: e.y + Math.sin(a) * r,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    radius: Math.random() * 2 + 1,
+                    color: Math.random() > 0.5 ? '#00ffff' : '#ffff00',
+                    alpha: 1.0,
+                    decay: Math.random() * 0.03 + 0.02
+                });
+            }
+        }
         
         if (e.hp <= 0) {
             createExplosion(e.x, e.y, e.color, e.isBoss ? 70 : 12, e.isBoss ? 2 : 1);
@@ -185,6 +204,47 @@ function updateEnemies() {
             if (nearestP.lifeSteal) {
                 nearestP.hp = Math.min(nearestP.maxHp, nearestP.hp + nearestP.lifeSteal);
                 updateUI();
+            }
+            
+            // Sobrecarga de Armas Ultra (Lv6): Matar cura 5 HP
+            if (nearestP.qTurboTimer > 0) {
+                let overloadMod = getActiveSkillModifier('sobrecarga_armas');
+                if (overloadMod.level === 6) {
+                    nearestP.hp = Math.min(nearestP.maxHp, nearestP.hp + 5);
+                    spawnDamageText(nearestP.x, nearestP.y, '+5 HP', 'heal');
+                    updateUI();
+                }
+            }
+            
+            // Batería de Repuesto Ultra (Reciclaje): matar reduce 0.5s CD activo
+            let cdLvl = getPassiveLevel('passive_cooldown');
+            if (cdLvl === 6) {
+                let cdReduction = 30; // 0.5s en 60fps
+                if ((nearestP.pulseCooldown || 0) > 0) nearestP.pulseCooldown = Math.max(0, nearestP.pulseCooldown - cdReduction);
+                else if ((nearestP.qCooldown || 0) > 0) nearestP.qCooldown = Math.max(0, nearestP.qCooldown - cdReduction);
+                else if ((nearestP.dashCooldown || 0) > 0) nearestP.dashCooldown = Math.max(0, nearestP.dashCooldown - cdReduction);
+            }
+            
+            // Inyector de Adrenalina: matar élite da boost de cadencia de fuego
+            let adrenalLvl = getPassiveLevel('passive_adrenal');
+            if (adrenalLvl > 0 && (e.isEliteGold || e.isBoss)) {
+                nearestP.overdriveTimer = Math.max(nearestP.overdriveTimer || 0, 300); // 5s boost cadencia
+                if (adrenalLvl === 6) {
+                    nearestP.minigunHeatMod = 0; // Sin consumo de calor (Estado de Flujo)
+                    setTimeout(() => { if (nearestP) nearestP.minigunHeatMod = 1; }, 5000);
+                }
+                showNetworkMessage('💉 ¡ADRENALINA! Cadencia +100% por 5s', 1500);
+            }
+            
+            // Transmisor de Energía: al morir enemigo con crystal, dar boost a aliados
+            if (e.dropType === 'crystal') {
+                let transmLvl = getPassiveLevel('passive_ally_dmg');
+                if (transmLvl > 0) {
+                    players.forEach(p => {
+                        p.transmitterBuff = Math.max(p.transmitterBuff || 0, 600); // 10s
+                        p.transmitterLvl = transmLvl;
+                    });
+                }
             }
             let dropMat = null; let roll = Math.random();
             if (e.isBoss || e.isEliteGold) dropMat = e.dropType; else if (roll < 0.25) dropMat = e.dropType;
@@ -203,6 +263,15 @@ function updateEnemies() {
                         dropType: 'core'
                     });
                 }
+            }
+            if (e.isVectorFragment) {
+                // Crear zona de Glitch de ralentización (hazard)
+                hazards.push({
+                    x: e.x, y: e.y,
+                    radius: 75, timer: 0, maxTimer: 0, duration: 360,
+                    active: true, shockwaveRadius: 0, isGlitchZone: true
+                });
+                createExplosion(e.x, e.y, '#ff007f', 25, 2.0);
             }
             enemies.splice(i, 1); 
             
@@ -260,8 +329,12 @@ function updateEnemies() {
         enemies.forEach(o => { if (o === e) return; let d = Math.hypot(o.x - e.x, o.y - e.y); if (d < (e.radius + o.radius) * 1.4) { sx -= (o.x - e.x) * 0.12; sy -= (o.y - e.y) * 0.12; } });
 
         // Ruteo a los módulos correspondientes
-        if (e.isClone || e.isVectorFragment || e.isKamikaze) {
+        if (e.stunTimer > 0) {
+            // Aturdido: no hacer nada
+        } else if (e.isClone || e.isKamikaze) {
             updateKamikazeEnemy(e, dx, dy, dist, sx, sy, nearestPlayer);
+        } else if (e.isVectorFragment) {
+            updateVectorFragment(e, dx, dy, dist, sx, sy, nearestPlayer);
         } else if (e.isCoreGuardian) {
             updateBossGuardian(e, dx, dy, dist, sx, sy, nearestPlayer);
         } else if (e.isVectorSupreme) {
@@ -297,14 +370,14 @@ function updateEnemies() {
         // Colisión con jugador
         if (dist < e.radius + nearestPlayer.radius && nearestPlayer.dashTimer === 0 && !e.isHealer) {
             let dmg = 10;
-            if (e.isKamikaze) { dmg = 30; e.hp = 0; createExplosion(e.x, e.y, '#ff00ff', 20, 1.5); }
+            if (e.isKamikaze) { dmg = 30; e.hp = 0; createExplosion(e.x, e.y, e.color, 20, 1.5); }
             else if (e.isBoss) dmg = 25;
             else if (e.isEliteGold) dmg = 20;
             
             let finalDmg = dmg;
             if (nearestPlayer.overdriveTimer > 0) finalDmg = Math.floor(dmg * 0.5);
             
-            takeDamage(nearestPlayer, finalDmg); 
+            takeDamage(nearestPlayer, finalDmg, e); 
             screenShake = (e.isKamikaze && e.kamiState === 'DASHING') ? 8 : 4;
         }
     }

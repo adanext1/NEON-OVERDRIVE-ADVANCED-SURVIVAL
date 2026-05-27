@@ -87,12 +87,28 @@ function fireMinigun(pObj) {
         radius: 4, color: '#ffff00', damage: dmg, type: 'minigun' 
     });
     
-    // Incrementar calor
-    pObj.minigunHeat += 2 * (pObj.minigunHeatMod || 1.0);
+    // Incrementar calor (Enfriador Criogénico)
+    let heatDefLvl = getPassiveLevel('passive_heat_def');
+    let heatRate = 2 * (1 - heatDefLvl * 0.08);
+    pObj.minigunHeat += heatRate * (pObj.minigunHeatMod || 1.0);
+    
     if (pObj.minigunHeat >= 300) {
         pObj.minigunOverheat = true;
         pObj.minigunCooldown = 180 * (pObj.minigunCooldownMod || 1.0); // 3s base
         showNetworkMessage('🔥 ¡MINIGUN SOBRECALENTADA!', 2000);
+        
+        if (heatDefLvl === 6) {
+            // Cero Absoluto: congelar enemigos cercanos
+            createExplosion(pObj.x, pObj.y, '#00ffff', 40, 2.5);
+            enemies.forEach(e => {
+                if (Math.hypot(e.x - pObj.x, e.y - pObj.y) < 220) {
+                    e.stunTimer = 120; // 2s congelados
+                    e.isFrozen = true;
+                }
+            });
+            playPulseSound();
+            showNetworkMessage('❄️ ¡CERO ABSOLUTO! (Área Congelada)', 2000);
+        }
     }
 }
 
@@ -160,12 +176,24 @@ function fireWeapon(pObj) {
 
     if (!pObj.lastShot) pObj.lastShot = 0;
     if (now - pObj.lastShot < currentFireRate || pObj.dashTimer > 0) return;
+    
+    // Foco Infinito (Lv6 Calibración de Mirilla): +100% daño si estuvo sin disparar >= 2s
+    let isFocoInfinito = false;
+    if (getPassiveLevel('passive_dmg') === 6 && (now - (pObj.lastShotTime || 0) >= 2000)) {
+        isFocoInfinito = true;
+    }
     pObj.lastShot = now;
+    pObj.lastShotTime = now;
+    
     let targetAngle = pObj.angle; 
     screenShake = wep.type === 'plasma' ? 10 : 3;
 
     let baseDmg = wep.damage + mods.damage;
     let finalDmg = baseDmg * pObj.damageModifier;
+    if (isFocoInfinito) {
+        finalDmg *= 2;
+        spawnDamageText(pObj.x, pObj.y, 'FOCO INFINITO!', 'overdrive');
+    }
 
     if (wep.type === 'plasma') {
         playPlasmaSound();
@@ -173,17 +201,63 @@ function fireWeapon(pObj) {
         playLaserSound();
     }
 
+    // Acelerador de Partículas (Velocidad de proyectil)
+    let speedLvl = getPassiveLevel('passive_proj_speed');
+    let speedMult = 1 + speedLvl * 0.06;
+    let finalSpeed = wep.speed * speedMult;
+    let isStunning = (speedLvl === 6 && Math.random() < 0.20);
+    
+    // Contar disparos para Núcleo de Singularidad
+    if (!pObj.shotCount) pObj.shotCount = 0;
+    pObj.shotCount++;
+    let singularityLvl = getPassiveLevel('passive_singularity');
+    let isSingularityShot = false;
+    if (singularityLvl > 0 && pObj.shotCount >= 10) {
+        pObj.shotCount = 0;
+        isSingularityShot = true;
+    }
+    
+    // Cargar pasivos generales de disparo
+    let burnLvl = getPassiveLevel('passive_burn');
+    let bounceLvl = getPassiveLevel('passive_bounce');
+    let knockLvl = getPassiveLevel('passive_knockback');
+    let critDmgLvl = getPassiveLevel('passive_crit_dmg');
+    let bounceCount = bounceLvl; // bounce count equals level
+
     if (wep.type === 'single' || wep.type === 'plasma') {
         let baseAoERadius = wep.radius || 0;
         let finalAoERadius = (baseAoERadius > 0 && userSave.artifacts.singularity > 0)
             ? baseAoERadius * (1 + userSave.artifacts.singularity * 0.1)
             : baseAoERadius;
-        bullets.push({ x: pObj.x, y: pObj.y, vx: Math.cos(targetAngle) * wep.speed, vy: Math.sin(targetAngle) * wep.speed, radius: wep.type === 'plasma' ? 9 : 5, color: bulletColor, damage: finalDmg, type: wep.type, radiusAoE: finalAoERadius });
+        bullets.push({ 
+            x: pObj.x, y: pObj.y, 
+            vx: Math.cos(targetAngle) * finalSpeed, vy: Math.sin(targetAngle) * finalSpeed, 
+            radius: wep.type === 'plasma' ? 9 : 5, color: isSingularityShot ? '#aa00ff' : bulletColor, 
+            damage: finalDmg, type: wep.type, radiusAoE: finalAoERadius,
+            isStunning: isStunning,
+            burnLvl: burnLvl,
+            bounceLvl: bounceCount,
+            knockLvl: knockLvl,
+            critDmgLvl: critDmgLvl,
+            singularityLvl: isSingularityShot ? singularityLvl : 0
+        });
     } else if (wep.type === 'spread') {
         let count = wep.count + (mods.count || 0);
         for (let i = 0; i < count; i++) {
             let sa = targetAngle + (Math.random() - 0.5) * wep.spread;
-            bullets.push({ x: pObj.x, y: pObj.y, vx: Math.cos(sa) * (wep.speed * (Math.random() * 0.25 + 0.88)), vy: Math.sin(sa) * (wep.speed * (Math.random() * 0.25 + 0.88)), radius: 4, color: bulletColor, damage: finalDmg, type: 'single' });
+            bullets.push({ 
+                x: pObj.x, y: pObj.y, 
+                vx: Math.cos(sa) * (finalSpeed * (Math.random() * 0.25 + 0.88)), 
+                vy: Math.sin(sa) * (finalSpeed * (Math.random() * 0.25 + 0.88)), 
+                radius: 4, color: isSingularityShot ? '#aa00ff' : bulletColor, 
+                damage: finalDmg, type: 'single',
+                isStunning: isStunning,
+                burnLvl: burnLvl,
+                bounceLvl: bounceCount,
+                knockLvl: knockLvl,
+                critDmgLvl: critDmgLvl,
+                singularityLvl: isSingularityShot ? singularityLvl : 0
+            });
         }
     }
 
@@ -195,7 +269,58 @@ function fireWeapon(pObj) {
             weaponType: wep.type,
             bulletColor: bulletColor,
             damage: finalDmg,
-            speed: wep.speed
+            speed: finalSpeed
         });
     }
+}
+
+function fireMortar(pObj) {
+    if ((pObj.laserCooldown || 0) > 0) return;
+    
+    let targetX = mouse.x;
+    let targetY = mouse.y;
+    if (pObj.inputSource === 'gamepad') {
+        targetX = pObj.x + Math.cos(pObj.angle) * 300;
+        targetY = pObj.y + Math.sin(pObj.angle) * 300;
+    }
+    
+    // Cooldown de arma especial en el Nexus (240 frames = 4s)
+    pObj.laserCooldown = 240;
+    pObj.maxLaserCooldown = 240;
+    
+    let dmg = 220 * pObj.damageModifier;
+    
+    bullets.push({
+        type: 'mortar_shell',
+        x: pObj.x,
+        y: pObj.y,
+        startX: pObj.x,
+        startY: pObj.y,
+        targetX: targetX,
+        targetY: targetY,
+        vx: 0,
+        vy: 0,
+        duration: 45,
+        radius: 8,
+        color: '#ffaa00',
+        damage: dmg
+    });
+    
+    playPlasmaSound();
+}
+
+function triggerMortarExplosion(x, y, dmg) {
+    createExplosion(x, y, '#ffaa00', 40, 2.5);
+    playExplosionSound();
+    
+    enemies.forEach(e => {
+        let dist = Math.hypot(e.x - x, e.y - y);
+        if (dist < 120 && !(e.isBoss && e.bossInvulnTimer > 0)) {
+            let finalDmg = Math.floor(dmg * (1 - dist / 120));
+            let damageTaken = Math.max(1, finalDmg - (e.armor || 0));
+            e.hp -= damageTaken;
+            e.flashTicks = 4;
+            spawnDamageText(e.x, e.y, damageTaken, 'normal');
+        }
+    });
 }

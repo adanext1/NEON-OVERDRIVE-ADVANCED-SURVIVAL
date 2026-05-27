@@ -8,6 +8,9 @@ function checkCoopGameOver() {
         let allDead = players.every(p => p.isDead || p.hp <= 0);
         if (allDead && !isGameOver) {
             isGameOver = true;
+            // Guardar créditos obtenidos en la partida
+            userSave.credits = (userSave.credits || 0) + players[0].credits;
+            saveGame();
             document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
             document.getElementById('game-over-modal').style.display = 'block';
             updateMenuSelection('game-over-modal');
@@ -16,23 +19,101 @@ function checkCoopGameOver() {
     }
 }
 
-// === FUNCIÓN revivePlayer MOVIDA A player.js ===
+// --- ACTUALIZACIONES DINÁMICAS HUD ---
+function updateHUDLabels() {
+    let build = userSave.nexusBuild;
+    if (!build) return;
+    
+    // Habilidad Shift (Dash-CD Bar)
+    let shiftSkill = build.skills.Shift;
+    let shiftLabel = shiftSkill ? COMPONENT_CATALOG[shiftSkill].name.toUpperCase() : 'VACÍO';
+    let shiftParent = document.getElementById('dash-cd').parentElement.previousElementSibling;
+    if (shiftParent) shiftParent.innerText = `${shiftLabel} [SHIFT]:`;
+
+    // Habilidad E (Pulse-CD Bar)
+    let eSkill = build.skills.E;
+    let eLabel = eSkill ? COMPONENT_CATALOG[eSkill].name.toUpperCase() : 'VACÍO';
+    let eParent = document.getElementById('pulse-cd').parentElement.previousElementSibling;
+    if (eParent) eParent.innerText = `${eLabel} [E]:`;
+
+    // Habilidad Q (Q-CD Bar)
+    let qSkill = build.skills.Q;
+    let qLabel = qSkill ? COMPONENT_CATALOG[qSkill].name.toUpperCase() : 'VACÍO';
+    let qParent = document.getElementById('q-cd').parentElement.previousElementSibling;
+    if (qParent) qParent.innerText = `${qLabel} [Q]:`;
+
+    // Arma Especial (Laser-CD Bar)
+    let specWep = build.specialWeapon;
+    let specLabel = specWep ? COMPONENT_CATALOG[specWep].name.toUpperCase() : 'VACÍO';
+    let specParent = document.getElementById('laser-cd').parentElement.previousElementSibling;
+    if (specParent) specParent.innerText = `${specLabel} [CLIC D]:`;
+}
+
+function updateHUDCooldownBars(p) {
+    let build = userSave.nexusBuild;
+    if (!build) return;
+    
+    function getCooldownPercent(skillId, pObj) {
+        if (!skillId) return 0;
+        let mod = getActiveSkillModifier(skillId);
+        if (skillId === 'dash' || skillId === 'turbo_impulso') {
+            let maxCD = Math.max(15, Math.floor(90 * mod.cdMultiplier));
+            return 1 - (pObj.dashCooldown / maxCD);
+        } else if (skillId === 'pulse' || skillId === 'pulso_choque') {
+            let maxCD = Math.max(60, Math.floor(300 * mod.cdMultiplier));
+            return 1 - (pObj.pulseCooldown / maxCD);
+        } else if (skillId === 'overload' || skillId === 'sobrecarga_armas') {
+            let maxCD = Math.max(180, Math.floor(900 * mod.cdMultiplier));
+            return 1 - (pObj.qCooldown / maxCD);
+        } else if (skillId === 'teleport' || skillId === 'salto_falla') {
+            let maxCD = Math.max(90, Math.floor(480 * mod.cdMultiplier));
+            return 1 - ((pObj.teleportCooldown || 0) / maxCD);
+        }
+        return 1;
+    }
+    
+    let shiftPercent = getCooldownPercent(build.skills.Shift, p);
+    document.getElementById('dash-cd').style.width = `${Math.max(0, Math.min(1, shiftPercent)) * 100}%`;
+    
+    let ePercent = getCooldownPercent(build.skills.E, p);
+    document.getElementById('pulse-cd').style.width = `${Math.max(0, Math.min(1, ePercent)) * 100}%`;
+    
+    let qPercent = getCooldownPercent(build.skills.Q, p);
+    document.getElementById('q-cd').style.width = `${Math.max(0, Math.min(1, qPercent)) * 100}%`;
+    
+    let specWep = build.specialWeapon;
+    let maxLaserCD = specWep === 'mortar' ? 240 : (p.maxLaserCooldown || 480);
+    document.getElementById('laser-cd').style.width = `${(1 - p.laserCooldown / maxLaserCD) * 100}%`;
+}
 
 function startGameSimulation() {
     gameStarted = true;
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('hud-box').style.display = 'block';
     
+    // Cargar build del Nexus
+    updateHUDLabels();
+    
     players.forEach(p => {
-        p.maxHp = 100 + (userSave.artifacts.shipHp * 15);
+        // Inicializar stats según pasivas equipadas
+        p.maxHp = 100 + getPassiveLevel('passive_hp') * 15;
         p.hp = p.maxHp;
-        p.damageModifier = 1.0 + (userSave.artifacts.shipDmg * 0.05);
-        p.maxShield = 40 + (userSave.artifacts.shieldGen * 10);
-        if (userSave.artifacts.shieldGen > 0) { p.shield = p.maxShield; }
+        p.damageModifier = 1.0 + getPassiveLevel('passive_dmg') * 0.05;
+        p._baseDmgMod = p.damageModifier; // Base para restaurar tras buffs
+        p.maxShield = getPassiveLevel('passive_shield') > 0 ? (40 + getPassiveLevel('passive_shield') * 10) : 0;
+        p.shield = p.maxShield;
         
-        // Variables v0.8.0
+        // Equipamiento del Nexus
+        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
+        p.currentWeaponIndex = 0;
+        
+        // Variables v0.8.0 / v0.9.0
         p.laserCharge = 0;
         p.laserCooldown = 0;
+        p.teleportCooldown = 0;
+        p.reinicioForzadoCooldown = 0;
+        p.postCombustionTimer = 0;
+        p.lastShotTime = Date.now();
         p.isTurret = false;
         p.minigunHeat = 0;
         p.minigunOverheat = false;
@@ -46,6 +127,7 @@ function startGameSimulation() {
     if (!isOnline || isHost) {
         startWave();
     }
+
     
     if (typeof isOnline !== 'undefined' && isOnline && isHost) {
         sendGameEvent('start-game', {});
@@ -65,6 +147,10 @@ function resetGame() {
     helperDrones = [];
     xpMultiplier = 1;
     
+    // Guardar créditos de la partida al reiniciar
+    userSave.credits = (userSave.credits || 0) + players[0].credits;
+    saveGame();
+    
     players.forEach(p => {
         p.credits = 0;
         p.level = 1;
@@ -72,12 +158,15 @@ function resetGame() {
         p.nextXp = 100;
         p.hp = p.maxHp || 100;
         p.shield = 0;
-        p.weapons = ['basic'];
+        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
         p.currentWeaponIndex = 0;
         p.overdriveTimer = 0;
         p.dashTimer = 0;
         p.dashCooldown = 0;
         p.pulseCooldown = 0;
+        p.teleportCooldown = 0;
+        p.reinicioForzadoCooldown = 0;
+        p.postCombustionTimer = 0;
         p.weaponUpgrades = { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } };
         p.upgradeCounts = { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 };
         p.laserDmgMod = 1.0;
@@ -111,6 +200,10 @@ function returnToMainMenu() {
     helperDrones = [];
     xpMultiplier = 1;
     
+    // Guardar créditos de la partida al volver al menú
+    userSave.credits = (userSave.credits || 0) + players[0].credits;
+    saveGame();
+    
     players.forEach(p => {
         p.credits = 0;
         p.level = 1;
@@ -118,12 +211,15 @@ function returnToMainMenu() {
         p.nextXp = 100;
         p.hp = p.maxHp || 100;
         p.shield = 0;
-        p.weapons = ['basic'];
+        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
         p.currentWeaponIndex = 0;
         p.overdriveTimer = 0;
         p.dashTimer = 0;
         p.dashCooldown = 0;
         p.pulseCooldown = 0;
+        p.teleportCooldown = 0;
+        p.reinicioForzadoCooldown = 0;
+        p.postCombustionTimer = 0;
         p.weaponUpgrades = { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } };
         p.upgradeCounts = { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 };
         p.laserDmgMod = 1.0;
@@ -152,41 +248,247 @@ function returnToMainMenu() {
     }
 }
 
-// === FUNCIÓN processGamepadInput MOVIDA A player.js ===
+// --- IMPLEMENTACIÓN DE HABILIDADES CONFIGURABLES ---
+function triggerTeleport(pObj) {
+    if (!pObj) pObj = players[0];
+    let moveX = 0; let moveY = 0;
+    if (pObj.inputSource === 'keyboard') {
+        if (keys['w'] || keys['arrowup']) moveY = -1;
+        if (keys['s'] || keys['arrowdown']) moveY = 1;
+        if (keys['a'] || keys['arrowleft']) moveX = -1;
+        if (keys['d'] || keys['arrowright']) moveX = 1;
+    } else {
+        const gamepads = navigator.getGamepads();
+        let gp = gamepads[pObj.gamepadIndex];
+        if (gp) {
+            moveX = gp.axes[0] || 0;
+            moveY = gp.axes[1] || 0;
+        }
+    }
+    let angle = pObj.angle;
+    if (moveX !== 0 || moveY !== 0) {
+        angle = Math.atan2(moveY, moveX);
+    }
+    
+    let dist = 180;
+    let newX = pObj.x + Math.cos(angle) * dist;
+    let newY = pObj.y + Math.sin(angle) * dist;
+    
+    newX = Math.max(pObj.radius, Math.min(canvas.width - pObj.radius, newX));
+    newY = Math.max(pObj.radius, Math.min(canvas.height - pObj.radius, newY));
+    
+    createExplosion(pObj.x, pObj.y, '#aa00ff', 20, 1.2);
+    createExplosion(newX, newY, '#00ffff', 25, 1.5);
+    
+    enemies.forEach(e => {
+        let distStart = Math.hypot(e.x - pObj.x, e.y - pObj.y);
+        let distEnd = Math.hypot(e.x - newX, e.y - newY);
+        if (distStart < 100 || distEnd < 100) {
+            let dmg = 50 * pObj.damageModifier;
+            e.hp -= dmg;
+            e.flashTicks = 4;
+            spawnDamageText(e.x, e.y, Math.floor(dmg), 'normal');
+        }
+    });
+    
+    pObj.x = newX;
+    pObj.y = newY;
+    pObj.teleportCooldown = 480; 
+    playPulseSound(); 
+    showNetworkMessage(`🌌 ¡TELETRANSPORTE (P${pObj.id})!`, 1000);
+}
 
+function triggerAbility(slotKey, pObj) {
+    if (!pObj) pObj = players[0];
+    if (pObj.isDead || isPaused || !gameStarted) return;
+    if ((pObj.empTimer || 0) > 0) return;
+    
+    let abilityId = userSave.nexusBuild.skills[slotKey];
+    if (!abilityId) return;
+    
+    let mod = getActiveSkillModifier(abilityId);
+    
+    if (abilityId === 'dash' || abilityId === 'turbo_impulso') {
+        if (pObj.dashCooldown > 0 || pObj.dashTimer > 0) return;
+        let moveX = 0; let moveY = 0;
+        if (pObj.inputSource === 'keyboard') {
+            if (keys['w'] || keys['arrowup']) moveY = -1;
+            if (keys['s'] || keys['arrowdown']) moveY = 1;
+            if (keys['a'] || keys['arrowleft']) moveX = -1;
+            if (keys['d'] || keys['arrowright']) moveX = 1;
+        } else {
+            const gamepads = navigator.getGamepads();
+            let gp = gamepads[pObj.gamepadIndex];
+            if (gp) {
+                moveX = gp.axes[0] || 0;
+                moveY = gp.axes[1] || 0;
+            }
+        }
+        if (moveX === 0 && moveY === 0) return;
+        let len = Math.hypot(moveX, moveY);
+        pObj.dashVx = (moveX / len) * 14; pObj.dashVy = (moveY / len) * 14;
+        
+        let baseCD = Math.max(30, 90 - (getPassiveLevel('passive_cooldown') * 5));
+        let dashCD = Math.max(15, Math.floor(baseCD * mod.cdMultiplier));
+        
+        pObj.dashTimer = 10; pObj.dashCooldown = dashCD; screenShake = 5;
+        playDashSound();
+        
+        if (mod.level === 6) {
+            pObj.invisibleTimer = 30; // 0.5s at 60fps
+            pObj.invulnTimer = Math.max(pObj.invulnTimer || 0, 30);
+            showNetworkMessage('🏃 ¡DASH INVISIBLE!', 800);
+        }
+    } else if (abilityId === 'pulse' || abilityId === 'pulso_choque') {
+        if (pObj.pulseCooldown > 0) return;
+        let baseCD = 300;
+        pObj.pulseCooldown = Math.max(60, Math.floor(baseCD * mod.cdMultiplier));
+        createExplosion(pObj.x, pObj.y, '#ff007f', 40, 2);
+        screenShake = 15;
+        playPulseSound();
+        
+        let pulseDmg = Math.floor(35 * mod.effectMultiplier);
+        let forceMult = mod.effectMultiplier;
+        
+        enemies.forEach(e => {
+            let dx = e.x - pObj.x; let dy = e.y - pObj.y; let dist = Math.hypot(dx, dy);
+            if (dist < 260) {
+                let force = ((260 - dist) / 1.2) * forceMult; let angle = Math.atan2(dy, dx);
+                if (dist > 0) { e.x += Math.cos(angle) * force; e.y += Math.sin(angle) * force; }
+                e.hp -= pulseDmg; e.flashTicks = 5; spawnDamageText(e.x, e.y, pulseDmg, 'normal');
+                if (mod.level === 6) {
+                    e.stunTimer = 90; // 1.5s stun
+                    createExplosion(e.x, e.y, '#00ffff', 4, 0.4);
+                }
+            }
+        });
+    } else if (abilityId === 'overload' || abilityId === 'sobrecarga_armas') {
+        if (pObj.qCooldown > 0) return;
+        let baseCD = 900;
+        pObj.qCooldown = Math.max(180, Math.floor(baseCD * mod.cdMultiplier * (pObj.qCdMod || 1.0)));
+        pObj.dashCooldown = 0;
+        pObj.pulseCooldown = 0;
+        pObj.laserCooldown = 0;
+        pObj.qTurboTimer = 240; 
+        
+        playOverloadSound();
+        createExplosion(pObj.x, pObj.y, '#00ffaa', 30, 2);
+        showNetworkMessage(`⚡ ¡CÉLULA DE SOBRECARGA ACTIVADA (P${pObj.id})!`, 2000);
+    } else if (abilityId === 'turret' || abilityId === 'torreta_desplegable') {
+        pObj.isTurret = !pObj.isTurret;
+        playTurretToggleSound();
+        if (pObj.isTurret) pObj.minigunSpool = 0;
+    } else if (abilityId === 'teleport' || abilityId === 'salto_falla') {
+        if ((pObj.teleportCooldown || 0) > 0) return;
+        let baseCD = 480;
+        let blinkCD = Math.max(90, Math.floor(baseCD * mod.cdMultiplier));
+        
+        let moveX = 0; let moveY = 0;
+        if (pObj.inputSource === 'keyboard') {
+            if (keys['w'] || keys['arrowup']) moveY = -1;
+            if (keys['s'] || keys['arrowdown']) moveY = 1;
+            if (keys['a'] || keys['arrowleft']) moveX = -1;
+            if (keys['d'] || keys['arrowright']) moveX = 1;
+        } else {
+            const gamepads = navigator.getGamepads();
+            let gp = gamepads[pObj.gamepadIndex];
+            if (gp) {
+                moveX = gp.axes[0] || 0;
+                moveY = gp.axes[1] || 0;
+            }
+        }
+        if (moveX === 0 && moveY === 0) {
+            moveX = Math.cos(pObj.angle);
+            moveY = Math.sin(pObj.angle);
+        }
+        let len = Math.hypot(moveX, moveY);
+        let dx = (moveX / len) * 220;
+        let dy = (moveY / len) * 220;
+        
+        let oldX = pObj.x;
+        let oldY = pObj.y;
+        let newX = Math.max(pObj.radius, Math.min(canvas.width - pObj.radius, pObj.x + dx));
+        let newY = Math.max(pObj.radius, Math.min(canvas.height - pObj.radius, pObj.y + dy));
+        
+        createExplosion(oldX, oldY, '#7700ff', 20, 1);
+        enemies.forEach(e => {
+            let distStart = Math.hypot(e.x - oldX, e.y - oldY);
+            let distEnd = Math.hypot(e.x - newX, e.y - newY);
+            if (distStart < 100 || distEnd < 100) {
+                let dmg = 50 * mod.effectMultiplier * pObj.damageModifier;
+                e.hp -= dmg;
+                e.flashTicks = 4;
+                spawnDamageText(e.x, e.y, Math.floor(dmg), 'normal');
+            }
+        });
+        
+        if (mod.level === 6) {
+            // Decoy explosion decoy clone
+            setTimeout(() => {
+                createExplosion(oldX, oldY, '#ff00ff', 50, 2.5);
+                enemies.forEach(e => {
+                    let dist = Math.hypot(e.x - oldX, e.y - oldY);
+                    if (dist < 150) {
+                        let dmg = 100 * pObj.damageModifier;
+                        e.hp -= dmg; e.flashTicks = 5;
+                        spawnDamageText(e.x, e.y, dmg, 'normal');
+                    }
+                });
+                playExplosionSound();
+            }, 300);
+            showNetworkMessage('🌌 ¡CLON DE EXTRACCIÓN EXPLOSIVA!', 1000);
+        }
+        
+        pObj.x = newX;
+        pObj.y = newY;
+        pObj.teleportCooldown = blinkCD;
+        playPulseSound(); 
+        showNetworkMessage(`🌌 ¡TELETRANSPORTE (P${pObj.id})!`, 1000);
+    } else {
+        // Delegar todas las habilidades restantes al gestor central de habilidades
+        if (typeof executeActiveSkill === 'function') {
+            executeActiveSkill(abilityId, pObj, slotKey);
+        } else {
+            // Fallback mínimo si skills.js no cargó
+            let baseCD = 300;
+            let skillCD = Math.max(60, Math.floor(baseCD * mod.cdMultiplier));
+            if (slotKey === 'Shift') pObj.dashCooldown = skillCD;
+            else if (slotKey === 'E') pObj.pulseCooldown = skillCD;
+            else if (slotKey === 'Q') pObj.qCooldown = skillCD;
+            else if (slotKey === 'Space') pObj.pulseCooldown = skillCD;
+            playLaserFireSound(1.5); screenShake = 5;
+            showNetworkMessage(`⚡ ${COMPONENT_CATALOG[abilityId] ? COMPONENT_CATALOG[abilityId].name.toUpperCase() : abilityId}`, 1000);
+        }
+    }
+
+    // Efecto Ultra Aspiradora de Datos
+    let magnetLevel = getPassiveLevel('passive_magnet');
+    if (magnetLevel === 6 && pObj.id === 1) {
+        drops.forEach(d => {
+            d.x = pObj.x;
+            d.y = pObj.y;
+        });
+        showNetworkMessage('🧲 ¡ASPIRADORA DE DATOS ACTIVADA!', 1200);
+    }
+}
+
+// === ENTRADA DE TECLADO Y MOUSE ===
 window.addEventListener('keydown', e => {
     let k = e.key.toLowerCase(); keys[k] = true;
     if (!gameStarted) return;
     if (k === 'p') { if (!isShopActive && !inCollectionMenu) { togglePause(); } }
     if (isPaused) return;
     if (k === 'm') { players[0].aimMode = players[0].aimMode === 'AUTO' ? 'MANUAL' : 'AUTO'; updateUI(); }
-    if (e.key === 'Shift') { triggerDash(); playDashSound(); } 
-    if (k === 'e') { triggerPulse(); playPulseSound(); }
-    if (k === 'q') {
-        let p = players[0];
-        if ((p.qCooldown || 0) <= 0 && (p.empTimer || 0) === 0) {
-            p.dashCooldown = 0;
-            p.pulseCooldown = 0;
-            p.laserCooldown = 0;
-            p.qTurboTimer = 240; // 4s
-            p.qCooldown = 900 * (p.qCdMod || 1.0); // 15s base
-            
-            playOverloadSound();
-            createExplosion(p.x, p.y, '#00ffaa', 30, 2);
-            showNetworkMessage('⚡ ¡CÉLULA DE SOBRECARGA ACTIVADA!', 2000);
-        }
-    }
+    
+    // Mapeo dinámico de habilidades del Nexus
+    if (e.key === 'Shift') { triggerAbility('Shift'); } 
+    if (k === 'e') { triggerAbility('E'); }
+    if (k === 'q') { triggerAbility('Q'); }
+    
     if (e.key === ' ' || e.key === 'Spacebar') {
         if (gameStarted && !isPaused) {
-            let p = players[0];
             if (waveActive) {
-                if ((p.empTimer || 0) === 0) {
-                    p.isTurret = !p.isTurret;
-                    playTurretToggleSound();
-                    if (p.isTurret) {
-                        p.minigunSpool = 0;
-                    }
-                }
+                triggerAbility('Space');
             } else if (enemies.length === 0 && !inCollectionMenu) {
                 toggleShop(!isShopActive);
             }
@@ -206,8 +508,13 @@ window.addEventListener('mousedown', e => {
     if (e.button === 2 && gameStarted && !isPaused) {
         let p = players[0];
         if ((p.empTimer || 0) === 0 && (p.laserCooldown || 0) <= 0 && !p.isTurret) {
-            p.isChargingLaser = true;
-            p.laserCharge = 0;
+            let specWep = userSave.nexusBuild.specialWeapon || 'laser';
+            if (specWep === 'laser') {
+                p.isChargingLaser = true;
+                p.laserCharge = 0;
+            } else if (specWep === 'mortar') {
+                fireMortar(p);
+            }
         }
     }
 });
@@ -309,14 +616,68 @@ function update() {
         if (p.empTimer > 0) p.empTimer--;
         if ((p.invulnTimer || 0) > 0) p.invulnTimer--;
         
-        // Cooldowns v0.8.0
+        // Cooldowns v0.8.0 / v0.9.0
         if (p.laserCooldown > 0) p.laserCooldown -= cdRate;
+        if (p.teleportCooldown > 0) p.teleportCooldown -= cdRate;
         if (p.qCooldown > 0) p.qCooldown--;
         if (p.qTurboTimer > 0) p.qTurboTimer--;
+        
+        // Cooldowns pasivos y especiales
+        if (p.reinicioForzadoCooldown > 0) p.reinicioForzadoCooldown--;
+        if (p.postCombustionTimer > 0) p.postCombustionTimer--;
+        if (p.invisibleTimer > 0) p.invisibleTimer--;
+        
+        // HP drain during Weapon Overload (sobrecarga_armas)
+        if (p.qTurboTimer > 0) {
+            p.hp = Math.max(1, p.hp - 0.15);
+        }
         
         if (p.dashCooldown < 0) p.dashCooldown = 0;
         if (p.pulseCooldown < 0) p.pulseCooldown = 0;
         if (p.laserCooldown < 0) p.laserCooldown = 0;
+        if (p.teleportCooldown < 0) p.teleportCooldown = 0;
+        
+        // Avatar de la Guerra: x2 daño y velocidad, x3 max HP temporalmente
+        if ((p.avatarGuerraTimer || 0) > 0) {
+            p.avatarGuerraTimer--;
+            if (!p._avatarApplied) {
+                p._avatarApplied = true;
+                p.damageModifier *= 2; p.speed *= 1.5;
+                if (p.avatarGuerraUltra) { p.invulnTimer = 999; }
+            }
+        } else if (p._avatarApplied) {
+            p._avatarApplied = false;
+            p.damageModifier /= 2; p.speed /= 1.5;
+            if (p.invulnTimer > 0 && p.avatarGuerraUltra) p.invulnTimer = 0;
+        }
+        
+        // Frenesí Cinético: dash hace x10 daño
+        if ((p.frenesiCineticoTimer || 0) > 0) {
+            p.frenesiCineticoTimer--;
+            if (p.dashTimer > 0) {
+                // Daño de embestida a enemigos
+                enemies.forEach(e => {
+                    let d = Math.hypot(e.x - p.x, e.y - p.y);
+                    if (d < p.radius + e.radius + 10) {
+                        let dmg = Math.floor(80 * p.damageModifier * (p.frenesiCineticoUltra ? 1.5 : 1));
+                        e.hp -= dmg; e.flashTicks = 5;
+                        spawnDamageText(e.x, e.y, dmg, 'crit');
+                        // Ultra: resetear dash CD al matar
+                        if (e.hp <= 0 && p.frenesiCineticoUltra) p.dashCooldown = 0;
+                    }
+                });
+            }
+        }
+        
+        // Transmisor de Energía: aplicar boost de daño activo
+        if ((p.transmitterBuff || 0) > 0) {
+            p.transmitterBuff--;
+            let transmLvl = p.transmitterLvl || 1;
+            p.damageModifier = (p._baseDmgMod || 1.0) * (1 + transmLvl * 0.05);
+            if (p.transmitterBuff <= 0) {
+                p.damageModifier = p._baseDmgMod || 1.0;
+            }
+        }
         
         // Carga del láser
         if (p.isChargingLaser) {
@@ -342,23 +703,28 @@ function update() {
             }
         }
         
-        // Descarga trasera
+        // Descarga trasera y Misiles Torreta Ultra (Lv6)
         if (p.isTurret) {
             p.rearDischargeTimer++;
             if (p.rearDischargeTimer >= 90) {
                 p.rearDischargeTimer = 0;
                 triggerRearDischarge(p);
             }
+            let turretLvl = getActiveSkillLevel('torreta_desplegable');
+            if (turretLvl === 6) {
+                if (!p.turretRocketTimer) p.turretRocketTimer = 0;
+                p.turretRocketTimer++;
+                if (p.turretRocketTimer >= 180) { // 3s
+                    p.turretRocketTimer = 0;
+                    fireTurretRockets(p);
+                }
+            }
+        } else {
+            p.turretRocketTimer = 0;
         }
     });
 
-    let maxDashCD = Math.max(30, 90 - (userSave.artifacts.hyperdrive * 5));
-    document.getElementById('dash-cd').style.width = `${(1 - players[0].dashCooldown / maxDashCD) * 100}%`;
-    document.getElementById('pulse-cd').style.width = `${(1 - players[0].pulseCooldown / 300) * 100}%`;
-    document.getElementById('q-cd').style.width = `${(1 - players[0].qCooldown / 900) * 100}%`;
-    
-    let maxLaserCD = players[0].maxLaserCooldown || 480;
-    document.getElementById('laser-cd').style.width = `${(1 - players[0].laserCooldown / maxLaserCD) * 100}%`;
+    updateHUDCooldownBars(players[0]);
     
     let heatBar = document.getElementById('minigun-heat-bar');
     if (heatBar) {
@@ -384,6 +750,10 @@ function update() {
                 if (p.vortexPullCount >= 2) currentSpeed /= 2;
                 if (p.isChargingLaser) currentSpeed = 1.8;
                 if (p.isTurret) currentSpeed = 0;
+                
+                // Ralentización por zonas Glitch
+                let inGlitch = hazards.some(h => h.isGlitchZone && Math.hypot(p.x - h.x, p.y - h.y) < h.radius);
+                if (inGlitch) currentSpeed *= 0.45;
                 
                 if (mx !== 0 || my !== 0) { let l = Math.hypot(mx, my); p.x += (mx / l) * currentSpeed; p.y += (my / l) * currentSpeed; }
             }
@@ -544,14 +914,77 @@ function update() {
     // Balas vs Enemigos
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i]; if (b.type === 'enemy') continue;
-        b.x += b.vx; b.y += b.vy;
+        
+        if (b.type === 'homing_rocket') {
+            if (b.target && b.target.hp > 0 && enemies.includes(b.target)) {
+                let dx = b.target.x - b.x;
+                let dy = b.target.y - b.y;
+                let angle = Math.atan2(dy, dx);
+                let speed = 9;
+                b.vx = Math.cos(angle) * speed;
+                b.vy = Math.sin(angle) * speed;
+            } else if (enemies.length > 0) {
+                // Find a new target if old one is dead
+                let closest = enemies[0];
+                let minDist = Math.hypot(enemies[0].x - b.x, enemies[0].y - b.y);
+                enemies.forEach(e => {
+                    let d = Math.hypot(e.x - b.x, e.y - b.y);
+                    if (d < minDist) { minDist = d; closest = e; }
+                });
+                b.target = closest;
+            }
+            b.x += b.vx; b.y += b.vy;
+        } else if (b.type === 'mortar_shell') {
+            let t = 1 - b.duration / 45;
+            b.x = b.startX + (b.targetX - b.startX) * t;
+            b.y = b.startY + (b.targetY - b.startY) * t - Math.sin(t * Math.PI) * 120;
+        } else {
+            b.x += b.vx; b.y += b.vy;
+        }
         
         if (b.duration !== undefined) {
             b.duration--;
-            if (b.duration <= 0) { bullets.splice(i, 1); continue; }
+            if (b.duration <= 0) {
+                if (b.type === 'mortar_shell') {
+                    triggerMortarExplosion(b.targetX, b.targetY, b.damage);
+                }
+                bullets.splice(i, 1); 
+                continue; 
+            }
         }
         
-        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) { bullets.splice(i, 1); continue; }
+        // Balística de Rebote (passive_bounce): SOLO rebotar si tiene cargas
+        let outOfBounds = b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height;
+        if (outOfBounds) {
+            if ((b.bounceLvl || 0) > 0) {
+                // Clampear posición e invertir velocidad
+                if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx); }
+                else if (b.x > canvas.width) { b.x = canvas.width; b.vx = -Math.abs(b.vx); }
+                if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy); }
+                else if (b.y > canvas.height) { b.y = canvas.height; b.vy = -Math.abs(b.vy); }
+                
+                // Ultra Fragmentación (Lv6): primer rebote genera 2 sub-proyectiles
+                if (b.bounceLvl >= 6 && !b._hasSplit) {
+                    b._hasSplit = true;
+                    for (let sp = 0; sp < 2; sp++) {
+                        let sAngle = Math.atan2(b.vy, b.vx) + (sp === 0 ? 0.4 : -0.4);
+                        bullets.push({
+                            x: b.x, y: b.y,
+                            vx: Math.cos(sAngle) * Math.hypot(b.vx, b.vy) * 0.8,
+                            vy: Math.sin(sAngle) * Math.hypot(b.vx, b.vy) * 0.8,
+                            radius: (b.radius * 0.6) | 0,
+                            color: '#ffaa00', damage: b.damage * 0.5, type: 'single',
+                            bounceLvl: 0, burnLvl: b.burnLvl || 0
+                        });
+                    }
+                    createExplosion(b.x, b.y, '#ffaa00', 5, 0.6);
+                }
+                b.bounceLvl--;
+            } else {
+                // Sin rebotes: eliminar bala normalmente
+                bullets.splice(i, 1); continue;
+            }
+        }
 
         for (let j = enemies.length - 1; j >= 0; j--) {
             let e = enemies[j]; 
@@ -576,6 +1009,10 @@ function update() {
             
             if (dist < b.radius + e.radius) {
                 if (e.isBoss && e.bossInvulnTimer > 0) { createExplosion(b.x, b.y, '#ffffff', 5, 0.8); bullets.splice(i, 1); break; }
+
+                if (b.isStunning) {
+                    e.stunTimer = 30;
+                }
 
                 // Inmunidad Fase 2 del Overlord Apex: solo el Mega-Láser Crítico puede dañarlo
                 if (e.isOverlordApex && e.olPhase2Immune) {
@@ -617,8 +1054,9 @@ function update() {
                     let diff = angleToB - e.matrixAngle;
                     while (diff > Math.PI) diff -= Math.PI * 2;
                     while (diff < -Math.PI) diff += Math.PI * 2;
-                    if (Math.abs(diff) < Math.PI / 3) { // ±60° frontal bloqueado
+                    if (Math.abs(diff) < Math.PI / 9.0) { // ±20° frontal bloqueado (era ±28.5°)
                         createExplosion(b.x, b.y, '#00aaff', 5, 0.8);
+                        e.shieldFlashTicks = 8;
                         bullets.splice(i, 1); break;
                     }
                 }
@@ -638,17 +1076,103 @@ function update() {
                         }
                     }
                 } else {
-                    let isCrit = Math.random() < 0.15; let finalDmg = isCrit ? b.damage * 1.8 : b.damage;
+                    // --- MODIFICADORES DE PASIVOS ---
+                    // Crítico base (15%) + Analizador de Debilidades
+                    let critLvl = b.critDmgLvl || 0;
+                    let critChance = 0.15 + critLvl * 0.03;
+                    let isCrit = Math.random() < critChance;
+                    let critMult = isCrit ? (1.8 + critLvl * 0.1) : 1.0;
+                    let finalDmg = b.damage * critMult;
+
+                    // Punto de Quiebre (Lv6): ejecutar enemigos < 15% HP
+                    if (critLvl === 6 && isCrit && e.hp < e.maxHp * 0.15 && !e.isBoss) {
+                        finalDmg = e.hp + 9999;
+                        spawnDamageText(e.x, e.y, 'EJECUCIÓN', 'crit');
+                    }
                     
                     // Daño porcentual por vida máxima a jefes con láser
                     if (e.isBoss && (b.type === 'laser_medium' || b.type === 'laser_heavy')) {
                         let pct = b.type === 'laser_heavy' ? 0.05 : 0.02; // 5% o 2% por impacto
                         finalDmg += Math.floor(e.maxHp * pct);
                     }
-                    
+
+                    // Venganza de Código: +2% daño por cada 1% HP perdido
+                    if (players[0] && getPassiveLevel('passive_code_vengeance') > 0) {
+                        let vengeanceLvl = getPassiveLevel('passive_code_vengeance');
+                        let hpPct = (players[0].maxHp - players[0].hp) / players[0].maxHp;
+                        finalDmg *= (1 + hpPct * 2.0 * (vengeanceLvl / 6));
+                        // Ultra: crítico garantizado y atraviesa armadura
+                        if (vengeanceLvl === 6 && players[0].hp <= 1) {
+                            isCrit = true; finalDmg *= 2; e.armor = 0;
+                        }
+                    }
+
                     let damageTaken = Math.max(1, finalDmg - (e.armor || 0));
-                    e.hp -= damageTaken; e.flashTicks = 4; createExplosion(b.x, b.y, b.color, 3, 0.5); spawnDamageText(e.x, e.y, damageTaken, isCrit ? 'crit' : 'normal');
+                    e.hp -= damageTaken; e.flashTicks = 4;
+                    // Contraataque de espejo para los fragmentos de Vector
+                    if (e.isVectorFragment && typeof triggerFragmentMirrorAttack === 'function') {
+                        triggerFragmentMirrorAttack(e);
+                    }
+                    createExplosion(b.x, b.y, b.color, 3, 0.5);
+                    spawnDamageText(e.x, e.y, Math.floor(damageTaken), isCrit ? 'crit' : 'normal');
                     playHitSound();
+
+                    // --- QUEMADURA (Munición Incendiaria) ---
+                    if ((b.burnLvl || 0) > 0) {
+                        let burnChance = b.burnLvl * 0.08;
+                        if (Math.random() < burnChance) {
+                            e.burnTimer = 180;
+                            e.burnDmg = b.burnLvl * 2;
+                            e.isBurning = true;
+                            createExplosion(e.x, e.y, '#ff4400', 4, 0.6);
+                        }
+                    }
+
+                    // --- KNOCKBACK EXTRA (Condensador de Pulso) ---
+                    if ((b.knockLvl || 0) > 0) {
+                        let kforce = 4 + b.knockLvl * 1.5;
+                        let ka = Math.atan2(e.y - b.y, e.x - b.x);
+                        e.x += Math.cos(ka) * kforce;
+                        e.y += Math.sin(ka) * kforce;
+                        // Ultra (Lv6): daño extra si colisiona con el borde
+                        if (b.knockLvl === 6) {
+                            if (e.x < e.radius || e.x > canvas.width - e.radius || e.y < e.radius || e.y > canvas.height - e.radius) {
+                                e.hp -= Math.floor(damageTaken * 0.5);
+                                spawnDamageText(e.x, e.y, '¡IMPACTO!', 'crit');
+                            }
+                            e.x = Math.max(e.radius, Math.min(canvas.width - e.radius, e.x));
+                            e.y = Math.max(e.radius, Math.min(canvas.height - e.radius, e.y));
+                        }
+                    }
+
+                    // --- SINGULARIDAD (Núcleo de Singularidad) ---
+                    if ((b.singularityLvl || 0) > 0) {
+                        enemies.forEach(other => {
+                            if (other !== e) {
+                                let sdx = b.x - other.x; let sdy = b.y - other.y;
+                                let sdist = Math.hypot(sdx, sdy);
+                                if (sdist < 120 && sdist > 0) {
+                                    let sf = 1.5 * b.singularityLvl;
+                                    other.x += (sdx / sdist) * sf;
+                                    other.y += (sdy / sdist) * sf;
+                                }
+                            }
+                        });
+                    }
+
+                    // --- ROBO DE VIDA (Sifón de Vida) ---
+                    let lifestealLvl = getPassiveLevel('passive_lifesteal');
+                    if (lifestealLvl > 0 && players[0]) {
+                        let stolen = damageTaken * 0.005 * lifestealLvl;
+                        if (stolen >= 1) {
+                            players[0].hp = Math.min(players[0].maxHp, players[0].hp + stolen);
+                            // Ultra: curar al aliado con menos HP
+                            if (lifestealLvl === 6 && isCoop && players.length > 1) {
+                                let weakest = players.reduce((a, b) => (!b.isDead && b.hp < a.hp) ? b : a, players[0]);
+                                if (weakest !== players[0]) weakest.hp = Math.min(weakest.maxHp, weakest.hp + stolen);
+                            }
+                        }
+                    }
                 }
                 if (e.isBoss && e.hp <= e.maxHp * 0.5 && e.bossPhase === 0) { e.bossPhase = 1; e.bossInvulnTimer = 150; createExplosion(e.x, e.y, '#ffff00', 40, 2); }
                 
@@ -667,25 +1191,53 @@ function update() {
     updateEnemies();
     // Actualizar barra de vida del jefe en HUD (si existe)
     let boss = enemies.find(e => e.isVectorSupreme || e.isCoreGuardian || e.isOverlordApex);
+    let frags = enemies.filter(e => e.isVectorFragment);
     let hpFill = document.getElementById('boss-hp-fill');
     let hpCont = document.getElementById('boss-hp-container');
-    if (boss && hpFill && hpCont) {
+    
+    if ((boss || frags.length > 0) && hpFill && hpCont) {
         if (hpCont.style.display !== 'block') {
             hpCont.style.display = 'block';
             let label = hpCont.querySelector('.boss-hp-label');
             if (label) {
-                label.innerText = boss.isCoreGuardian ? 'GUARDIÁN DEL NÚCLEO' : boss.isOverlordApex ? 'OVERLORD APEX' : 'VECTOR SUPREMO';
+                label.innerText = boss ? (boss.isCoreGuardian ? 'GUARDIÁN DEL NÚCLEO' : boss.isOverlordApex ? 'OVERLORD APEX' : 'VECTOR SUPREMO') : 'VECTOR SUPREMO — FRAGMENTOS';
             }
         }
-        let pct = Math.max(0, (boss.hp / boss.maxHp) * 100);
+        
+        let pct = 0;
+        if (boss) {
+            pct = Math.max(0, (boss.hp / boss.maxHp) * 100);
+        } else {
+            // Si solo quedan los fragmentos, sumamos su HP actual y lo comparamos con su HP máximo combinado
+            let currentFragsHp = frags.reduce((sum, f) => sum + f.hp, 0);
+            let totalMaxHp = frags.reduce((sum, f) => sum + f.maxHp, 0);
+            // Queremos que empiece exactamente en 30% y baje suavemente a 0%
+            pct = Math.max(0, 30 * (currentFragsHp / (totalMaxHp || 1)));
+            
+            let label = hpCont.querySelector('.boss-hp-label');
+            if (label && label.innerText !== 'VECTOR SUPREMO — FRAGMENTOS') {
+                label.innerText = 'VECTOR SUPREMO — FRAGMENTOS';
+            }
+        }
         hpFill.style.width = `${pct}%`;
-    } else if (!boss && hpCont) {
+    } else if (!boss && frags.length === 0 && hpCont) {
         if (hpCont.style.display !== 'none') hpCont.style.display = 'none';
     }
     // Balas enemigas vs Jugadores
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i]; if (b.type !== 'enemy') continue;
         b.x += b.vx; b.y += b.vy; if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) { bullets.splice(i, 1); continue; }
+        
+        // Estela de partículas moradas para las balas del fragmento Blaster de Vector
+        if (b.isPurpleBlasterBullet && Math.random() < 0.35) {
+            particles.push({
+                x: b.x, y: b.y,
+                vx: -b.vx * 0.15 + (Math.random() - 0.5) * 0.5,
+                vy: -b.vy * 0.15 + (Math.random() - 0.5) * 0.5,
+                radius: Math.random() * 2 + 1,
+                color: '#cc00ff', alpha: 0.8, decay: 0.05
+            });
+        }
         
         let hit = false;
         for (let p of players) {
@@ -760,6 +1312,40 @@ function update() {
 
     // === ACTUALIZAR DRONES ALIADOS ===
     updateHelperDrones();
+    
+    // === ACTUALIZAR HABILIDADES ACTIVAS Y PASIVOS ===
+    if (typeof updateSkillsAndPassives === 'function' && gameStarted && !isPaused) {
+        players.forEach(p => { if (!p.isDead) updateSkillsAndPassives(p); });
+        
+        // Quemadura activa en enemigos
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            if (e.isBurning && (e.burnTimer || 0) > 0) {
+                e.burnTimer--;
+                if (e.burnTimer % 30 === 0) { // Tick cada 0.5s
+                    e.hp -= (e.burnDmg || 2);
+                    e.flashTicks = 3;
+                    spawnDamageText(e.x, e.y, `🔥${e.burnDmg}`, 'normal');
+                    // Ultra Ignición en Cadena: al morir por quemadura, explotar en fuego
+                    if (e.hp <= 0 && getPassiveLevel('passive_burn') === 6) {
+                        createExplosion(e.x, e.y, '#ff4400', 20, 1.5);
+                        enemies.forEach(other => {
+                            if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 100) {
+                                other.isBurning = true; other.burnTimer = 90; other.burnDmg = (e.burnDmg || 2);
+                            }
+                        });
+                    }
+                }
+                if (e.burnTimer <= 0) { e.isBurning = false; }
+            }
+            // Congelado: reducir velocidad
+            if (e.isFrozen && (e.stunTimer || 0) > 0) {
+                if (e.frozenDmgAmp) e.frozenDmgAmpActive = true;
+            } else if (e.frozenDmgAmpActive && (e.stunTimer || 0) <= 0) {
+                e.frozenDmgAmpActive = false;
+            }
+        }
+    }
     // Limpiar drones al fin de oleada (se limpian en toggleShop -> resetGame)
 }
 
@@ -798,9 +1384,37 @@ function draw() {
         ctx.restore(); return;
     }
 
-    ctx.strokeStyle = 'rgba(0, 255, 204, 0.025)'; ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
-    for (let y = 0; y < canvas.height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+    // === DIBUJAR CUADRÍCULA (CON SOPORTE PARA GLITCH DE FRAGMENTOS) ===
+    let hasVectorFragments = enemies.some(e => e.isVectorFragment);
+    if (hasVectorFragments) {
+        let isGlitching = Math.random() < 0.22;
+        ctx.strokeStyle = isGlitching ? 'rgba(255, 0, 127, 0.05)' : 'rgba(0, 255, 204, 0.015)';
+        ctx.lineWidth = isGlitching ? 1.5 : 1;
+        let shift = isGlitching ? (Math.random() - 0.5) * 8 : 0;
+        
+        for (let x = 0; x < canvas.width; x += 60) {
+            ctx.beginPath();
+            ctx.moveTo(x + shift, 0);
+            ctx.lineTo(x + shift, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 60) {
+            ctx.beginPath();
+            ctx.moveTo(0, y + shift);
+            ctx.lineTo(canvas.width, y + shift);
+            ctx.stroke();
+        }
+        
+        // Tinte de fondo glitch muy sutil ocasional
+        if (Math.random() < 0.02) {
+            ctx.fillStyle = 'rgba(255, 0, 127, 0.03)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    } else {
+        ctx.strokeStyle = 'rgba(0, 255, 204, 0.025)'; ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for (let y = 0; y < canvas.height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+    }
 
     // === RENDERIZAR EVENTOS DINÁMICOS ===
     drawDynamicEvents();
@@ -830,12 +1444,39 @@ function draw() {
             ctx.strokeStyle = `rgba(255, 0, 0, ${0.15 + Math.sin(Date.now() * 0.01) * 0.08})`; ctx.lineWidth = 2; ctx.setLineDash([4, 6]); ctx.stroke();
             let scanProgress = h.timer / h.maxTimer; ctx.beginPath(); ctx.arc(h.x, h.y, h.radius * scanProgress, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255, 0, 85, 0.4)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
         } else {
-            ctx.save(); let gradient = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.radius);
-            gradient.addColorStop(0, 'rgba(255, 0, 85, 0.25)'); gradient.addColorStop(0.7, 'rgba(255, 0, 60, 0.12)'); gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-            ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
-            ctx.strokeStyle = `rgba(255, 0, 85, ${0.4 + Math.random() * 0.3})`; ctx.lineWidth = 2; ctx.stroke();
-            if (h.shockwaveRadius > 0 && h.shockwaveRadius < h.radius * 1.3) {
-                ctx.beginPath(); ctx.arc(h.x, h.y, h.shockwaveRadius, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255, 255, 255, ${1 - (h.shockwaveRadius / (h.radius * 1.3))})`; ctx.lineWidth = 3; ctx.stroke();
+            ctx.save();
+            if (h.isGlitchZone) {
+                // Dibujar zona Glitch: Rejilla distorsionada, color rosa/morado glitch
+                let grad = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.radius);
+                grad.addColorStop(0, 'rgba(255, 0, 127, 0.25)');
+                grad.addColorStop(0.7, 'rgba(127, 0, 255, 0.12)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                
+                // Anillos de glitch distorsionados
+                ctx.strokeStyle = `rgba(255, 0, 127, ${0.35 + Math.sin(Date.now() * 0.03) * 0.15})`;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 12]);
+                ctx.stroke();
+                
+                // Línea de borde del glitch
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)';
+                ctx.lineWidth = 1.0;
+                ctx.setLineDash([]);
+                ctx.stroke();
+            } else {
+                let gradient = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.radius);
+                gradient.addColorStop(0, 'rgba(255, 0, 85, 0.25)'); gradient.addColorStop(0.7, 'rgba(255, 0, 60, 0.12)'); gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
+                ctx.strokeStyle = `rgba(255, 0, 85, ${0.4 + Math.random() * 0.3})`; ctx.lineWidth = 2; ctx.stroke();
+                if (h.shockwaveRadius > 0 && h.shockwaveRadius < h.radius * 1.3) {
+                    ctx.beginPath(); ctx.arc(h.x, h.y, h.shockwaveRadius, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255, 255, 255, ${1 - (h.shockwaveRadius / (h.radius * 1.3))})`; ctx.lineWidth = 3; ctx.stroke();
+                }
             }
             ctx.restore();
         }
@@ -881,6 +1522,28 @@ function draw() {
             ctx.shadowBlur = 10; ctx.shadowColor = b.color;
             ctx.fillStyle = b.color;
             ctx.fillRect(-b.radius, -b.radius, b.radius * 2, b.radius * 2);
+        } else if (b.type === 'mortar_shell') {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffaa00';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff6600';
+            ctx.fill();
+            
+            // Retícula de impacto en el suelo
+            ctx.restore();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(b.targetX, b.targetY, 20, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 100, 0, ${0.4 + Math.sin(Date.now() * 0.015) * 0.25})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(b.targetX - 8, b.targetY); ctx.lineTo(b.targetX + 8, b.targetY);
+            ctx.moveTo(b.targetX, b.targetY - 8); ctx.lineTo(b.targetX, b.targetY + 8);
+            ctx.strokeStyle = 'rgba(255, 100, 0, 0.6)';
+            ctx.stroke();
         } else {
             ctx.beginPath();
             ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -891,6 +1554,52 @@ function draw() {
         ctx.restore();
     });
     particles.forEach(p => { ctx.save(); ctx.globalAlpha = p.alpha; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill(); ctx.restore(); });
+
+    // === DIBUJAR VÍNCULO DE PLASMA DE FRAGMENTOS VECTOR (FASE 3) ===
+    let fragsVector = enemies.filter(x => x.isVectorFragment && x.hp > 0);
+    if (fragsVector.length > 1) {
+        ctx.save();
+        for (let k = 0; k < fragsVector.length; k++) {
+            let f1 = fragsVector[k];
+            let f2 = fragsVector[(k + 1) % fragsVector.length];
+            
+            // Si alguno está aturdido o preparándose, el vínculo de daño se desactiva
+            if (f1.stunTimer > 0 || f2.stunTimer > 0 || f1.convState === 'PREPARE' || f2.convState === 'PREPARE') {
+                // Dibujar líneas de telegrafía guía hacia el jugador en fase de carga
+                if (f1.convState === 'PREPARE' && f1.isCharging) {
+                    ctx.beginPath();
+                    ctx.moveTo(f1.x, f1.y);
+                    let targetP = players[0];
+                    ctx.lineTo(targetP.x, targetP.y);
+                    ctx.strokeStyle = 'rgba(255, 0, 51, 0.45)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 6]);
+                    ctx.stroke();
+                }
+                continue;
+            }
+            
+            // Haz de plasma exterior (gloria carmesí translúcida)
+            ctx.beginPath();
+            ctx.moveTo(f1.x, f1.y);
+            ctx.lineTo(f2.x, f2.y);
+            ctx.strokeStyle = 'rgba(255, 0, 85, 0.4)';
+            ctx.lineWidth = 6 + Math.sin(Date.now() * 0.05) * 2;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ff0033';
+            ctx.stroke();
+            
+            // Haz de plasma interior (núcleo blanco filoso)
+            ctx.beginPath();
+            ctx.moveTo(f1.x, f1.y);
+            ctx.lineTo(f2.x, f2.y);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
 
     enemies.forEach(e => {
         ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.angle); ctx.beginPath();
@@ -940,6 +1649,7 @@ function draw() {
             ctx.shadowBlur = 30;
             ctx.shadowColor = e.color;
             
+            // Cuerpo principal (Rombo/Octágono Geométrico)
             ctx.moveTo(0, -e.radius);
             ctx.lineTo(e.radius * 0.3, -e.radius * 0.3);
             ctx.lineTo(e.radius, 0);
@@ -952,15 +1662,90 @@ function draw() {
             ctx.fillStyle = e.flashTicks > 0 ? '#fff' : e.color;
             ctx.fill();
             
-            e.drawRotAngle = (e.drawRotAngle || 0) + 0.03;
+            // Rombo interno oscuro para dar profundidad
             ctx.beginPath();
-            ctx.arc(0, 0, e.radius * 1.2, e.drawRotAngle, e.drawRotAngle + Math.PI * 0.5);
+            ctx.moveTo(0, -e.radius * 0.55);
+            ctx.lineTo(e.radius * 0.55, 0);
+            ctx.lineTo(0, e.radius * 0.55);
+            ctx.lineTo(-e.radius * 0.55, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#060112';
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 2.5;
+            ctx.fill();
+            ctx.stroke();
+
+            // Ojo de seguimiento digital (apunta al jugador) con ciclo de parpadeo
+            let relAngle = (e.matrixAngle || 0) - e.angle;
+            let pupilDist = e.bossPhase === 1 ? 10 : 4; // Mira más intensamente en fase estática
+            let pupilX = Math.cos(relAngle) * pupilDist;
+            let pupilY = Math.sin(relAngle) * pupilDist;
+            
+            // Parpadear por 250ms cada 4.5 segundos
+            let blinkCycle = Date.now() % 4500;
+            let isBlinking = blinkCycle > 4250;
+            
+            // Brillo de fondo del ojo
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.15)';
+            ctx.fill();
+            
+            if (isBlinking) {
+                // Dibujar ojo cerrado como una ranura horizontal cian brillante
+                ctx.beginPath();
+                ctx.moveTo(pupilX - 7, pupilY);
+                ctx.lineTo(pupilX + 7, pupilY);
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#00ffff';
+                ctx.stroke();
+            } else {
+                // Pupila/Núcleo cibernético
+                let pulse = 1.0 + Math.sin(Date.now() * 0.015) * 0.2;
+                ctx.beginPath();
+                ctx.arc(pupilX, pupilY, 6 * pulse, 0, Math.PI * 2);
+                ctx.fillStyle = '#00ffff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ffff';
+                ctx.fill();
+                
+                // Destello blanco central
+                ctx.beginPath();
+                ctx.arc(pupilX, pupilY, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+
+            // Anillos holográficos orbitales
+            e.drawRotAngle = (e.drawRotAngle || 0) + 0.03;
+            
+            // Hexágono holográfico en rotación inversa
+            ctx.save();
+            ctx.rotate(-e.drawRotAngle * 1.4);
+            ctx.beginPath();
+            for (let side = 0; side < 6; side++) {
+                let angle = (side * Math.PI) / 3;
+                let rx = Math.cos(angle) * (e.radius * 0.85);
+                let ry = Math.sin(angle) * (e.radius * 0.85);
+                if (side === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // Arcos exteriores giratorios
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radius * 1.25, e.drawRotAngle, e.drawRotAngle + Math.PI * 0.5);
             ctx.strokeStyle = '#ff007f';
             ctx.lineWidth = 3;
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.arc(0, 0, e.radius * 1.2, e.drawRotAngle + Math.PI, e.drawRotAngle + Math.PI + Math.PI * 0.5);
+            ctx.arc(0, 0, e.radius * 1.25, e.drawRotAngle + Math.PI, e.drawRotAngle + Math.PI + Math.PI * 0.5);
             ctx.strokeStyle = '#ff007f';
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -998,10 +1783,43 @@ function draw() {
             ctx.globalAlpha = e.isRevealed ? 0.8 : 0.3;
         }
         else if (e.isVectorFragment) {
-            // Fragmento: X de doble triángulo, rojo brillante
-            ctx.shadowBlur = 18; ctx.shadowColor = '#ff0000';
-            ctx.moveTo(0, -e.radius); ctx.lineTo(e.radius * 0.7, e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, e.radius * 0.7);
-            ctx.moveTo(0, e.radius); ctx.lineTo(e.radius * 0.7, -e.radius * 0.7); ctx.lineTo(-e.radius * 0.7, -e.radius * 0.7);
+            skipDefaultFill = true;
+            // Dibujar Mini-Vector Supremo (Geometría Compleja y Futurista)
+            let drawColor = (e.stunTimer > 0) ? '#7f8c8d' : e.color;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = drawColor;
+            
+            // Cuerpo principal (Rombo/Octágono Geométrico)
+            ctx.moveTo(0, -e.radius);
+            ctx.lineTo(e.radius * 0.3, -e.radius * 0.3);
+            ctx.lineTo(e.radius, 0);
+            ctx.lineTo(e.radius * 0.3, e.radius * 0.3);
+            ctx.lineTo(0, e.radius);
+            ctx.lineTo(-e.radius * 0.3, e.radius * 0.3);
+            ctx.lineTo(-e.radius, 0);
+            ctx.lineTo(-e.radius * 0.3, -e.radius * 0.3);
+            ctx.lineTo(0, -e.radius);
+            ctx.fillStyle = e.flashTicks > 0 ? '#fff' : drawColor;
+            ctx.fill();
+            
+            // Rombo interno oscuro
+            ctx.beginPath();
+            ctx.moveTo(0, -e.radius * 0.55);
+            ctx.lineTo(e.radius * 0.55, 0);
+            ctx.lineTo(0, e.radius * 0.55);
+            ctx.lineTo(-e.radius * 0.55, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#060112';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+
+            // Pupila central blanca pequeña
+            ctx.beginPath();
+            ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
         }
         else if (e.isFluxNullifier) {
             skipDefaultFill = true;
@@ -1182,21 +2000,159 @@ function draw() {
 
         // Render especial: Láser giratorio del Vector Supreme en Fase 1
         if (e.isVectorSupreme && e.bossPhase === 1) {
+            // --- 1. DIBUJAR LÁSER ELÉCTRICO DE ALTO VOLTAJE ---
             ctx.save();
-            ctx.strokeStyle = '#ff007f';
-            ctx.lineWidth = 8;
-            ctx.shadowBlur = 30; ctx.shadowColor = '#ff007f';
-            ctx.globalAlpha = 0.6;
-            // Haz A
+            
+            // Función auxiliar para dibujar rayos eléctricos pesados a lo largo de un ángulo (de rayosaer.html)
+            function drawHeavyLightningLaser(startX, startY, angle, length) {
+                const segments = 10;
+                const segmentLength = length / segments;
+                const points = [[startX, startY]];
+                for (let k = 1; k <= segments; k++) {
+                    let baseX = startX + Math.cos(angle) * (k * segmentLength);
+                    let baseY = startY + Math.sin(angle) * (k * segmentLength);
+                    // Desviación perpendicular aleatoria
+                    let jitter = (Math.random() - 0.5) * 45;
+                    let px = baseX - Math.sin(angle) * jitter;
+                    let py = baseY + Math.cos(angle) * jitter;
+                    points.push([px, py]);
+                }
+                
+                // Capa exterior de energía carmesí gruesa
+                ctx.beginPath();
+                ctx.moveTo(points[0][0], points[0][1]);
+                points.forEach(pt => ctx.lineTo(pt[0], pt[1]));
+                ctx.strokeStyle = '#ff0033';
+                ctx.lineWidth = 6 + Math.random() * 4;
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = '#ff0033';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+
+                // Capa de núcleo blanco interno delgado
+                ctx.beginPath();
+                ctx.moveTo(points[0][0], points[0][1]);
+                points.forEach(pt => ctx.lineTo(pt[0], pt[1]));
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
+            }
+
+            let angles = [e.bossLaserAngle, e.bossLaserAngle + Math.PI];
+            
+            angles.forEach(angle => {
+                let startDist = e.radius * 0.75;
+                let startX = e.x + Math.cos(angle) * startDist;
+                let startY = e.y + Math.sin(angle) * startDist;
+                let endX = e.x + Math.cos(angle) * canvas.width;
+                let endY = e.y + Math.sin(angle) * canvas.width;
+
+                // Capas estéticas del cuerpo del láser (adaptadas de rayosaer.html)
+                // Capa 1: Aura ancha semi-transparente
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = 'rgba(255, 0, 51, 0.08)';
+                ctx.lineWidth = 55;
+                ctx.stroke();
+                
+                // Capa 2: Brillo interior carmesí pulsante
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = '#ff0055';
+                let beamWidth = 20 + Math.sin(Date.now() * 0.04) * 4;
+                ctx.lineWidth = beamWidth;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff0055';
+                ctx.stroke();
+
+                // Capa 3: Núcleo filoso blanco central
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3.5;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#ffffff';
+                ctx.stroke();
+                ctx.restore();
+
+                // Capa 4: Rayos eléctricos agresivos intermitentes (cada 2 frames aproximadamente)
+                if (Math.random() < 0.4) {
+                    drawHeavyLightningLaser(startX, startY, angle, canvas.width - startDist);
+                }
+
+                // Generar partículas de plasma a lo largo del láser
+                if (Math.random() < 0.25) {
+                    let dist = Math.random() * (canvas.width - startDist);
+                    let pSpeed = 4 + Math.random() * 6;
+                    particles.push({
+                        x: startX + Math.cos(angle) * dist,
+                        y: startY + Math.sin(angle) * dist,
+                        vx: Math.cos(angle) * pSpeed + (Math.random() - 0.5) * 1.5,
+                        vy: Math.sin(angle) * pSpeed + (Math.random() - 0.5) * 1.5,
+                        radius: Math.random() * 3 + 1,
+                        color: '#ff0033',
+                        alpha: 0.95,
+                        decay: 0.015 + Math.random() * 0.02
+                    });
+                }
+            });
+            ctx.restore();
+
+            // --- 2. DIBUJAR ESCUDO FRONTAL HOLOGRÁFICO (TELEGRIFÍA DE INMUNIDAD) ---
+            ctx.save();
+            ctx.translate(e.x, e.y);
+            ctx.rotate(e.matrixAngle); // Rotado hacia el jugador
+            
+            let isShieldHit = e.shieldFlashTicks && e.shieldFlashTicks > 0;
+            if (isShieldHit) {
+                e.shieldFlashTicks--;
+            }
+            
+            let shieldArc = Math.PI / 9.0; // Coincide exactamente con el arco de colisión bloqueado (±20 grados)
+            let shieldRadius = e.radius + 20;
+
+            // Aura interior y brillo del escudo holográfico
+            let shieldGrad = ctx.createRadialGradient(0, 0, shieldRadius - 10, 0, 0, shieldRadius + 20);
+            shieldGrad.addColorStop(0, isShieldHit ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 170, 255, 0.25)');
+            shieldGrad.addColorStop(1, 'rgba(0, 170, 255, 0)');
+            
             ctx.beginPath();
-            ctx.moveTo(e.x, e.y);
-            ctx.lineTo(e.x + Math.cos(e.bossLaserAngle) * canvas.width, e.y + Math.sin(e.bossLaserAngle) * canvas.width);
-            ctx.stroke();
-            // Haz B (opuesto)
+            ctx.moveTo(Math.cos(-shieldArc) * (shieldRadius - 5), Math.sin(-shieldArc) * (shieldRadius - 5));
+            ctx.arc(0, 0, shieldRadius - 5, -shieldArc, shieldArc);
+            ctx.lineTo(Math.cos(shieldArc) * (shieldRadius + 15), Math.sin(shieldArc) * (shieldRadius + 15));
+            ctx.arc(0, 0, shieldRadius + 15, shieldArc, -shieldArc, true);
+            ctx.closePath();
+            ctx.fillStyle = shieldGrad;
+            ctx.fill();
+
+            // Línea de energía holográfica principal (cian/blanca)
             ctx.beginPath();
-            ctx.moveTo(e.x, e.y);
-            ctx.lineTo(e.x + Math.cos(e.bossLaserAngle + Math.PI) * canvas.width, e.y + Math.sin(e.bossLaserAngle + Math.PI) * canvas.width);
+            ctx.arc(0, 0, shieldRadius, -shieldArc, shieldArc);
+            ctx.strokeStyle = isShieldHit ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 255, 255, 0.8)';
+            ctx.lineWidth = isShieldHit ? 6 : 4;
+            ctx.shadowBlur = isShieldHit ? 25 : 15;
+            ctx.shadowColor = isShieldHit ? '#ffffff' : '#00ffff';
             ctx.stroke();
+
+            // Línea de soporte externa más fina
+            ctx.beginPath();
+            ctx.arc(0, 0, shieldRadius + 6, -shieldArc + 0.08, shieldArc - 0.08);
+            ctx.strokeStyle = isShieldHit ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 255, 255, 0.35)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Nodos o bornes en los extremos del escudo
+            ctx.fillStyle = isShieldHit ? '#ffffff' : '#00ffff';
+            ctx.beginPath();
+            ctx.arc(Math.cos(-shieldArc) * shieldRadius, Math.sin(-shieldArc) * shieldRadius, 3.5, 0, Math.PI * 2);
+            ctx.arc(Math.cos(shieldArc) * shieldRadius, Math.sin(shieldArc) * shieldRadius, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
             ctx.restore();
         }
 
@@ -1204,14 +2160,32 @@ function draw() {
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(e.x - e.radius, e.y - e.radius - 10, e.radius * 2, 5);
             ctx.fillStyle = '#ff0055'; ctx.fillRect(e.x - e.radius, e.y - e.radius - 10, (e.radius * 2) * (e.hp / e.maxHp), 5);
         }
+        
+        if (e.stunTimer > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffff00';
+            let time = Date.now() * 0.01;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y - e.radius - 18, 6, time, time + Math.PI * 1.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(e.x, e.y - e.radius - 18, 10, -time, -time + Math.PI * 1.5);
+            ctx.stroke();
+            ctx.restore();
+        }
     });
 
     // Dibujar Jugadores
     players.forEach(p => {
         ctx.save(); ctx.translate(p.x, p.y);
 
-        // Parpadeo visual durante i-frames (alternado cada ~80ms)
-        if ((p.invulnTimer || 0) > 0) {
+        // Parpadeo visual durante i-frames (alternado cada ~80ms) o Invisibilidad
+        if (p.invisibleTimer > 0) {
+            ctx.globalAlpha = 0.25;
+        } else if ((p.invulnTimer || 0) > 0) {
             ctx.globalAlpha = (Math.floor(Date.now() / 80) % 2 === 0) ? 0.3 : 0.9;
         }
 
@@ -1322,6 +2296,11 @@ function draw() {
         ctx.restore();
     });
 
+    // === DIBUJAR HABILIDADES ACTIVAS Y PASIVOS ===
+    if (typeof drawSkillsAndPassives === 'function' && gameStarted) {
+        drawSkillsAndPassives();
+    }
+
     damageTexts.forEach(dt => {
         ctx.save(); ctx.globalAlpha = dt.alpha;
         if (dt.isCrit) {
@@ -1356,6 +2335,27 @@ function gameLoop(currentTime) {
     while (accumulator >= fixedDeltaTime) { update(); accumulator -= fixedDeltaTime; }
 
     draw(); requestAnimationFrame(gameLoop);
+}
+
+function fireTurretRockets(p) {
+    if (enemies.length === 0) return;
+    for (let i = 0; i < 2; i++) {
+        let target = enemies[Math.floor(Math.random() * enemies.length)];
+        let angle = p.angle + (i === 0 ? -0.4 : 0.4);
+        bullets.push({
+            x: p.x,
+            y: p.y,
+            vx: Math.cos(angle) * 8,
+            vy: Math.sin(angle) * 8,
+            radius: 6,
+            color: '#ff00ff',
+            damage: 80 * p.damageModifier,
+            type: 'homing_rocket',
+            target: target,
+            duration: 180
+        });
+    }
+    playLaserFireSound(1.2);
 }
 
 updateUI();

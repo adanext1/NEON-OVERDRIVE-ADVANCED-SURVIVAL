@@ -246,7 +246,7 @@ function updateUI() {
 
     let shElement = document.getElementById('hud-shield');
     let shStat = document.getElementById('shield-stat');
-    if (userSave.artifacts.shieldGen && p1.maxShield > 0) {
+    if (p1.maxShield > 0) {
         if (shStat) shStat.style.display = 'flex';
         if (shElement) shElement.innerText = `${Math.ceil(p1.shield)}/${p1.maxShield}`;
         document.getElementById('shield-bar-fill').style.width = `${(p1.shield / p1.maxShield) * 100}%`;
@@ -255,7 +255,7 @@ function updateUI() {
     }
 
     if (document.getElementById('hud-mats')) {
-        document.getElementById('hud-mats').innerText = `C:${userSave.materials.core} | P:${userSave.materials.plate} | Cr:${userSave.materials.crystal}`;
+        document.getElementById('hud-mats').innerText = `C:${userSave.materials.core} | P:${userSave.materials.plate} | Cr:${userSave.materials.crystal} | R:${userSave.materials.bossRelic || 0}`;
     }
 
     // Jugador 2
@@ -272,7 +272,7 @@ function updateUI() {
 
         let shElementP2 = document.getElementById('hud-shield-p2');
         let shStatP2 = document.getElementById('shield-stat-p2');
-        if (userSave.artifacts.shieldGen && p2.maxShield > 0) {
+        if (p2.maxShield > 0) {
             if (shStatP2) shStatP2.style.display = 'flex';
             if (shElementP2) shElementP2.innerText = `${Math.ceil(p2.shield)}/${p2.maxShield}`;
             document.getElementById('shield-bar-fill-p2').style.width = `${(p2.shield / p2.maxShield) * 100}%`;
@@ -284,7 +284,7 @@ function updateUI() {
     }
 
     if (document.getElementById('hud-mats-p2')) {
-        document.getElementById('hud-mats-p2').innerText = `C:${userSave.materials.core}|P:${userSave.materials.plate}|Cr:${userSave.materials.crystal}`;
+        document.getElementById('hud-mats-p2').innerText = `C:${userSave.materials.core}|P:${userSave.materials.plate}|Cr:${userSave.materials.crystal}|R:${userSave.materials.bossRelic || 0}`;
     }
 
     // Botones de la tienda - Jugador 1
@@ -343,6 +343,465 @@ function togglePauseFromBtn() {
     togglePause();
 }
 
+function toggleControlsModal(show) {
+    const modal = document.getElementById('controls-modal');
+    if (!modal) return;
+    if (!gameStarted) {
+        document.getElementById('main-menu').style.display = show ? 'none' : 'block';
+    }
+    modal.style.display = show ? 'block' : 'none';
+    if (show) updateMenuSelection('controls-modal');
+}
+
+let activeNexusTab = 'passives';
+let activePassiveTier = 'all';
+
+function switchNexusTab(tab) {
+    activeNexusTab = tab;
+    document.querySelectorAll('.nexus-tab').forEach(btn => btn.classList.remove('active'));
+    let activeBtn = document.getElementById('tab-' + tab);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    const subfilters = document.getElementById('passive-tiers-filter');
+    if (subfilters) {
+        subfilters.style.display = (tab === 'passives') ? 'flex' : 'none';
+    }
+    
+    updateNexusUI();
+}
+
+function filterPassives(tier) {
+    activePassiveTier = tier;
+    document.querySelectorAll('.nexus-subtab').forEach(btn => btn.classList.remove('active'));
+    let activeBtn = document.getElementById('filter-tier-' + tier);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    updateNexusUI();
+}
+
+function getUpgradeCost(id, nextLevel) {
+    let comp = COMPONENT_CATALOG[id];
+    if (!comp) return null;
+    let base = comp.baseCost;
+    let credits = 0;
+    let mats = { core: 0, plate: 0, crystal: 0, bossRelic: 0 };
+    
+    if (comp.type === 'skill') {
+        if (nextLevel === 2) {
+            mats.core = 3;
+        } else if (nextLevel === 3) {
+            mats.core = 6;
+            mats.plate = 1;
+        } else if (nextLevel === 4) {
+            mats.core = 12;
+            mats.plate = 4;
+        } else if (nextLevel === 5) {
+            mats.core = 20;
+            mats.plate = 8;
+            mats.crystal = 2;
+        } else if (nextLevel === 6) {
+            mats.plate = 50;
+            mats.crystal = 10;
+        }
+    } else {
+        if (nextLevel === 2) {
+            credits = Math.floor(base * 1.5);
+            mats.core = 2;
+        } else if (nextLevel === 3) {
+            credits = Math.floor(base * 2.2);
+            mats.core = 5;
+            mats.plate = 1;
+        } else if (nextLevel === 4) {
+            credits = Math.floor(base * 3.5);
+            mats.core = 10;
+            mats.plate = 3;
+        } else if (nextLevel === 5) {
+            credits = Math.floor(base * 5.0);
+            mats.core = 15;
+            mats.plate = 5;
+            mats.crystal = 1;
+        } else if (nextLevel === 6) {
+            credits = Math.floor(base * 10.0);
+            mats.plate = 30;
+            mats.crystal = 5;
+            mats.bossRelic = 1;
+        }
+    }
+    return { credits, mats };
+}
+
+function updateNexusUI() {
+    if (!document.getElementById('collection-modal') || document.getElementById('collection-modal').style.display === 'none') return;
+
+    // 1. Materials Display
+    document.getElementById('nexus-cores').innerText = userSave.materials.core || 0;
+    document.getElementById('nexus-plates').innerText = userSave.materials.plate || 0;
+    document.getElementById('nexus-crystals').innerText = userSave.materials.crystal || 0;
+    document.getElementById('nexus-relics').innerText = userSave.materials.bossRelic || 0;
+    document.getElementById('nexus-credits').innerText = (userSave.credits || 0).toLocaleString();
+
+    // 2. Real-time stats
+    let maxHp = 100 + getPassiveLevel('passive_hp') * 15;
+    let maxShield = getPassiveLevel('passive_shield') > 0 ? (40 + getPassiveLevel('passive_shield') * 10) : 0;
+    let damageModifier = 1.0 + getPassiveLevel('passive_dmg') * 0.05;
+    let speedPct = 100 + getPassiveLevel('passive_speed') * 3;
+    let cdPct = getPassiveLevel('passive_cooldown') * 4;
+
+    document.getElementById('stat-max-hp').innerText = maxHp + ' HP';
+    document.getElementById('stat-max-shield').innerText = maxShield + ' SH';
+    document.getElementById('stat-damage').innerText = damageModifier.toFixed(2) + 'x';
+    document.getElementById('stat-speed').innerText = speedPct + '%';
+    document.getElementById('stat-cooldown').innerText = '-' + cdPct + '%';
+
+    // 3. RAM usage text
+    let ramUsed = getEquippedRam();
+    let ramLimit = 100;
+    document.getElementById('ram-usage-text').innerText = ramUsed + ' / ' + ramLimit + ' GB';
+    let ramBar = document.getElementById('ram-bar-fill');
+    let ramAlert = document.getElementById('ram-warning-alert');
+    let launchBtn = document.getElementById('nexus-launch-btn');
+    
+    if (ramBar) {
+        ramBar.style.width = Math.min(100, (ramUsed / ramLimit) * 100) + '%';
+        if (ramUsed > ramLimit) {
+            ramBar.classList.add('exceeded');
+            if (ramAlert) ramAlert.style.display = 'block';
+            if (launchBtn) launchBtn.disabled = true;
+        } else {
+            ramBar.classList.remove('exceeded');
+            if (ramAlert) ramAlert.style.display = 'none';
+            if (launchBtn) launchBtn.disabled = false;
+        }
+    }
+
+    // 4. Render equipped components list (right panel) and update SVG blueprint lanes/nodes
+    let build = userSave.nexusBuild;
+    
+    function updateSvgSlot(lineId, nodeId, compId) {
+        let line = document.getElementById(lineId);
+        let node = document.getElementById(nodeId);
+        let comp = COMPONENT_CATALOG[compId];
+        
+        if (comp) {
+            let typeClass = comp.type.includes('weapon') ? 'weapon' : (comp.type === 'skill' ? 'skill' : 'passive');
+            if (line) {
+                line.setAttribute('class', `nexus-svg-line active ${typeClass}`);
+            }
+            if (node) {
+                node.setAttribute('class', `nexus-svg-node active ${typeClass}`);
+            }
+        } else {
+            if (line) {
+                line.setAttribute('class', 'nexus-svg-line');
+            }
+            if (node) {
+                node.setAttribute('class', 'nexus-svg-node');
+            }
+        }
+    }
+
+    updateSvgSlot('line-primary-weapon', 'node-primary-weapon', build.primaryWeapon);
+    updateSvgSlot('line-special-weapon', 'node-special-weapon', build.specialWeapon);
+    updateSvgSlot('line-skill-q', 'node-skill-q', build.skills.Q);
+    updateSvgSlot('line-skill-e', 'node-skill-e', build.skills.E);
+    updateSvgSlot('line-skill-shift', 'node-skill-shift', build.skills.Shift);
+    updateSvgSlot('line-skill-space', 'node-skill-space', build.skills.Space);
+    
+    updateSvgSlot('line-passive-0', 'node-passive-0', build.passives[0]);
+    updateSvgSlot('line-passive-1', 'node-passive-1', build.passives[1]);
+    updateSvgSlot('line-passive-2', 'node-passive-2', build.passives[2]);
+
+    // Renderizar la lista de equipamiento activo en la derecha
+    let equippedList = document.getElementById('nexus-equipped-list');
+    if (equippedList) {
+        equippedList.innerHTML = '';
+        
+        let slots = [
+            { label: 'ARMA PRIMARIA', type: 'primaryWeapon', key: null, compId: build.primaryWeapon, icon: '🔫', class: 'weapon' },
+            { label: 'ARMA ESPECIAL', type: 'specialWeapon', key: null, compId: build.specialWeapon, icon: '🚀', class: 'weapon' },
+            { label: 'HABILIDAD [Q]', type: 'skills', key: 'Q', compId: build.skills.Q, icon: '⚡', class: 'skill' },
+            { label: 'HABILIDAD [E]', type: 'skills', key: 'E', compId: build.skills.E, icon: '🛡️', class: 'skill' },
+            { label: 'HABILIDAD [SHIFT]', type: 'skills', key: 'Shift', compId: build.skills.Shift, icon: '🏃', class: 'skill' },
+            { label: 'HABILIDAD [ESPACIO]', type: 'skills', key: 'Space', compId: build.skills.Space, icon: '🔧', class: 'skill' },
+            { label: 'PASIVA 1', type: 'passives', key: 0, compId: build.passives[0], icon: '⚙️', class: 'passive' },
+            { label: 'PASIVA 2', type: 'passives', key: 1, compId: build.passives[1], icon: '⚙️', class: 'passive' },
+            { label: 'PASIVA 3', type: 'passives', key: 2, compId: build.passives[2], icon: '⚙️', class: 'passive' }
+        ];
+        
+        slots.forEach((slot, index) => {
+            // Visual section headers
+            if (index === 0) {
+                let header = document.createElement('div');
+                header.className = 'equipped-section-header weapon-sec';
+                header.innerHTML = '⚔️ Armamento';
+                equippedList.appendChild(header);
+            } else if (index === 2) {
+                let header = document.createElement('div');
+                header.className = 'equipped-section-header skill-sec';
+                header.innerHTML = '⚡ Habilidades';
+                equippedList.appendChild(header);
+            } else if (index === 6) {
+                let header = document.createElement('div');
+                header.className = 'equipped-section-header passive-sec';
+                header.innerHTML = '⚙️ Módulos Pasivos';
+                equippedList.appendChild(header);
+            }
+
+            let row = document.createElement('div');
+            row.className = `equipped-item-row ${slot.class}`;
+            
+            let comp = COMPONENT_CATALOG[slot.compId];
+            if (comp) {
+                row.innerHTML = `
+                    <div class="equipped-item-info">
+                        <span class="equipped-item-label">${slot.label}</span>
+                        <span class="equipped-item-name">${slot.icon} ${comp.name}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="equipped-item-ram">${comp.ram} GB</span>
+                        <button class="equipped-item-remove" onclick="unequipSlot('${slot.type}', ${slot.key !== null ? `'${slot.key}'` : 'null'})">✖</button>
+                    </div>
+                `;
+            } else {
+                row.innerHTML = `
+                    <div class="equipped-item-info">
+                        <span class="equipped-item-label" style="color:#555;">${slot.label}</span>
+                        <span class="equipped-item-name" style="color:#444; font-style:italic;">[VACÍO]</span>
+                    </div>
+                    <span class="equipped-item-ram" style="color:#333;">0 GB</span>
+                `;
+            }
+            equippedList.appendChild(row);
+        });
+    }
+
+    // 5. Render left inventory list
+    let listContainer = document.getElementById('nexus-inventory-list');
+    if (listContainer) {
+        listContainer.innerHTML = '';
+        
+        for (let key in COMPONENT_CATALOG) {
+            let comp = COMPONENT_CATALOG[key];
+            
+            // Filter by type
+            if (activeNexusTab === 'passives' && comp.type !== 'passive') continue;
+            if (activeNexusTab === 'weapons' && !comp.type.includes('weapon')) continue;
+            if (activeNexusTab === 'skills' && comp.type !== 'skill') continue;
+            
+            // Filter passives by tier
+            if (activeNexusTab === 'passives' && activePassiveTier !== 'all' && comp.tier !== activePassiveTier) continue;
+            
+            let level = userSave.componentLevels[key] || 0;
+            let isUnlocked = userSave.unlockedComponents.includes(key) || comp.baseCost === 0;
+            
+            // Check if equipped
+            let isEquipped = false;
+            if (comp.type === 'primary_weapon') isEquipped = (build.primaryWeapon === key);
+            else if (comp.type === 'special_weapon') isEquipped = (build.specialWeapon === key);
+            else if (comp.type === 'skill') isEquipped = Object.values(build.skills).includes(key);
+            else if (comp.type === 'passive') isEquipped = build.passives.includes(key);
+            
+            let card = document.createElement('div');
+            card.className = `nexus-card ${isEquipped ? 'equipped' : ''}`;
+            
+            let tierLabel = { common: 'Común', rare: 'Raro', epic: 'Épico', legendary: 'Legendario', mythic: 'Mítico' }[comp.tier];
+            let nameWithLvl = comp.name + (((comp.type === 'passive' || comp.type === 'skill') && isUnlocked) ? ` (Nv. ${level}/6)` : '');
+            
+            let reqText = '';
+            let cannotUnlock = false;
+            
+            // Requisitos
+            if (!isUnlocked && comp.req) {
+                if (comp.req === 'Lvl 5 de 1 Pasiva Común') {
+                    let unlocked = false;
+                    for (let k in COMPONENT_CATALOG) {
+                        if (COMPONENT_CATALOG[k].tier === 'common' && (userSave.componentLevels[k] || 0) >= 5) {
+                            unlocked = true;
+                            break;
+                        }
+                    }
+                    if (!unlocked) {
+                        reqText = `<div style="color:#ff0055; font-size:10px; font-weight:bold; margin-top:2px;">Requisito: Lvl 5 de 1 Pasiva Común</div>`;
+                        cannotUnlock = true;
+                    }
+                } else if (comp.req === 'Derrotar a Vector Supreme') {
+                    if (!userSave.unlockedArtifacts.includes('heavy_hull')) {
+                        reqText = `<div style="color:#ff0055; font-size:10px; font-weight:bold; margin-top:2px;">Requisito: Derrotar a Vector Supreme (Lv10)</div>`;
+                        cannotUnlock = true;
+                    }
+                } else if (comp.req === 'Derrotar a Overlord Apex') {
+                    if (!userSave.unlockedArtifacts.includes('kinetic_core')) {
+                        reqText = `<div style="color:#ff0055; font-size:10px; font-weight:bold; margin-top:2px;">Requisito: Derrotar a Overlord Apex (Lv15)</div>`;
+                        cannotUnlock = true;
+                    }
+                }
+            }
+            
+            let desc = comp.desc;
+            if (level === 5) {
+                desc = `<strong>ULTRA (Nv6):</strong> ${comp.ultraDesc}`;
+            } else if (level === 6) {
+                desc = `<strong>ULTRA (Nv6):</strong> ${comp.ultraDesc}`;
+            }
+            
+            let costHtml = '';
+            let upgradeCost = null;
+            let canUpgrade = false;
+            
+            if (!isUnlocked) {
+                costHtml = `<div class="card-cost-row">Costo: ${comp.baseCost} Créditos</div>`;
+                canUpgrade = (userSave.credits || 0) >= comp.baseCost && !cannotUnlock;
+            } else if ((comp.type === 'passive' || comp.type === 'skill') && level < 6) {
+                upgradeCost = getUpgradeCost(key, level + 1);
+                let matCheck = userSave.materials.core >= (upgradeCost.mats.core || 0) &&
+                               userSave.materials.plate >= (upgradeCost.mats.plate || 0) &&
+                               userSave.materials.crystal >= (upgradeCost.mats.crystal || 0) &&
+                               userSave.materials.bossRelic >= (upgradeCost.mats.bossRelic || 0);
+                let credCheck = (userSave.credits || 0) >= upgradeCost.credits;
+                
+                let matsCostText = [];
+                if (upgradeCost.mats.core) matsCostText.push(`${upgradeCost.mats.core} C`);
+                if (upgradeCost.mats.plate) matsCostText.push(`${upgradeCost.mats.plate} P`);
+                if (upgradeCost.mats.crystal) matsCostText.push(`${upgradeCost.mats.crystal} Cr`);
+                if (upgradeCost.mats.bossRelic) matsCostText.push(`${upgradeCost.mats.bossRelic} Rel.`);
+                
+                let matsCostStr = matsCostText.join(' | ') || 'Gratis';
+                
+                if (upgradeCost.credits > 0) {
+                    costHtml = `<div class="card-cost-row">Costo: $${upgradeCost.credits} [${matsCostStr}]</div>`;
+                } else {
+                    costHtml = `<div class="card-cost-row">Costo: [${matsCostStr}]</div>`;
+                }
+                canUpgrade = credCheck && matCheck;
+            } else if ((comp.type === 'passive' || comp.type === 'skill') && level === 6) {
+                costHtml = `<div class="card-cost-row" style="color:#ffff00; background:rgba(255,255,0,0.05);">¡SISTEMA AL MÁXIMO!</div>`;
+            }
+            
+            let actionButtons = '';
+            if (!isUnlocked) {
+                actionButtons = `<button class="card-btn upgrade-btn" ${!canUpgrade ? 'disabled' : ''} onclick="unlockComponent('${key}', ${comp.baseCost})">DESBLOQUEAR</button>`;
+            } else {
+                let equipBtnLabel = isEquipped ? 'DESEQUIPAR' : 'EQUIPAR';
+                let equipAction = isEquipped ? `unequipComponent('${key}')` : `equipComponent('${key}')`;
+                
+                actionButtons = `
+                    ${((comp.type === 'passive' || comp.type === 'skill') && level < 6) ? `<button class="card-btn upgrade-btn" ${!canUpgrade ? 'disabled' : ''} onclick="upgradeComponent('${key}')">MEJORAR</button>` : ''}
+                    <button class="card-btn equip-btn" onclick="${equipAction}">${equipBtnLabel}</button>
+                `;
+            }
+            
+            card.innerHTML = `
+                <div class="card-header-row">
+                    <span class="card-title">${nameWithLvl}</span>
+                    <span class="card-tier-badge ${comp.tier}">${tierLabel} (${comp.ram} GB)</span>
+                </div>
+                <div class="card-desc">${desc}</div>
+                ${reqText}
+                ${costHtml}
+                <div class="card-actions">${actionButtons}</div>
+            `;
+            listContainer.appendChild(card);
+        }
+    }
+}
+
+function unlockComponent(id, cost) {
+    if ((userSave.credits || 0) >= cost) {
+        userSave.credits -= cost;
+        userSave.unlockedComponents.push(id);
+        if (COMPONENT_CATALOG[id].type === 'passive' || COMPONENT_CATALOG[id].type === 'skill') {
+            userSave.componentLevels[id] = 1;
+        }
+        saveGame();
+        updateNexusUI();
+    }
+}
+
+function upgradeComponent(id) {
+    let level = userSave.componentLevels[id] || 0;
+    if (level >= 6) return;
+    let costObj = getUpgradeCost(id, level + 1);
+    if (!costObj) return;
+    
+    let hasMats = userSave.materials.core >= (costObj.mats.core || 0) &&
+                   userSave.materials.plate >= (costObj.mats.plate || 0) &&
+                   userSave.materials.crystal >= (costObj.mats.crystal || 0) &&
+                   userSave.materials.bossRelic >= (costObj.mats.bossRelic || 0);
+    let hasCredits = (userSave.credits || 0) >= costObj.credits;
+    
+    if (hasMats && hasCredits) {
+        userSave.credits -= costObj.credits;
+        userSave.materials.core -= (costObj.mats.core || 0);
+        userSave.materials.plate -= (costObj.mats.plate || 0);
+        userSave.materials.crystal -= (costObj.mats.crystal || 0);
+        userSave.materials.bossRelic -= (costObj.mats.bossRelic || 0);
+        userSave.componentLevels[id] = level + 1;
+        saveGame();
+        updateNexusUI();
+    }
+}
+
+function equipComponent(id) {
+    let comp = COMPONENT_CATALOG[id];
+    if (!comp) return;
+    
+    let build = userSave.nexusBuild;
+    if (comp.type === 'primary_weapon') {
+        build.primaryWeapon = id;
+    } else if (comp.type === 'special_weapon') {
+        build.specialWeapon = id;
+    } else if (comp.type === 'skill') {
+        let slotKey = Object.keys(build.skills).find(k => build.skills[k] === id);
+        if (slotKey) return; 
+        
+        let slots = ['Q', 'E', 'Shift', 'Space'];
+        let emptySlot = slots.find(s => !build.skills[s]);
+        if (emptySlot) {
+            build.skills[emptySlot] = id;
+        } else {
+            build.skills['Q'] = id; 
+        }
+    } else if (comp.type === 'passive') {
+        if (build.passives.includes(id)) return;
+        let emptyIdx = build.passives.findIndex(p => p === null);
+        if (emptyIdx !== -1) {
+            build.passives[emptyIdx] = id;
+        } else {
+            build.passives[0] = id; 
+        }
+    }
+    saveGame();
+    updateNexusUI();
+}
+
+function unequipComponent(id) {
+    let build = userSave.nexusBuild;
+    if (build.primaryWeapon === id) build.primaryWeapon = null;
+    if (build.specialWeapon === id) build.specialWeapon = null;
+    for (let k in build.skills) {
+        if (build.skills[k] === id) build.skills[k] = null;
+    }
+    let pIdx = build.passives.indexOf(id);
+    if (pIdx !== -1) build.passives[pIdx] = null;
+    saveGame();
+    updateNexusUI();
+}
+
+function unequipSlot(type, keyOrIdx) {
+    let build = userSave.nexusBuild;
+    if (type === 'primaryWeapon') {
+        build.primaryWeapon = null;
+    } else if (type === 'specialWeapon') {
+        build.specialWeapon = null;
+    } else if (type === 'skills') {
+        build.skills[keyOrIdx] = null;
+    } else if (type === 'passives') {
+        build.passives[keyOrIdx] = null;
+    }
+    saveGame();
+    updateNexusUI();
+}
+
 function toggleCollection(show) {
     inCollectionMenu = show;
     isPaused = show || isGameOver;
@@ -351,56 +810,22 @@ function toggleCollection(show) {
     document.getElementById('collection-modal').style.display = show ? 'block' : 'none';
 
     if (show) {
-        document.getElementById('mats-display').innerText = `Núcleos: ${userSave.materials.core} | Placas: ${userSave.materials.plate} | Cristales: ${userSave.materials.crystal}`;
-        let grid = document.getElementById('collection-grid'); grid.innerHTML = '';
-        for (let key in ARTIFACT_RECIPES) {
-            let art = ARTIFACT_RECIPES[key];
-            let level = userSave.artifacts[key] || 0;
-            let maxLevel = art.maxLevel;
-            let cost = {
-                core: art.baseCost.core * (level + 1),
-                plate: art.baseCost.plate * (level + 1),
-                crystal: art.baseCost.crystal * (level + 1)
-            };
-            let hasMats = userSave.materials.core >= cost.core && userSave.materials.plate >= cost.plate && userSave.materials.crystal >= cost.crystal;
-            
-            let itemDiv = document.createElement('div'); itemDiv.className = `collection-item ${level > 0 ? 'item-owned' : ''}`;
-            itemDiv.innerHTML = `
-        <strong style="color: ${level > 0 ? '#ffff00' : '#ff007f'}; font-size: 14px;">${art.name} (Nv. ${level}/${maxLevel})</strong><br>
-        <div style="font-size:12px; color:rgba(255,255,255,0.9); margin: 4px 0;">${art.desc}</div>
-        <div style="font-size:11px; color:#00ffcc; font-weight:bold;">Costo: C:${cost.core} P:${cost.plate} Cr:${cost.crystal}</div>
-        ${(level < maxLevel) ? `<button class="shop-btn" style="padding:6px; margin-top:8px; font-size:11px;" ${!hasMats ? 'disabled' : ''} onclick="craftArtifact('${key}')">MEJORAR</button>` : '<div style="color:#00ffcc; font-size:11px; font-weight:bold; margin-top:8px;">MÁXIMO NIVEL</div>'}
-    `;
-            grid.appendChild(itemDiv);
-        }
-        updateMenuSelection('collection-modal');
+        switchNexusTab(activeNexusTab);
     }
 }
 
 function closeCollectionMenu() {
+    if (getEquippedRam() > 100) {
+        showNetworkMessage('⚠️ MEMORIA RAM SOBRECARGADA - AJUSTA TU EQUIPAMIENTO', 2000);
+        return;
+    }
+    
     if (!gameStarted) {
         inCollectionMenu = false;
         document.getElementById('collection-modal').style.display = 'none';
         document.getElementById('main-menu').style.display = 'block';
-    } else { toggleCollection(false); }
-}
-
-function craftArtifact(key) {
-    let art = ARTIFACT_RECIPES[key];
-    let level = userSave.artifacts[key] || 0;
-    let cost = {
-        core: art.baseCost.core * (level + 1),
-        plate: art.baseCost.plate * (level + 1),
-        crystal: art.baseCost.crystal * (level + 1)
-    };
-    
-    if (userSave.materials.core >= cost.core && userSave.materials.plate >= cost.plate && userSave.materials.crystal >= cost.crystal && level < art.maxLevel) {
-        userSave.materials.core -= cost.core;
-        userSave.materials.plate -= cost.plate;
-        userSave.materials.crystal -= cost.crystal;
-        userSave.artifacts[key] = level + 1;
-        saveGame();
-        toggleCollection(true);
+    } else { 
+        toggleCollection(false); 
     }
 }
 

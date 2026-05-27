@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.8.5</title>
+    <title>NEON OVERDRIVE: ADVANCED SURVIVAL v0.10.1</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -34,7 +34,7 @@
             
             <div class="hud-row">
                 <span id="hud-credits">CRÉDITOS: $0</span>
-                <span style="margin-left:10px;" id="hud-mats">C:0 | P:0 | Cr:0</span>
+                <span style="margin-left:10px;" id="hud-mats">C:0 | P:0 | Cr:0 | R:0</span>
             </div>
             
             <div class="hud-row">
@@ -96,7 +96,7 @@
             
             <div class="hud-row">
                 <span id="hud-credits-p2">CRÉDITOS: $0</span>
-                <span style="margin-left:10px;" id="hud-mats-p2">C:0 | P:0 | Cr:0</span>
+                <span style="margin-left:10px;" id="hud-mats-p2">C:0 | P:0 | Cr:0 | R:0</span>
             </div>
             
             <div class="hud-row">
@@ -170,7 +170,7 @@
             <button class="shop-btn" style="width: 100%; border-color: #00ffcc; color: #00ffcc; margin: 0; padding: 12px;" onclick="togglePauseFromBtn()">▶ REANUDAR SIMULACIÓN</button>
             <p style="color: rgba(255,255,255,0.18); font-size: 10px; letter-spacing: 2px; margin-top: 14px;">[P] para reanudar</p>
         </div>
-        <div style="position:fixed;bottom:8px;right:12px;color:rgba(212,175,55,0.5);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.9.0 — KINETIC COLLAPSE</div>
+        <div style="position:fixed;bottom:8px;right:12px;color:rgba(0,255,170,0.55);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;pointer-events:none;z-index:9999;">v0.10.1 — QUANTUM EVOLUTION</div>
 
         <!-- Menú Principal Inicial -->
         <div id="main-menu">
@@ -196,9 +196,9 @@
 
                 <!-- Info de versión -->
                 <div class="menu-version-info">
-                    <span class="version-badge" style="color:#d4af37; border-color:#d4af37; text-shadow:0 0 8px rgba(212,175,55,0.6);">v0.9.0</span>
+                    <span class="version-badge" style="color:#00ffaa; border-color:#00ffaa; text-shadow:0 0 8px rgba(0,255,170,0.7);">v0.10.1</span>
                     <span class="version-sep">—</span>
-                    <span class="version-text" style="color:#d4af37; letter-spacing:3px;">KINETIC COLLAPSE</span>
+                    <span class="version-text" style="color:#00ffaa; letter-spacing:3px;">QUANTUM EVOLUTION</span>
                 </div>
 
                 <!-- Botones principales -->
@@ -212,6 +212,12 @@
                     <button class="menu-btn menu-btn-yellow" onclick="toggleCollection(true)">
                         <span class="btn-icon">⬡</span>
                         <span class="btn-text">MEJORAS PERMANENTES</span>
+                        <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
+                    </button>
+
+                    <button class="menu-btn menu-btn-cyan" onclick="toggleControlsModal(true)">
+                        <span class="btn-icon">⌨</span>
+                        <span class="btn-text">CONTROLES</span>
                         <span class="btn-shine-wrap"><span class="btn-shine"></span></span>
                     </button>
 
@@ -285,16 +291,150 @@
             <button class="shop-btn" style="border-color:#ff007f; color:#ff007f; margin-top: 20px;" onclick="toggleShop(false)">VOLVER A COMBATIR</button>
         </div>
 
-        <!-- Colección Permanente -->
-        <div id="collection-modal">
-            <h2>ÁLBUM DE RELIQUIAS</h2>
-            <p style="color: #aaa; font-size: 12px;">Componentes en inventario permanente:</p>
-            <div style="font-size: 13px; color: #00ffff; margin: 5px 0;" id="mats-display">Núcleos: 0 | Placas: 0 |
-                Cristales: 0</div>
+        <!-- Manual de Controles -->
+        <div id="controls-modal">
+            <h2>MANUAL DE CONTROLES</h2>
+            <p class="controls-subtitle">Referencia de entrada — teclado, ratón y mando</p>
 
-            <div class="collection-grid" id="collection-grid"></div>
-            <button class="shop-btn" style="border-color:#ffff00; color:#ffff00;"
-                onclick="closeCollectionMenu()">VOLVER</button>
+            <div class="controls-section">
+                <div class="controls-section-title keyboard">TECLADO Y RATÓN</div>
+                <div class="controls-grid">
+                    <span><kbd>WASD / Flechas</kbd> — Mover</span>
+                    <span><kbd>Clic Izq.</kbd> — Disparar</span>
+                    <span><kbd>Shift</kbd> — Dash</span>
+                    <span><kbd>Clic Der.</kbd> — Mega-Láser</span>
+                    <span><kbd>E</kbd> — Pulso EMP</span>
+                    <span><kbd>Espacio</kbd> — Modo Torreta</span>
+                    <span><kbd>Q</kbd> — Célula de Sobrecarga</span>
+                    <span><kbd>M</kbd> — Apuntado AUTO / MANUAL</span>
+                    <span><kbd>1 / 2 / 3</kbd> — Seleccionar arma</span>
+                    <span><kbd>Rueda ratón</kbd> — Cambiar arma</span>
+                    <span><kbd>P</kbd> — Pausa</span>
+                    <span><kbd>C</kbd> — Álbum (entre oleadas)</span>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="controls-section-title gamepad">MANDO (GAMEPAD)</div>
+                <div class="controls-grid gamepad">
+                    <span><kbd>Stick Izq. / D-Pad</kbd> — Mover</span>
+                    <span><kbd>RT / A</kbd> — Disparar</span>
+                    <span><kbd>LB / L2</kbd> — Dash</span>
+                    <span><kbd>RB</kbd> — Mega-Láser</span>
+                    <span><kbd>B</kbd> — Pulso EMP</span>
+                    <span><kbd>Y</kbd> — Modo Torreta</span>
+                    <span><kbd>LT</kbd> — Cambiar arma</span>
+                    <span><kbd>R3</kbd> — Célula de Sobrecarga</span>
+                    <span><kbd>Stick Der.</kbd> — Apuntar (manual)</span>
+                    <span><kbd>Select</kbd> — AUTO / MANUAL</span>
+                    <span><kbd>Start</kbd> — Pausa</span>
+                    <span><kbd>Stick / D-Pad</kbd> — Navegar menús</span>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="controls-section-title coop">COOPERATIVO</div>
+                <div class="controls-grid coop">
+                    <span><kbd>R (mantener)</kbd> — Revivir aliado caído</span>
+                    <span><kbd>A</kbd> — Confirmar en menús</span>
+                </div>
+            </div>
+
+            <button class="shop-btn controls-back-btn" onclick="toggleControlsModal(false)">VOLVER</button>
+        </div>
+
+        <!-- NEXUS DE ENSAMBLAJE (Reworked Collection Modal) -->
+        <div id="collection-modal" style="display: none;">
+            <div class="nexus-header">
+                <h2>NEXUS DE ENSAMBLAJE</h2>
+                <div class="nexus-concept">🛠️ El Concepto: "Modular Chasis Assembly"</div>
+                <p style="color: #aaa; font-size: 11px; margin-top: 5px;">Configura y equipa los módulos en el chasis de tu nave. ¡Presta atención al límite de memoria RAM!</p>
+            </div>
+            
+            <div class="nexus-materials">
+                <span class="mat-badge core">💿 Núcleos: <span id="nexus-cores">0</span></span>
+                <span class="mat-badge plate">🛡️ Placas: <span id="nexus-plates">0</span></span>
+                <span class="mat-badge crystal">🔮 Cristales: <span id="nexus-crystals">0</span></span>
+                <span class="mat-badge relic">🏆 Reliquias: <span id="nexus-relics">0</span></span>
+                <span class="mat-badge credits">💵 Créditos: <span id="nexus-credits">0</span></span>
+            </div>
+
+            <div class="nexus-container">
+                <!-- Panel Izquierdo: Inventario de Componentes -->
+                <div class="nexus-left">
+                    <div class="nexus-tabs">
+                        <button class="nexus-tab active" id="tab-passives" onclick="switchNexusTab('passives')">Pasivos</button>
+                        <button class="nexus-tab" id="tab-weapons" onclick="switchNexusTab('weapons')">Armas</button>
+                        <button class="nexus-tab" id="tab-skills" onclick="switchNexusTab('skills')">Habilidades</button>
+                    </div>
+                    
+                    <!-- Sub-filtros para pasivos por tiers -->
+                    <div class="nexus-subfilters" id="passive-tiers-filter">
+                        <button class="nexus-subtab active" id="filter-tier-all" onclick="filterPassives('all')">Todos</button>
+                        <button class="nexus-subtab" id="filter-tier-common" onclick="filterPassives('common')">⚪ Común</button>
+                        <button class="nexus-subtab" id="filter-tier-rare" onclick="filterPassives('rare')">🔵 Raro</button>
+                        <button class="nexus-subtab" id="filter-tier-epic" onclick="filterPassives('epic')">🟣 Épico</button>
+                        <button class="nexus-subtab" id="filter-tier-legendary" onclick="filterPassives('legendary')">🟡 Leg.</button>
+                        <button class="nexus-subtab" id="filter-tier-mythic" onclick="filterPassives('mythic')">🔥 Mítico</button>
+                    </div>
+                    <div class="nexus-inventory-list" id="nexus-inventory-list">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+                <!-- Panel Central: Componentes Equipados -->
+                <div class="nexus-center">
+                    <div class="nexus-panel-title">COMPONENTES EQUIPADOS</div>
+                    <div class="nexus-equipped-list" id="nexus-equipped-list">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Stats & RAM balance -->
+                <div class="nexus-right">
+                    <div class="nexus-panel-title">ESTADO DEL CHASIS</div>
+                    
+                    <div class="nexus-stat-box">
+                        <div class="nexus-stat-row">
+                            <span>❤️ Vida Máxima:</span>
+                            <span id="stat-max-hp" class="neon-cyan">100 HP</span>
+                        </div>
+                        <div class="nexus-stat-row">
+                            <span>🛡️ Escudo Máximo:</span>
+                            <span id="stat-max-shield" class="neon-blue">0 SH</span>
+                        </div>
+                        <div class="nexus-stat-row">
+                            <span>⚔️ Daño Global:</span>
+                            <span id="stat-damage" class="neon-orange">1.0x</span>
+                        </div>
+                        <div class="nexus-stat-row">
+                            <span>👟 Velocidad Chasis:</span>
+                            <span id="stat-speed" class="neon-green">100%</span>
+                        </div>
+                        <div class="nexus-stat-row">
+                            <span>⏱️ Reducción Cooldown:</span>
+                            <span id="stat-cooldown" class="neon-yellow">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="ram-balance-section">
+                        <div class="ram-header">
+                            <span>MEMORIA RAM</span>
+                            <span id="ram-usage-text">0 / 100 GB</span>
+                        </div>
+                        <div class="ram-bar-container">
+                            <div class="ram-bar-fill" id="ram-bar-fill"></div>
+                        </div>
+                        <div class="ram-warning-alert" id="ram-warning-alert" style="display: none;">
+                            ⚠️ RAM EXCEDIDA.<br>La nave no puede despegar.
+                        </div>
+                    </div>
+
+
+                    <button class="shop-btn nexus-launch-btn" id="nexus-launch-btn" style="border-color:#ffff00; color:#ffff00; margin-top: 10px;" onclick="closeCollectionMenu()">
+                        🚀 DESPEGAR
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Game Over Modal -->
@@ -370,7 +510,8 @@
     </script>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="js/data.js?v=0.6.3"></script>
+    <script src="js/data.js?v=0.10.1"></script>
+    <script src="js/skills.js?v=0.10.1"></script>
     <script src="js/audio.js?v=0.8.2"></script>
     <script src="js/player.js?v=0.8.2"></script>
     <script src="js/enemies/common.js?v=0.8.3"></script>
@@ -383,18 +524,18 @@
     <script src="js/enemies/helix_weaver.js?v=0.8.3"></script>
     <script src="js/enemies/binary_aegis.js?v=0.8.3"></script>
     <script src="js/enemies/boss_guardian.js?v=0.8.3"></script>
-    <script src="js/enemies/boss_vector.js?v=0.8.3"></script>
-    <script src="js/enemies/flux_nullifier.js?v=0.9.0"></script>
-    <script src="js/enemies/glitch_weaver.js?v=0.9.0"></script>
-    <script src="js/enemies/singularity_sentinel.js?v=0.9.0"></script>
-    <script src="js/enemies/boss_overlord.js?v=0.9.0"></script>
-    <script src="js/enemies.js?v=0.8.3"></script>
+    <script src="js/enemies/boss_vector.js?v=0.10.1"></script>
+    <script src="js/enemies/flux_nullifier.js?v=0.10.1"></script>
+    <script src="js/enemies/glitch_weaver.js?v=0.10.1"></script>
+    <script src="js/enemies/singularity_sentinel.js?v=0.10.1"></script>
+    <script src="js/enemies/boss_overlord.js?v=0.10.1"></script>
+    <script src="js/enemies.js?v=0.10.1"></script>
     <script src="js/weapons.js?v=0.8.2"></script>
     <script src="js/effects.js?v=0.8.2"></script>
     <script src="js/events.js?v=0.8.2"></script>
-    <script src="js/network.js?v=0.6.3"></script>
-    <script src="js/ui.js?v=0.6.3"></script>
-    <script src="js/game.js?v=0.6.3"></script>
+    <script src="js/network.js?v=0.10.1"></script>
+    <script src="js/ui.js?v=0.10.1"></script>
+    <script src="js/game.js?v=0.10.1"></script>
 </body>
 
 </html>

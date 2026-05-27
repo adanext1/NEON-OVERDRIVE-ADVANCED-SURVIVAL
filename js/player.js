@@ -1,17 +1,63 @@
 // === LÓGICA DEL JUGADOR ===
 
-function takeDamage(pObj, amount) {
+function takeDamage(pObj, amount, attacker = null) {
     if (amount <= 0) return;
-    if (pObj.isDead) return; // Ya muerto, no recibir más daño
-    if ((pObj.invulnTimer || 0) > 0) return; // Invulnerable por i-frames
+    if (pObj.isDead) return; 
+    if ((pObj.invulnTimer || 0) > 0 || (pObj.invisibleTimer || 0) > 0) return; 
     
-    if (pObj.isTurret) amount *= (1 - (pObj.turretDamageReduction || 0.3)); // 30% base
+    // --- CÚPULA DEFENSIVA: Reducción de daño si el jugador está dentro ---
+    if (typeof activeDomes !== 'undefined') {
+        activeDomes.forEach(dome => {
+            if (Math.hypot(pObj.x - dome.x, pObj.y - dome.y) < dome.radius) {
+                amount *= (1 - dome.reduction);
+                if (dome.isUltra) { /* Bonus cadencia fuego - handled on shoot */ }
+            }
+        });
+    }
     
-    // Activar i-frames (35 frames ≈ 0.58 segundos a 60fps)
+    // --- PASIVA: MÓDULO DE RESISTENCIA (REDUCCIÓN DE ESTADOS) ---
+    let statusResLvl = getPassiveLevel('passive_status_res');
+    // Ultra Nv6: Inquebrantable (invulnerable 1.5s al recibir Stun, CD 30s)
+    if (statusResLvl === 6 && pObj.stunTimer > 0) {
+        if (!pObj.inquebrantableCooldown || pObj.inquebrantableCooldown <= 0) {
+            pObj.invulnTimer = 90; // 1.5s invulnerabilidad
+            pObj.inquebrantableCooldown = 1800; // 30s CD
+            spawnDamageText(pObj.x, pObj.y, 'INQUEBRANTABLE', 'shield');
+        }
+    }
+    if ((pObj.inquebrantableCooldown || 0) > 0) pObj.inquebrantableCooldown--;
+    
+    // --- PASIVA: ESCUDO ESPECTRAL (EVASIÓN) ---
+    let evadeLvl = getPassiveLevel('passive_evade');
+    if (evadeLvl > 0 && Math.random() < evadeLvl * 0.04) {
+        spawnDamageText(pObj.x, pObj.y, 'EVADIDO', 'shield');
+        createExplosion(pObj.x, pObj.y, '#aa00ff', 12, 1.0);
+        // Ultra Nv6: Desfase (1s invisible/invulnerable)
+        if (evadeLvl === 6) {
+            pObj.invulnTimer = 60; 
+            showNetworkMessage('👤 ¡DESFASE! (Invisible)', 1000);
+        }
+        return;
+    }
+
+    // --- PASIVA: PLACAS REFRACTARIAS (REDUCCIÓN DE DAÑO) ---
+    let defLvl = getPassiveLevel('passive_energy_def');
+    if (defLvl > 0) {
+        amount *= (1 - defLvl * 0.06);
+        // Ultra Nv6: Prisma (Refleja 15% del daño al atacante)
+        if (defLvl === 6 && attacker && attacker.hp !== undefined) {
+            let reflected = amount * 0.15;
+            attacker.hp -= reflected;
+            attacker.flashTicks = 4;
+            spawnDamageText(attacker.x, attacker.y, Math.floor(reflected), 'normal');
+        }
+    }
+
+    if (pObj.isTurret) amount *= (1 - (pObj.turretDamageReduction || 0.3)); 
+    
     pObj.invulnTimer = 35;
     pObj.flashTicks = 6; pObj.damageFlashAlpha = 0.5;
     
-    // Animación en el HUD
     let hudId = pObj.id === 1 ? 'hud-box' : 'hud-box-p2';
     let hudElem = document.getElementById(hudId);
     if (hudElem) {
@@ -24,8 +70,43 @@ function takeDamage(pObj, amount) {
         let absorbed = Math.min(pObj.shield, amount); pObj.shield -= absorbed; amount -= absorbed;
         spawnDamageText(pObj.x, pObj.y, absorbed, 'shield'); createExplosion(pObj.x, pObj.y, '#00aaff', 8, 1.2);
     }
+    
+    // --- PASIVA: CÉLULA DE ESCUDO ULTRA (REINICIO FORZADO) ---
+    if (pObj.shield <= 0 && getPassiveLevel('passive_shield') === 6 && (!pObj.reinicioForzadoCooldown || pObj.reinicioForzadoCooldown <= 0)) {
+        pObj.shield = pObj.maxShield * 0.5;
+        pObj.reinicioForzadoCooldown = 3600; 
+        createExplosion(pObj.x, pObj.y, '#00aaff', 30, 1.5);
+        showNetworkMessage('🛡️ ¡REINICIO FORZADO! (50% Escudo)', 2000);
+    }
+
     if (amount > 0) {
+        if (pObj.hp - amount <= 0 && isCoop) {
+            let otherPlayer = players.find(p => p !== pObj && !p.isDead);
+            let guardianLvl = getPassiveLevel('passive_guardian');
+            if (otherPlayer && guardianLvl > 0) {
+                let mitigated = amount * (1 - guardianLvl * 0.1);
+                takeDamage(otherPlayer, mitigated);
+                showNetworkMessage('🛡️ ¡DAÑO REDIRIGIDO POR GUARDIÁN!', 1500);
+                return;
+            }
+        }
+        
         pObj.hp -= amount;
+        
+        // --- PASIVA: REFUERZO DE CHASIS ULTRA (BLINDAJE REACTIVO) ---
+        let hpLevel = getPassiveLevel('passive_hp');
+        if (hpLevel === 6) {
+            createExplosion(pObj.x, pObj.y, '#ff0055', 25, 1.2);
+            enemies.forEach(e => {
+                let dist = Math.hypot(e.x - pObj.x, e.y - pObj.y);
+                if (dist < 150) {
+                    e.hp -= 20;
+                    e.flashTicks = 4;
+                    spawnDamageText(e.x, e.y, 20, 'normal');
+                }
+            });
+        }
+
         if (pObj.hp <= 0) {
             if (pObj.hasSecondChance) {
                 pObj.hp = Math.floor(pObj.maxHp * 0.5);
@@ -36,18 +117,34 @@ function takeDamage(pObj, amount) {
             } else {
                 pObj.hp = 0;
                 createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
+                
+                // Mártir (passive_guardian Nv6)
+                if (getPassiveLevel('passive_guardian') === 6) {
+                    createExplosion(pObj.x, pObj.y, '#ffffff', 80, 3.0);
+                    players.forEach(p => {
+                        if (p !== pObj && !p.isDead) {
+                            p.hp = p.maxHp;
+                            spawnDamageText(p.x, p.y, '100% HP', 'heal');
+                            createExplosion(p.x, p.y, '#00ff88', 20, 1.2);
+                        }
+                    });
+                    playExplosionSound();
+                    showNetworkMessage('🏆 ¡MÁRTIR! (Aliados sanados)', 2500);
+                }
+                
                 screenShake = 15;
                 spawnDamageText(pObj.x, pObj.y, amount, 'player_hit');
                 spawnDamageText(pObj.x, pObj.y - 28, 'KO', 'hazard');
                 
-                // En solitario, Game Over directo e inmediato
                 if (!isCoop && !isOnline) {
                     isGameOver = true;
+                    userSave.credits = (userSave.credits || 0) + players[0].credits;
+                    saveGame();
                     document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
                     document.getElementById('game-over-modal').style.display = 'block';
                     updateMenuSelection('game-over-modal');
                     isPaused = true;
-                    return; // Detener ejecución para evitar que quede en bucle
+                    return; 
                 } else {
                     pObj.isDead = true;
                     pObj.reviveTimer = 0;
@@ -160,6 +257,12 @@ function processGamepadInput() {
             if (pObj.isChargingLaser) currentSpeed = 1.8;
             if (pObj.isTurret) currentSpeed = 0;
             
+            // Ralentización por zonas Glitch
+            if (typeof hazards !== 'undefined') {
+                let inGlitch = hazards.some(h => h.isGlitchZone && Math.hypot(pObj.x - h.x, pObj.y - h.y) < h.radius);
+                if (inGlitch) currentSpeed *= 0.45;
+            }
+            
             if (pObj.dashTimer <= 0) { pObj.x += moveX * currentSpeed; pObj.y += moveY * currentSpeed; }
         }
 
@@ -188,61 +291,41 @@ function processGamepadInput() {
             pObj.isShooting = false; 
         }
 
-        // Dash
+        // Mapeo dinámico de habilidades (Shift, E, Space, Q) para Gamepad
         if ((gp.buttons[4]?.pressed && !lastGamepadButtons[gpIdx][4]) || (gp.buttons[2]?.pressed && !lastGamepadButtons[gpIdx][2])) {
-            if ((pObj.empTimer || 0) === 0 && pObj.dashCooldown === 0 && pObj.dashTimer === 0 && (moveX !== 0 || moveY !== 0)) {
-                let len = Math.hypot(moveX, moveY);
-                pObj.dashVx = (moveX / len) * 14; pObj.dashVy = (moveY / len) * 14;
-                let dashCD = Math.max(30, 90 - (userSave.artifacts.hyperdrive * 5));
-                pObj.dashTimer = 10; pObj.dashCooldown = dashCD; screenShake = 5;
-            }
+            triggerAbility('Shift', pObj);
         }
 
         // Cambiar arma (LT)
         if (gp.buttons[6]?.pressed && !lastGamepadButtons[gpIdx][6]) { pObj.currentWeaponIndex = (pObj.currentWeaponIndex + 1) % pObj.weapons.length; updateUI(); }
         
-        // Pulso (B / Botón 1)
+        // Pulso (B / Botón 1) -> slot E
         if (gp.buttons[1]?.pressed && !lastGamepadButtons[gpIdx][1]) {
-            if ((pObj.empTimer || 0) === 0 && (pObj.pulseCooldown || 0) === 0) {
-                triggerPulse();
-                playPulseSound();
-            }
+            triggerAbility('E', pObj);
         }
         
-        // Modo Torreta (Y / Botón 3)
+        // Modo Torreta (Y / Botón 3) -> slot Space
         if (gp.buttons[3]?.pressed && !lastGamepadButtons[gpIdx][3]) {
-            if (waveActive && (pObj.empTimer || 0) === 0) {
-                pObj.isTurret = !pObj.isTurret;
-                playTurretToggleSound();
-                if (pObj.isTurret) pObj.minigunSpool = 0;
-            }
+            triggerAbility('Space', pObj);
         }
         
-        // Célula Q (R3 / Botón 11)
+        // Célula Q (R3 / Botón 11) -> slot Q
         if (gp.buttons[11]?.pressed && !lastGamepadButtons[gpIdx][11]) {
-            if ((pObj.qCooldown || 0) <= 0 && (pObj.empTimer || 0) === 0) {
-                pObj.dashCooldown = 0;
-                pObj.pulseCooldown = 0;
-                pObj.laserCooldown = 0;
-                pObj.qTurboTimer = 240; // 4s
-                pObj.qCooldown = 900 * (pObj.qCdMod || 1.0); // 15s base
-                
-                playOverloadSound();
-                createExplosion(pObj.x, pObj.y, '#00ffaa', 30, 2);
-                showNetworkMessage('⚡ ¡CÉLULA DE SOBRECARGA ACTIVADA!', 2000);
-            }
+            triggerAbility('Q', pObj);
         }
         
-        // Mega Láser (RB / Botón 5)
+        // Arma Especial (RB / Botón 5) -> Clic Derecho
         if (gp.buttons[5]?.pressed) {
             if ((pObj.empTimer || 0) === 0 && (pObj.laserCooldown || 0) <= 0 && !pObj.isTurret) {
-                if (!pObj.isChargingLaser) {
+                let specWep = userSave.nexusBuild.specialWeapon || 'laser';
+                if (specWep === 'laser' && !pObj.isChargingLaser) {
                     pObj.isChargingLaser = true;
                     pObj.laserCharge = 0;
+                } else if (specWep === 'mortar' && !lastGamepadButtons[gpIdx][5]) {
+                    fireMortar(pObj);
                 }
             }
         } else if (lastGamepadButtons[gpIdx][5] && !gp.buttons[5]?.pressed) {
-            // Se soltó el botón
             if (pObj.isChargingLaser) {
                 pObj.isChargingLaser = false;
                 fireMegaLaser(pObj);
@@ -255,7 +338,11 @@ function processGamepadInput() {
     function handleMenuGamepad(gp, gpIdx) {
         let moved = false;
         let activeModal = null;
-        if (!gameStarted) activeModal = document.getElementById('main-menu');
+        if (!gameStarted) {
+            const controlsModal = document.getElementById('controls-modal');
+            if (controlsModal?.style.display === 'block') activeModal = controlsModal;
+            else activeModal = document.getElementById('main-menu');
+        }
         else if (isShopActive) activeModal = document.getElementById('shop-modal');
         else if (inCollectionMenu) activeModal = document.getElementById('collection-modal');
         else if (isGameOver) activeModal = document.getElementById('game-over-modal');
