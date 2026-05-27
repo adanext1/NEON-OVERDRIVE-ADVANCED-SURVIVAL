@@ -66,6 +66,10 @@
             let lp = getLocalPlayer();
             if (lp) lp.aimMode = 'MANUAL';
         }
+        // Al tocar la palanca derecha para apuntar, también activar el auto-disparo
+        if (typeof mouse !== 'undefined') {
+            mouse.isDown = true;
+        }
         updateAim(touch);
     }
 
@@ -95,6 +99,14 @@
 
     function endAim() {
         knobAim.style.transform = `translate(-50%, -50%)`;
+        // Dejar de disparar si se suelta el joystick de apuntado,
+        // a menos que se mantenga pulsado el botón de disparar dedicado.
+        if (typeof mouse !== 'undefined') {
+            const fireBtnActive = document.querySelector('.touch-btn-fire:active');
+            if (!fireBtnActive) {
+                mouse.isDown = false;
+            }
+        }
     }
 
     // ================= REGISTRAR TOUCHES MÚLTIPLES =================
@@ -230,6 +242,30 @@
             }
         }
     });
+
+    // Pantalla completa (Fullscreen API)
+    const fsBtn = document.getElementById('touch-btn-fs');
+    if (fsBtn) {
+        fsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error al activar pantalla completa: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        // Soporte táctil directo
+        fsBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {});
+            } else {
+                document.exitFullscreen();
+            }
+        });
+    }
 
     // Mostrar overlay solo durante juego activo (ocultar en menús/modales/pausa)
     function isModalOpen() {

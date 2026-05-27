@@ -1861,6 +1861,19 @@ body.magnetic-inversion #hud-wave::after {
 .touch-btn-aim     { border-color: #888;    color: #888; font-size: 14px; }
 .touch-btn-pause   { border-color: #888;    color: #888; font-size: 14px; }
 
+/* Botón pantalla completa arriba izquierda */
+#touch-btn-fs {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+    border-color: #00aaff;
+    color: #00aaff;
+    z-index: 5002;
+}
+
 /* Pausa en una posición fija arriba para evitar pulsarla por error */
 .touch-btn-pause {
     position: fixed;
