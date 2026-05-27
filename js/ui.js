@@ -27,8 +27,12 @@ function showLevelUpMenu(pObj) {
     }
 
     const modal = document.getElementById('level-up-modal');
+    let playerColor = PLAYER_COLORS[pObj.id - 1] || '#00ffcc';
+    
     if (modal.style.display === 'block') {
-        levelUpQueue.push(pObj);
+        if (!levelUpQueue.some(p => p.id === pObj.id)) {
+            levelUpQueue.push(pObj);
+        }
         return;
     }
     
@@ -41,7 +45,6 @@ function showLevelUpMenu(pObj) {
     const titleElem = modal.querySelector('h2');
     const descElem = modal.querySelector('p');
     
-    let playerColor = PLAYER_COLORS[pObj.id - 1] || '#00ffcc';
     titleElem.style.color = playerColor;
 
     let oldTimer = document.getElementById('levelup-timer');
@@ -61,9 +64,6 @@ function showLevelUpMenu(pObj) {
                 <div style="font-size:12px; margin-top:12px; color: ${playerColor};">El juego se reanudará cuando elija</div>
             </div>`;
             
-        if (typeof isOnline !== 'undefined' && isOnline && isHost) {
-            sendGameEvent('open-level-up', { playerId: pObj.id });
-        }
         return;
     }
 
@@ -155,6 +155,9 @@ function showLevelUpMenu(pObj) {
         let b = document.getElementById('levelup-bar'); if (b) b.remove();
 
         if (typeof isOnline !== 'undefined' && isOnline) {
+            if (typeof sendPlayerUpgradeSync === 'function') {
+                sendPlayerUpgradeSync(pObj);
+            }
             sendGameEvent('level-up-resume', { playerId: pObj.id });
         }
         if (levelUpQueue.length > 0) {

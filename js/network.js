@@ -236,22 +236,26 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             applyRemotePlayerUpgrade(data.payload);
         } else if (data.type === 'level-up-pause') {
             let remoteP = players.find(p => p.id === data.payload.playerId) || players[0];
+            if (data.payload.playerId === localPlayerId) return;
             
             // Si nosotros estamos eligiendo mejora localmente, encolamos la del aliado
             if (typeof isLocalLevelUpOpen !== 'undefined' && isLocalLevelUpOpen) {
-                levelUpQueue.push(remoteP);
+                if (!levelUpQueue.some(p => p.id === remoteP.id)) {
+                    levelUpQueue.push(remoteP);
+                }
             } else {
                 // Si no, pausamos y mostramos la pantalla de espera
                 isPaused = true;
                 showLevelUpMenu(remoteP);
             }
         } else if (data.type === 'level-up-resume') {
+            if (data.payload.playerId === localPlayerId) return;
+            if (typeof levelUpQueue !== 'undefined') {
+                levelUpQueue = levelUpQueue.filter(p => p.id !== data.payload.playerId);
+            }
             // Si nosotros estamos eligiendo mejora localmente, el aliado terminó su espera
             if (typeof isLocalLevelUpOpen !== 'undefined' && isLocalLevelUpOpen) {
                 // Quitar al aliado de la cola si estaba ahí (ya no necesitamos mostrar su espera)
-                if (typeof levelUpQueue !== 'undefined') {
-                    levelUpQueue = levelUpQueue.filter(p => p.id !== data.payload.playerId);
-                }
             } else {
                 // Estábamos en pantalla de espera: cerrar y reanudar
                 let modal = document.getElementById('level-up-modal');

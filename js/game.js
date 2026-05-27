@@ -825,7 +825,7 @@ function update() {
     players.forEach(p => {
         if (p.isDead) return; // No disparar si está muerto
         if (typeof isOnline !== 'undefined' && isOnline && p.id !== localPlayerId) return; 
-        if (p.id === 1 && p.inputSource === 'keyboard' && mouse.isDown) fireWeapon(p);
+        if (p.inputSource === 'keyboard' && mouse.isDown) fireWeapon(p);
         else if (p.isShooting) fireWeapon(p);
     });
 
