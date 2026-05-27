@@ -21,7 +21,9 @@ function checkCoopGameOver() {
 
 // --- ACTUALIZACIONES DINÁMICAS HUD ---
 function updateHUDLabels() {
-    let build = userSave.nexusBuild;
+    let hudPlayer = (typeof getLocalPlayer === 'function') ? getLocalPlayer() : players[0];
+    let pSave = typeof getPlayerSave === 'function' ? getPlayerSave(hudPlayer) : userSave;
+    let build = pSave.nexusBuild;
     if (!build) return;
     
     // Habilidad Shift (Dash-CD Bar)
@@ -50,12 +52,13 @@ function updateHUDLabels() {
 }
 
 function updateHUDCooldownBars(p) {
-    let build = userSave.nexusBuild;
+    let pSave = typeof getPlayerSave === 'function' ? getPlayerSave(p) : userSave;
+    let build = pSave.nexusBuild;
     if (!build) return;
     
     function getCooldownPercent(skillId, pObj) {
         if (!skillId) return 0;
-        let mod = getActiveSkillModifier(skillId);
+        let mod = getActiveSkillModifier(skillId, pObj);
         if (skillId === 'dash' || skillId === 'turbo_impulso') {
             let maxCD = Math.max(15, Math.floor(90 * mod.cdMultiplier));
             return 1 - (pObj.dashCooldown / maxCD);
@@ -483,13 +486,31 @@ function triggerAbility(slotKey, pObj) {
     }
 
     // Efecto Ultra Aspiradora de Datos
-    let magnetLevel = getPassiveLevel('passive_magnet');
-    if (magnetLevel === 6 && pObj.id === 1) {
+    let magnetLevel = getPassiveLevel('passive_magnet', pObj);
+    if (magnetLevel === 6) {
         drops.forEach(d => {
             d.x = pObj.x;
             d.y = pObj.y;
         });
         showNetworkMessage('🧲 ¡ASPIRADORA DE DATOS ACTIVADA!', 1200);
+    }
+    
+    if (typeof isOnline !== 'undefined' && isOnline && pObj.id === localPlayerId) {
+        sendGameEvent('player-ability', {
+            playerId: pObj.id,
+            slotKey: slotKey,
+            abilityId: abilityId,
+            x: pObj.x,
+            y: pObj.y,
+            angle: pObj.angle,
+            dashCooldown: pObj.dashCooldown,
+            pulseCooldown: pObj.pulseCooldown,
+            qCooldown: pObj.qCooldown,
+            laserCooldown: pObj.laserCooldown,
+            teleportCooldown: pObj.teleportCooldown,
+            isTurret: pObj.isTurret,
+            qTurboTimer: pObj.qTurboTimer
+        });
     }
 }
 
@@ -537,7 +558,8 @@ window.addEventListener('mousedown', e => {
     if (e.button === 2 && gameStarted && !isPaused) {
         let p = getLocalPlayer();
         if ((p.empTimer || 0) === 0 && (p.laserCooldown || 0) <= 0 && !p.isTurret) {
-            let specWep = userSave.nexusBuild.specialWeapon || 'laser';
+            let pSave = typeof getPlayerSave === 'function' ? getPlayerSave(p) : userSave;
+            let specWep = pSave.nexusBuild.specialWeapon || 'laser';
             if (specWep === 'laser') {
                 p.isChargingLaser = true;
                 p.laserCharge = 0;
@@ -758,12 +780,13 @@ function update() {
         }
     });
 
-    updateHUDCooldownBars(players[0]);
+    let hudPlayer = (typeof getLocalPlayer === 'function') ? getLocalPlayer() : players[0];
+    updateHUDCooldownBars(hudPlayer);
     
     let heatBar = document.getElementById('minigun-heat-bar');
     if (heatBar) {
-        heatBar.style.width = `${(players[0].minigunHeat / 300) * 100}%`;
-        heatBar.style.background = players[0].minigunOverheat ? '#ff0000' : '#ffaa00';
+        heatBar.style.width = `${(hudPlayer.minigunHeat / 300) * 100}%`;
+        heatBar.style.background = hudPlayer.minigunOverheat ? '#ff0000' : '#ffaa00';
     }
 
     // Movimiento

@@ -59,6 +59,8 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
         
         // Si no somos el host, somos cliente
         isHost = (localPlayerId === 1);
+        if (typeof updateHUDLabels === 'function') updateHUDLabels();
+        if (typeof updateUI === 'function') updateUI();
         
         showNetworkMessage(`🎮 Eres JUGADOR ${localPlayerId}`, 3000);
     });
@@ -157,10 +159,29 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
         if (remoteP) {
             remoteP.x = data.x;
             remoteP.y = data.y;
+            remoteP.angle = data.angle ?? remoteP.angle;
             remoteP.hp = data.hp;
+            remoteP.maxHp = data.maxHp ?? remoteP.maxHp;
             remoteP.shield = data.shield;
+            remoteP.maxShield = data.maxShield ?? remoteP.maxShield;
             remoteP.aimMode = data.aimMode;
+            remoteP.level = data.level ?? remoteP.level;
+            remoteP.xp = data.xp ?? remoteP.xp;
+            remoteP.nextXp = data.nextXp ?? remoteP.nextXp;
+            remoteP.credits = data.credits ?? remoteP.credits;
+            remoteP.damageModifier = data.damageModifier ?? remoteP.damageModifier;
+            remoteP.speed = data.speed ?? remoteP.speed;
+            remoteP.dashCooldown = data.dashCooldown ?? remoteP.dashCooldown;
+            remoteP.pulseCooldown = data.pulseCooldown ?? remoteP.pulseCooldown;
+            remoteP.qCooldown = data.qCooldown ?? remoteP.qCooldown;
+            remoteP.laserCooldown = data.laserCooldown ?? remoteP.laserCooldown;
+            remoteP.teleportCooldown = data.teleportCooldown ?? remoteP.teleportCooldown;
+            remoteP.isTurret = data.isTurret ?? remoteP.isTurret;
+            remoteP.qTurboTimer = data.qTurboTimer ?? remoteP.qTurboTimer;
+            remoteP.isDead = data.isDead ?? remoteP.isDead;
             if (data.weapons) remoteP.weapons = data.weapons;
+            if (data.weaponUpgrades) remoteP.weaponUpgrades = data.weaponUpgrades;
+            if (data.upgradeCounts) remoteP.upgradeCounts = data.upgradeCounts;
             remoteP.currentWeaponIndex = Math.min(data.currentWeaponIndex, (remoteP.weapons.length - 1));
         }
     });
@@ -238,6 +259,8 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else if (data.type === 'player-upgrade') {
             applyRemotePlayerUpgrade(data.payload);
+        } else if (data.type === 'player-ability') {
+            applyRemotePlayerAbility(data.payload);
         } else if (data.type === 'level-up-pause') {
             let remoteP = players.find(p => p.id === data.payload.playerId) || players[0];
             if (data.payload.playerId === localPlayerId) return;
@@ -319,10 +342,29 @@ function sendPlayerUpdate() {
         x: localP.x,
         y: localP.y,
         hp: localP.hp,
+        maxHp: localP.maxHp,
         shield: localP.shield,
+        maxShield: localP.maxShield,
+        angle: localP.angle,
         aimMode: localP.aimMode,
+        level: localP.level,
+        xp: localP.xp,
+        nextXp: localP.nextXp,
+        credits: localP.credits,
+        damageModifier: localP.damageModifier,
+        speed: localP.speed,
+        dashCooldown: localP.dashCooldown,
+        pulseCooldown: localP.pulseCooldown,
+        qCooldown: localP.qCooldown,
+        laserCooldown: localP.laserCooldown,
+        teleportCooldown: localP.teleportCooldown,
+        isTurret: localP.isTurret,
+        qTurboTimer: localP.qTurboTimer,
+        isDead: localP.isDead,
         currentWeaponIndex: localP.currentWeaponIndex,
-        weapons: localP.weapons
+        weapons: localP.weapons,
+        weaponUpgrades: localP.weaponUpgrades,
+        upgradeCounts: localP.upgradeCounts
     });
 }
 
@@ -358,14 +400,26 @@ function sendPlayerUpgradeSync(pObj) {
         playerId: pObj.id,
         hp: pObj.hp,
         maxHp: pObj.maxHp,
+        shield: pObj.shield,
+        maxShield: pObj.maxShield,
+        level: pObj.level,
+        xp: pObj.xp,
+        nextXp: pObj.nextXp,
         credits: pObj.credits,
         damageModifier: pObj.damageModifier,
+        speed: pObj.speed,
         weapons: pObj.weapons,
         currentWeaponIndex: pObj.currentWeaponIndex,
+        weaponUpgrades: pObj.weaponUpgrades,
         upgradeCounts: pObj.upgradeCounts,
         laserDmgMod: pObj.laserDmgMod,
         minigunHeatMod: pObj.minigunHeatMod,
-        qCdMod: pObj.qCdMod
+        minigunCooldownMod: pObj.minigunCooldownMod,
+        qCdMod: pObj.qCdMod,
+        magnetRange: pObj.magnetRange,
+        lifeSteal: pObj.lifeSteal,
+        hasSecondChance: pObj.hasSecondChance,
+        turretDamageReduction: pObj.turretDamageReduction
     });
 }
 
@@ -381,15 +435,77 @@ function applyRemotePlayerUpgrade(payload) {
     }
     pObj.hp = payload.hp;
     pObj.maxHp = payload.maxHp;
+    pObj.shield = payload.shield ?? pObj.shield;
+    pObj.maxShield = payload.maxShield ?? pObj.maxShield;
+    pObj.level = payload.level ?? pObj.level;
+    pObj.xp = payload.xp ?? pObj.xp;
+    pObj.nextXp = payload.nextXp ?? pObj.nextXp;
     pObj.credits = payload.credits;
     pObj.damageModifier = payload.damageModifier;
+    pObj.speed = payload.speed ?? pObj.speed;
     pObj.weapons = payload.weapons || pObj.weapons;
     pObj.currentWeaponIndex = payload.currentWeaponIndex || 0;
+    pObj.weaponUpgrades = payload.weaponUpgrades || pObj.weaponUpgrades;
     pObj.upgradeCounts = payload.upgradeCounts || pObj.upgradeCounts;
     pObj.laserDmgMod = payload.laserDmgMod;
     pObj.minigunHeatMod = payload.minigunHeatMod;
+    pObj.minigunCooldownMod = payload.minigunCooldownMod;
     pObj.qCdMod = payload.qCdMod;
+    pObj.magnetRange = payload.magnetRange ?? pObj.magnetRange;
+    pObj.lifeSteal = payload.lifeSteal ?? pObj.lifeSteal;
+    pObj.hasSecondChance = payload.hasSecondChance ?? pObj.hasSecondChance;
+    pObj.turretDamageReduction = payload.turretDamageReduction ?? pObj.turretDamageReduction;
     updateUI();
+}
+
+function applyRemotePlayerAbility(payload) {
+    if (!payload || payload.playerId === localPlayerId) return;
+    let pObj = players.find(p => p.id === payload.playerId);
+    if (!pObj) {
+        pObj = createPlayer(payload.playerId, payload.playerId - 1);
+        pObj.inputSource = 'remote';
+        pObj.color = PLAYER_COLORS[payload.playerId - 1];
+        players.push(pObj);
+        players.sort((a, b) => a.id - b.id);
+    }
+    pObj.x = payload.x ?? pObj.x;
+    pObj.y = payload.y ?? pObj.y;
+    pObj.angle = payload.angle ?? pObj.angle;
+    pObj.dashCooldown = payload.dashCooldown ?? pObj.dashCooldown;
+    pObj.pulseCooldown = payload.pulseCooldown ?? pObj.pulseCooldown;
+    pObj.qCooldown = payload.qCooldown ?? pObj.qCooldown;
+    pObj.laserCooldown = payload.laserCooldown ?? pObj.laserCooldown;
+    pObj.teleportCooldown = payload.teleportCooldown ?? pObj.teleportCooldown;
+    pObj.isTurret = payload.isTurret ?? pObj.isTurret;
+    pObj.qTurboTimer = payload.qTurboTimer ?? pObj.qTurboTimer;
+    
+    if (typeof isHost !== 'undefined' && isHost) {
+        let abilityId = payload.abilityId;
+        if (abilityId === 'pulse' || abilityId === 'pulso_choque') {
+            createExplosion(pObj.x, pObj.y, '#ff007f', 40, 2);
+            enemies.forEach(e => {
+                let dx = e.x - pObj.x;
+                let dy = e.y - pObj.y;
+                let dist = Math.hypot(dx, dy);
+                if (dist < 260) {
+                    let angle = Math.atan2(dy, dx);
+                    let force = (260 - dist) / 1.2;
+                    if (dist > 0) {
+                        e.x += Math.cos(angle) * force;
+                        e.y += Math.sin(angle) * force;
+                    }
+                    let dmg = Math.floor(35 * (pObj.damageModifier || 1));
+                    e.hp -= dmg;
+                    e.flashTicks = 5;
+                    if (typeof spawnDamageText === 'function') spawnDamageText(e.x, e.y, dmg, 'normal');
+                }
+            });
+        } else if (abilityId === 'teleport' || abilityId === 'salto_falla') {
+            createExplosion(pObj.x, pObj.y, '#7700ff', 20, 1);
+        } else if (abilityId === 'overload' || abilityId === 'sobrecarga_armas') {
+            createExplosion(pObj.x, pObj.y, '#00ffaa', 30, 2);
+        }
+    }
 }
 
 function spawnRemoteBullet(data) {

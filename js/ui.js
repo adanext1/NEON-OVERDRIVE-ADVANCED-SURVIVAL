@@ -219,9 +219,10 @@ function showLevelUpMenu(pObj) {
 
 
 function updateUI() {
-    let p1 = players[0];
+    let p1 = (typeof getLocalPlayer === 'function') ? getLocalPlayer() : players[0];
+    if (!p1) p1 = players[0];
 
-    // Jugador 1 (siempre presente)
+    // HUD principal: en online muestra al jugador local; en local muestra J1
     document.getElementById('hud-wave').innerText = `OLEADA: ${wave}`;
     document.getElementById('hud-hp').innerText = `${Math.max(0, Math.ceil(p1.hp))}/${p1.maxHp}`;
     document.getElementById('hp-bar-fill').style.width = `${(p1.hp / p1.maxHp) * 100}%`;
@@ -303,7 +304,7 @@ function updateUI() {
         }
     }
 
-    // Botones de tienda — P1
+    // Botones de tienda — HUD principal/jugador local
     let btnHp = document.getElementById('btn-up-hp');
     if (btnHp) btnHp.disabled = p1.credits < 50;
     let btnDmg = document.getElementById('btn-up-dmg');

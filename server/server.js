@@ -35,9 +35,10 @@ io.on('connection', (socket) => {
         
         let room = rooms[roomId];
         
-        // Asignar ID de jugador secuencial (1-4)
-        let playerId = room.players.length + 1;
-        if (playerId > 4) {
+        // Asignar primer ID libre de jugador (1-4)
+        let usedIds = room.players.map(p => p.playerId);
+        let playerId = [1, 2, 3, 4].find(id => !usedIds.includes(id));
+        if (!playerId) {
             socket.emit('room-full', { message: 'Sala llena (máximo 4 jugadores)' });
             socket.leave(roomId);
             return;
