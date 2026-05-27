@@ -28,7 +28,7 @@ function updateBossGuardian(e, dx, dy, dist, sx, sy, nearestPlayer) {
         if (e.summonTimer >= 360) {
             e.summonTimer = 0;
             let sa = Math.random() * Math.PI * 2;
-            enemies.push({ 
+            pushEnemy({ 
                 id: Date.now() + Math.random(), 
                 x: e.x + Math.cos(sa) * 65, y: e.y + Math.sin(sa) * 65, 
                 radius: 11, speed: 4.2, hp: 20, maxHp: 20, color: '#00ff55', 
@@ -145,7 +145,7 @@ function updateBossGuardian(e, dx, dy, dist, sx, sy, nearestPlayer) {
             e.summonTimer = 0;
             for (let k = 0; k < 2; k++) {
                 let sa = (k * Math.PI) + (e.spiralAngle || 0);
-                enemies.push({ 
+                pushEnemy({ 
                     id: Date.now() + Math.random() + k, 
                     x: e.x + Math.cos(sa) * 70, y: e.y + Math.sin(sa) * 70, 
                     radius: 11, speed: 4.8, hp: 25, maxHp: 25, color: '#ffaa00', 

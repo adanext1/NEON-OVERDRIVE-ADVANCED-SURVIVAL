@@ -1363,6 +1363,13 @@ function update() {
                     }
                 });
                 if (d.matType) saveGame();
+                if (typeof isOnline !== 'undefined' && isOnline && isHost && typeof sendGameEvent === 'function') {
+                    if (d.id) sendGameEvent('drop-pickup', { id: d.id });
+                    if (d.matType) {
+                        // Sincronizar incremento de material a todos los jugadores remotos
+                        sendGameEvent('mat-gain', { matType: d.matType });
+                    }
+                }
                 drops.splice(i, 1); updateUI();
                 
                 // Enviar sincronización de stats al Cliente
@@ -1395,6 +1402,26 @@ function update() {
         if (isHost) {
             let enemyData = enemies.map(e => ({ id: e.id, x: e.x, y: e.y, hp: e.hp }));
             sendGameEvent('enemy-update', enemyData);
+            // Sync autoritativo cada ~200ms
+            if (typeof window._lastPlayersStateSync === 'undefined') window._lastPlayersStateSync = 0;
+            window._lastPlayersStateSync++;
+            if (window._lastPlayersStateSync >= 12) {
+                window._lastPlayersStateSync = 0;
+                let allState = {};
+                players.forEach(p => {
+                    allState[`p${p.id}`] = {
+                        hp: p.hp,
+                        maxHp: p.maxHp,
+                        shield: p.shield,
+                        maxShield: p.maxShield,
+                        isDead: p.isDead
+                    };
+                });
+                sendGameEvent('players-state-sync', allState);
+                // Snapshot completo de drops para reconciliación visual
+                let dropSnap = drops.map(d => ({ id: d.id, x: d.x, y: d.y, credits: d.credits, xp: d.xp, radius: d.radius, matType: d.matType }));
+                sendGameEvent('drops-sync', dropSnap);
+            }
         }
     }
 

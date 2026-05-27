@@ -185,7 +185,7 @@ function updateBossVector(e, dx, dy, dist, sx, sy, nearestPlayer) {
 
             [[-90,-90],[90,-90],[-90,90],[90,90]].forEach(([ox, oy], idx) => {
                 let data = fragmentData[idx];
-                enemies.push({
+                pushEnemy({
                     id: Date.now() + Math.random() + idx,
                     x: e.x + ox, y: e.y + oy,
                     radius: data.radius, speed: data.speed, hp: data.hp, maxHp: data.hp,

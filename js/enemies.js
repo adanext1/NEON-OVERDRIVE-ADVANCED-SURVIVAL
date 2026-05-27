@@ -168,7 +168,16 @@ function spawnEnemy() {
     }
 }
 
+// Helper: push enemy y, si somos host, sincronizarlo con clientes
+function pushEnemy(enemy) {
+    enemies.push(enemy);
+    if (typeof isOnline !== 'undefined' && isOnline && typeof isHost !== 'undefined' && isHost) {
+        if (typeof sendGameEvent === 'function') sendGameEvent('spawn-enemy', enemy);
+    }
+}
+
 function updateEnemies() {
+    let _hostAuthoritative = (typeof isOnline === 'undefined') || !isOnline || isHost;
     for (let i = enemies.length - 1; i >= 0; i--) {
         let e = enemies[i]; 
         if (e.bossInvulnTimer > 0) e.bossInvulnTimer--;
@@ -191,6 +200,8 @@ function updateEnemies() {
         }
         
         if (e.hp <= 0) {
+            // En cliente online: la muerte/loot/spawns la decide el host. No remover localmente.
+            if (!_hostAuthoritative) { continue; }
             createExplosion(e.x, e.y, e.color, e.isBoss ? 70 : 12, e.isBoss ? 2 : 1);
             playExplosionSound();
             
@@ -248,12 +259,16 @@ function updateEnemies() {
             }
             let dropMat = null; let roll = Math.random();
             if (e.isBoss || e.isEliteGold) dropMat = e.dropType; else if (roll < 0.25) dropMat = e.dropType;
-            drops.push({ x: e.x, y: e.y, credits: e.credits, xp: e.xp, radius: 4, matType: dropMat });
+            let newDrop = { id: Date.now() + Math.random(), x: e.x, y: e.y, credits: e.credits, xp: e.xp, radius: 4, matType: dropMat };
+            drops.push(newDrop);
+            if (typeof isOnline !== 'undefined' && isOnline && isHost && typeof sendGameEvent === 'function') {
+                sendGameEvent('drop-spawn', newDrop);
+            }
             
             if (e.isSplitter) {
                 for (let k = 0; k < 3; k++) {
                     let a = Math.random() * Math.PI * 2;
-                    enemies.push({
+                    pushEnemy({
                         id: Date.now() + Math.random() + k,
                         x: e.x + Math.cos(a) * 15, y: e.y + Math.sin(a) * 15,
                         radius: 11, speed: 3.2, hp: 35, maxHp: 35,

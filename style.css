@@ -1759,3 +1759,198 @@ body.magnetic-inversion #hud-wave::after {
     box-shadow: none !important;
 }
 
+/* =====================================================================
+   ===== ADAPTACIÓN MÓVIL: ESCALADO DE UI Y CONTROLES TÁCTILES =========
+   ===================================================================== */
+
+/* --- Controles táctiles (overlay) --- */
+#touch-controls {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5000;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.touch-joy {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(0, 255, 204, 0.08);
+    border: 2px solid rgba(0, 255, 204, 0.45);
+    box-shadow: 0 0 18px rgba(0, 255, 204, 0.2);
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#touch-joy-move {
+    left: 24px;
+    bottom: 24px;
+}
+
+#touch-joy-aim {
+    right: 24px;
+    bottom: 24px;
+    border-color: rgba(255, 0, 127, 0.5);
+    background: rgba(255, 0, 127, 0.08);
+    box-shadow: 0 0 18px rgba(255, 0, 127, 0.2);
+}
+
+.touch-joy-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 255, 204, 0.5);
+    border: 2px solid #00ffcc;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    box-shadow: 0 0 12px #00ffcc;
+}
+
+#touch-joy-aim .touch-joy-knob {
+    background: rgba(255, 0, 127, 0.5);
+    border-color: #ff007f;
+    box-shadow: 0 0 12px #ff007f;
+}
+
+#touch-buttons {
+    position: absolute;
+    right: 180px;
+    bottom: 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 64px);
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.touch-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid #00ffcc;
+    background: rgba(5, 5, 20, 0.65);
+    color: #00ffcc;
+    font-size: 22px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.touch-btn:active {
+    background: rgba(0, 255, 204, 0.25);
+    transform: scale(0.92);
+}
+
+.touch-btn-fire    { border-color: #ffaa00; color: #ffaa00; box-shadow: 0 0 10px #ffaa0066; }
+.touch-btn-special { border-color: #ff0055; color: #ff0055; box-shadow: 0 0 10px #ff005566; }
+.touch-btn-shift   { border-color: #00ffaa; color: #00ffaa; }
+.touch-btn-e       { border-color: #ff007f; color: #ff007f; }
+.touch-btn-q       { border-color: #aa00ff; color: #aa00ff; }
+.touch-btn-space   { border-color: #ffff00; color: #ffff00; }
+.touch-btn-aim     { border-color: #888;    color: #888; font-size: 14px; }
+.touch-btn-pause   { border-color: #888;    color: #888; font-size: 14px; }
+
+/* Pausa en una posición fija arriba para evitar pulsarla por error */
+.touch-btn-pause {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    font-size: 12px;
+    z-index: 5001;
+}
+
+/* --- Escalado responsivo del HUD/menús --- */
+@media (max-width: 900px) {
+    #ui-layer { padding: 8px; }
+    .hud-box {
+        font-size: 11px;
+        padding: 8px;
+        width: 180px;
+        border-radius: 7px;
+    }
+    .hud-box .hud-row { font-size: 9px; }
+    .hud-compact {
+        padding: 6px;
+        width: 130px;
+        font-size: 9px;
+    }
+    #hud-box    { left: 6px; top: 6px; }
+    #hud-box-p2 { right: 6px; top: 6px; }
+    #hud-box-p3 { left: 6px; bottom: 170px; }
+    #hud-box-p4 { right: 6px; bottom: 170px; }
+
+    /* Modales: ocupar la pantalla con scroll interno */
+    #shop-modal,
+    #level-up-modal,
+    #pause-modal,
+    #game-over-modal,
+    #controls-modal,
+    #collection-modal,
+    #main-menu {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        max-height: 92vh !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        overflow-y: auto !important;
+        padding: 12px !important;
+        font-size: 12px !important;
+    }
+    .shop-btn, button {
+        font-size: 12px !important;
+        padding: 8px !important;
+    }
+    h1 { font-size: 22px !important; }
+    h2 { font-size: 18px !important; }
+    h3 { font-size: 14px !important; }
+
+    /* Chat compacto */
+    #chat-box {
+        width: 200px !important;
+        max-height: 140px !important;
+        font-size: 10px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .hud-box {
+        font-size: 10px;
+        width: 150px;
+    }
+    .hud-compact {
+        width: 110px;
+        font-size: 8px;
+    }
+    .touch-joy { width: 110px; height: 110px; }
+    .touch-joy-knob { width: 48px; height: 48px; }
+    #touch-buttons {
+        grid-template-columns: repeat(2, 52px);
+        right: 130px;
+        gap: 6px;
+    }
+    .touch-btn { width: 52px; height: 52px; font-size: 18px; }
+    .touch-btn-aim, .touch-btn-pause { font-size: 11px; }
+}
+
+/* En móvil ocultar la leyenda de tecla M de "apuntado" extra si no cabe */
+@media (max-height: 500px) {
+    #touch-buttons {
+        bottom: 6px;
+        grid-template-columns: repeat(4, 52px);
+    }
+}
+

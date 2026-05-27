@@ -160,16 +160,22 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             remoteP.x = data.x;
             remoteP.y = data.y;
             remoteP.angle = data.angle ?? remoteP.angle;
-            remoteP.hp = data.hp;
-            remoteP.maxHp = data.maxHp ?? remoteP.maxHp;
-            remoteP.shield = data.shield;
-            remoteP.maxShield = data.maxShield ?? remoteP.maxShield;
+            // HP/escudo/isDead son autoritativos del host: el host ignora lo que mande el cliente
+            if (!isHost) {
+                remoteP.hp = data.hp ?? remoteP.hp;
+                remoteP.maxHp = data.maxHp ?? remoteP.maxHp;
+                remoteP.shield = data.shield ?? remoteP.shield;
+                remoteP.maxShield = data.maxShield ?? remoteP.maxShield;
+            }
             remoteP.aimMode = data.aimMode;
-            remoteP.level = data.level ?? remoteP.level;
-            remoteP.xp = data.xp ?? remoteP.xp;
-            remoteP.nextXp = data.nextXp ?? remoteP.nextXp;
-            remoteP.credits = data.credits ?? remoteP.credits;
-            remoteP.damageModifier = data.damageModifier ?? remoteP.damageModifier;
+            // XP/nivel/créditos son autoritativos del host: solo los aceptan los clientes (vía sync-stats),
+            // nunca el host desde un cliente.
+            if (!isHost) {
+                remoteP.level = data.level ?? remoteP.level;
+                remoteP.xp = data.xp ?? remoteP.xp;
+                remoteP.nextXp = data.nextXp ?? remoteP.nextXp;
+                remoteP.credits = data.credits ?? remoteP.credits;
+            }
             remoteP.speed = data.speed ?? remoteP.speed;
             remoteP.dashCooldown = data.dashCooldown ?? remoteP.dashCooldown;
             remoteP.pulseCooldown = data.pulseCooldown ?? remoteP.pulseCooldown;
@@ -178,11 +184,14 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             remoteP.teleportCooldown = data.teleportCooldown ?? remoteP.teleportCooldown;
             remoteP.isTurret = data.isTurret ?? remoteP.isTurret;
             remoteP.qTurboTimer = data.qTurboTimer ?? remoteP.qTurboTimer;
-            remoteP.isDead = data.isDead ?? remoteP.isDead;
-            if (data.weapons) remoteP.weapons = data.weapons;
-            if (data.weaponUpgrades) remoteP.weaponUpgrades = data.weaponUpgrades;
-            if (data.upgradeCounts) remoteP.upgradeCounts = data.upgradeCounts;
-            remoteP.currentWeaponIndex = Math.min(data.currentWeaponIndex, (remoteP.weapons.length - 1));
+            if (!isHost) {
+                remoteP.isDead = data.isDead ?? remoteP.isDead;
+            }
+            // weapons/weaponUpgrades/upgradeCounts/damageModifier se sincronizan por player-upgrade.
+            // Aquí sólo aceptamos el arma activa para que el cambio de arma se vea rápido.
+            if (typeof data.currentWeaponIndex === 'number' && remoteP.weapons && remoteP.weapons.length > 0) {
+                remoteP.currentWeaponIndex = Math.min(data.currentWeaponIndex, remoteP.weapons.length - 1);
+            }
         }
     });
 
@@ -197,9 +206,48 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             }
         } else if (data.type === 'spawn-enemy') {
             if (!isHost) {
-                enemies.push(data.payload);
+                // Evitar duplicados por id
+                if (!enemies.some(en => en.id === data.payload.id)) {
+                    enemies.push(data.payload);
+                }
                 if (typeof enemiesToSpawn !== 'undefined' && enemiesToSpawn > 0) {
                     enemiesToSpawn--;
+                }
+            }
+        } else if (data.type === 'drop-spawn') {
+            if (!isHost) {
+                if (!drops.some(d => d.id === data.payload.id)) {
+                    drops.push(data.payload);
+                }
+            }
+        } else if (data.type === 'drop-pickup') {
+            if (!isHost) {
+                let idx = drops.findIndex(d => d.id === data.payload.id);
+                if (idx >= 0) drops.splice(idx, 1);
+            }
+        } else if (data.type === 'drops-sync') {
+            if (!isHost) {
+                let hostIds = new Set(data.payload.map(d => d.id));
+                // Eliminar drops locales que ya no existen
+                for (let i = drops.length - 1; i >= 0; i--) {
+                    if (!hostIds.has(drops[i].id)) drops.splice(i, 1);
+                }
+                // Agregar drops del host que no estén locales
+                data.payload.forEach(rd => {
+                    if (!drops.some(d => d.id === rd.id)) drops.push(rd);
+                });
+            }
+        } else if (data.type === 'mat-gain') {
+            if (!isHost) {
+                // Incrementar material del jugador local (cada cliente actualiza su propio save)
+                let localP = players.find(p => p.id === localPlayerId);
+                if (localP && typeof getPlayerSave === 'function') {
+                    let pSave = getPlayerSave(localP);
+                    if (pSave && pSave.materials && data.payload.matType) {
+                        pSave.materials[data.payload.matType] = (pSave.materials[data.payload.matType] || 0) + 1;
+                        if (typeof saveGame === 'function') saveGame();
+                        if (typeof updateUI === 'function') updateUI();
+                    }
                 }
             }
         } else if (data.type === 'wave-sync') {
@@ -225,6 +273,22 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
                 } else {
                     showNetworkMessage(`⏳ J${data.payload.playerId} está eligiendo mejora`, 2000);
                 }
+            }
+        } else if (data.type === 'players-state-sync') {
+            if (!isHost) {
+                Object.keys(data.payload).forEach(key => {
+                    let pid = parseInt(key.replace('p', ''));
+                    let pObj = players.find(p => p.id === pid);
+                    if (pObj) {
+                        let st = data.payload[key];
+                        pObj.hp = st.hp ?? pObj.hp;
+                        pObj.maxHp = st.maxHp ?? pObj.maxHp;
+                        pObj.shield = st.shield ?? pObj.shield;
+                        pObj.maxShield = st.maxShield ?? pObj.maxShield;
+                        pObj.isDead = st.isDead ?? pObj.isDead;
+                    }
+                });
+                if (typeof updateUI === 'function') updateUI();
             }
         } else if (data.type === 'sync-stats') {
             if (!isHost) {
@@ -347,11 +411,6 @@ function sendPlayerUpdate() {
         maxShield: localP.maxShield,
         angle: localP.angle,
         aimMode: localP.aimMode,
-        level: localP.level,
-        xp: localP.xp,
-        nextXp: localP.nextXp,
-        credits: localP.credits,
-        damageModifier: localP.damageModifier,
         speed: localP.speed,
         dashCooldown: localP.dashCooldown,
         pulseCooldown: localP.pulseCooldown,
@@ -361,10 +420,7 @@ function sendPlayerUpdate() {
         isTurret: localP.isTurret,
         qTurboTimer: localP.qTurboTimer,
         isDead: localP.isDead,
-        currentWeaponIndex: localP.currentWeaponIndex,
-        weapons: localP.weapons,
-        weaponUpgrades: localP.weaponUpgrades,
-        upgradeCounts: localP.upgradeCounts
+        currentWeaponIndex: localP.currentWeaponIndex
     });
 }
 
@@ -535,6 +591,8 @@ function spawnRemoteBullet(data) {
 }
 
 function updateRemoteEnemies(enemyData) {
+    let hostIds = new Set(enemyData.map(e => e.id));
+    // Aplicar posiciones/HP del host
     enemyData.forEach(remoteEnemy => {
         let localEnemy = enemies.find(e => e.id === remoteEnemy.id);
         if (localEnemy) {
@@ -543,4 +601,10 @@ function updateRemoteEnemies(enemyData) {
             localEnemy.hp = remoteEnemy.hp;
         }
     });
+    // Eliminar enemigos locales que el host ya no tiene (host autoritativo)
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (!hostIds.has(enemies[i].id)) {
+            enemies.splice(i, 1);
+        }
+    }
 }
