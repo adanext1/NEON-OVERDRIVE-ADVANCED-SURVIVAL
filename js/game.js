@@ -988,6 +988,25 @@ function update() {
 
         for (let j = enemies.length - 1; j >= 0; j--) {
             let e = enemies[j]; 
+
+            // Daño a pilares de la Jaula de Vectores (Fase 0 del Overlord)
+            if (e.isOverlordApex && e.bossPhase === 0 && e.olPillarsSpawned && e.olPillarPositions) {
+                let hitPillar = false;
+                for (let pi = 0; pi < 4; pi++) {
+                    if (!e.olPillarAlive[pi]) continue;
+                    let pp = e.olPillarPositions[pi];
+                    let pillarDist = Math.hypot(b.x - pp.x, b.y - pp.y);
+                    if (pillarDist < 22 + b.radius) {
+                        let pillarDmg = b.damage * 0.5;
+                        damageOverlordPillar(e, pi, pillarDmg);
+                        spawnDamageText(pp.x, pp.y, Math.floor(pillarDmg), 'normal');
+                        bullets.splice(i, 1);
+                        hitPillar = true;
+                        break;
+                    }
+                }
+                if (hitPillar) break;
+            }
             
             if (!b.hitEnemies) b.hitEnemies = [];
             if (b.hitEnemies.includes(e.id)) continue; // No golpear al mismo enemigo dos veces
@@ -1010,6 +1029,16 @@ function update() {
             if (dist < b.radius + e.radius) {
                 if (e.isBoss && e.bossInvulnTimer > 0) { createExplosion(b.x, b.y, '#ffffff', 5, 0.8); bullets.splice(i, 1); break; }
 
+                // Inmunidad Fase 0 (Jaula de Vectores) del Overlord Apex
+                if (e.isOverlordApex && e.bossPhase === 0) {
+                    let pillarsAlive = e.olPillarAlive ? e.olPillarAlive.filter(a => a).length : 0;
+                    if (!e.olPillarsSpawned || pillarsAlive > 0) {
+                        createExplosion(b.x, b.y, '#d4af37', 6, 0.8);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+
                 if (b.isStunning) {
                     e.stunTimer = 30;
                 }
@@ -1022,22 +1051,7 @@ function update() {
                     }
                 }
 
-                // Daño a pilares de la Jaula de Vectores (Fase 0 del Overlord)
-                if (e.isOverlordApex && e.bossPhase === 0 && e.olPillarsSpawned && e.olPillarPositions) {
-                    for (let pi = 0; pi < 4; pi++) {
-                        if (!e.olPillarAlive[pi]) continue;
-                        let pp = e.olPillarPositions[pi];
-                        let pillarDist = Math.hypot(b.x - pp.x, b.y - pp.y);
-                        if (pillarDist < 22) {
-                            let pillarDmg = b.damage * 0.5;
-                            damageOverlordPillar(e, pi, pillarDmg);
-                            spawnDamageText(pp.x, pp.y, Math.floor(pillarDmg), 'normal');
-                            bullets.splice(i, 1);
-                            break;
-                        }
-                    }
-                    if (i < 0 || (bullets[i] && bullets[i] !== b)) break;
-                }
+
 
                 // Enlace Cuántico del Singularity Sentinel: redirigir daño
                 if (e.isSingularitySentinel === false && typeof checkSentinelLinkRedirect !== 'undefined') {
@@ -1750,7 +1764,202 @@ function draw() {
             ctx.lineWidth = 3;
             ctx.stroke();
         }
+        else if (e.isOverlordApex) {
+            skipDefaultFill = true;
+            let frame = e.olTimer || 0;
+            let phase = e.bossPhase + 1; // 1, 2, o 3
+            
+            // Paletas de color del rediseño visual
+            const THEMES = {
+                1: { core: "#ffffff", primary: "#6600ff", secondary: "#330088" }, // Morado calculador
+                2: { core: "#ffffff", primary: "#ff0033", secondary: "#880011" }, // Rojo furia
+                3: { core: "#ffffff", primary: "#ff0000", secondary: "#ffffff" }  // Contraste apocalíptico
+            };
+            const t = THEMES[phase] || THEMES[1];
+            
+            // Funciones de dibujo internas
+            function drawPolyRing(radius, sides, angleOffset, color, dash) {
+                ctx.save();
+                ctx.rotate(angleOffset);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = phase === 3 ? 4.5 : 2.5;
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = color;
+                if (dash) ctx.setLineDash([15, 10]);
+
+                ctx.beginPath();
+                for (let i = 0; i <= sides; i++) {
+                    const theta = (i * 2 * Math.PI) / sides;
+                    const glitch = phase === 3 ? (Math.random() - 0.5) * 16 : 0;
+                    const px = Math.cos(theta) * (radius + glitch);
+                    const py = Math.sin(theta) * (radius + glitch);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawAggressiveLightning(startX, startY, endX, endY, color, width) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width + Math.random() * 2;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                let currX = startX, currY = startY;
+                const segments = 8;
+                for (let i = 1; i <= segments; i++) {
+                    currX += (endX - startX) / segments + (Math.random() - 0.5) * 35;
+                    currY += (endY - startY) / segments + (Math.random() - 0.5) * 35;
+                    ctx.lineTo(currX, currY);
+                }
+                ctx.stroke();
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.shadowBlur = 0; ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawDeathBeam(angle) {
+                ctx.save();
+                ctx.rotate(angle);
+                const length = Math.max(canvas.width, canvas.height) * 1.5;
+
+                // Aura exterior
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = THEMES[3].primary;
+                ctx.fillStyle = "rgba(255, 0, 0, 0.25)";
+                ctx.fillRect(0, -15, length, 30);
+
+                // Cuerpo rojo
+                ctx.fillStyle = THEMES[3].primary;
+                ctx.fillRect(0, -4, length, 8);
+
+                // Aguja blanca letal
+                ctx.fillStyle = "#ffffff";
+                ctx.shadowBlur = 10;
+                ctx.fillRect(0, -1, length, 2);
+
+                // Rayos gruesos alrededor del haz
+                if (Math.random() > 0.55) {
+                    drawAggressiveLightning(0, 0, length * 0.8, (Math.random() - 0.5) * 80, THEMES[3].primary, 4);
+                }
+                ctx.restore();
+            }
+
+            // --- RENDERIZADO DEL CUERPO DEL BOSS ---
+            
+            // Partículas desde el núcleo (se añaden a la lista global)
+            if (phase > 1 && frame % (phase === 2 ? 3 : 1) === 0 && typeof particles !== 'undefined') {
+                const pColor = Math.random() > 0.5 ? t.primary : t.core;
+                const pAngle = Math.random() * Math.PI * 2;
+                const pSpeed = (Math.random() * 6 + 3) * phase;
+                particles.push({
+                    x: e.x,
+                    y: e.y,
+                    vx: Math.cos(pAngle) * pSpeed,
+                    vy: Math.sin(pAngle) * pSpeed,
+                    radius: Math.random() * 3 + 1.5,
+                    color: pColor,
+                    alpha: 1.0,
+                    decay: 0.025
+                });
+            }
+
+            // Efectos de Fase 3 (Rayos de Aniquilación Scissor Lasers)
+            if (phase === 3) {
+                const sweepAngle = Math.sin(frame * 0.02) * Math.PI;
+                drawDeathBeam(sweepAngle + Math.PI / 2);
+                drawDeathBeam(-sweepAngle + Math.PI / 2);
+
+                if (frame % 2 === 0) {
+                    drawAggressiveLightning(0, 0, (Math.random() - 0.5) * 600, (Math.random() - 0.5) * 600, t.primary, 6);
+                }
+            }
+
+            // Efectos de Fase 2 (Inestabilidad)
+            if (phase === 2) {
+                if (frame % 6 === 0) {
+                    drawAggressiveLightning(0, 0, (Math.random() - 0.5) * 220, (Math.random() - 0.5) * 220, t.primary, 3);
+                }
+            }
+
+            // Anillos protectores (Geometría del Boss)
+            const pulse = Math.sin(frame * 0.05) * 8;
+            // Anillo exterior
+            drawPolyRing(110 + pulse, 6, frame * (phase * 0.008), t.secondary, true);
+            // Anillo medio (gira al revés)
+            drawPolyRing(75 - pulse, 8, -frame * (phase * 0.015), t.primary, false);
+            // Anillo interior (caótico en fase 3)
+            drawPolyRing(38, phase === 3 ? 3 : 4, frame * (phase * 0.04), t.core, false);
+
+            // NÚCLEO (El "Ojo")
+            ctx.beginPath();
+            const coreRadius = phase === 3 ? 24 + Math.random() * 8 : 18 + pulse * 0.4;
+            ctx.arc(0, 0, coreRadius, 0, Math.PI * 2);
+            ctx.fillStyle = t.core;
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = t.primary;
+            ctx.fill();
+
+            // Pupila/Iris (Se rasga en fase 2 y 3)
+            ctx.beginPath();
+            ctx.fillStyle = "#000000";
+            ctx.shadowBlur = 0;
+            if (phase > 1) {
+                const slitHeight = 30 + Math.random() * 8;
+                ctx.ellipse(0, 0, 4, slitHeight, 0, 0, Math.PI * 2);
+            } else {
+                ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            }
+            ctx.fill();
+
+            // Escudo dorado de Fase 0 si hay pilares vivos
+            if (phase === 1) {
+                let pillarsAlive = e.olPillarAlive ? e.olPillarAlive.filter(a => a).length : 0;
+                if (!e.olPillarsSpawned || pillarsAlive > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    let shieldRot = (Date.now() * 0.002) % (Math.PI * 2);
+                    for (let i = 0; i < 6; i++) {
+                        let a = (i * Math.PI / 3) + shieldRot;
+                        let sx = Math.cos(a) * (135);
+                        let sy = Math.sin(a) * (135);
+                        i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+                    }
+                    ctx.closePath();
+                    ctx.strokeStyle = '#d4af37';
+                    ctx.lineWidth = 3 + Math.sin(Date.now() * 0.01) * 1.5;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#d4af37';
+                    ctx.stroke();
+                    ctx.fillStyle = `rgba(212, 175, 55, ${0.06 + Math.sin(Date.now() * 0.005) * 0.04})`;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // Flash de transición de fase full screen
+            if (e.olTransitionFlash > 0) {
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Full screen
+                ctx.fillStyle = `rgba(255, 255, 255, ${e.olTransitionFlash})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+                e.olTransitionFlash -= 0.04;
+            }
+
+            // Glitch de pantalla en fase 3
+            if (phase === 3 && Math.random() > 0.95) {
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Full screen
+                ctx.fillStyle = "rgba(255, 0, 50, 0.15)";
+                ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 80 + 20);
+                ctx.restore();
+            }
+        }
         else if (e.isBoss) { for (let i = 0; i < 8; i++) { let a = (i * Math.PI / 4); let x = Math.cos(a) * e.radius; let y = Math.sin(a) * e.radius; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } }
+
         else if (e.isKamikaze) { ctx.moveTo(e.radius * 1.4, 0); ctx.lineTo(0, -e.radius * 0.7); ctx.lineTo(-e.radius * 0.6, 0); ctx.lineTo(0, e.radius * 0.7); }
         else if (e.isEliteGold) { ctx.moveTo(e.radius * 1.5, 0); ctx.lineTo(0, -e.radius * 0.5); ctx.lineTo(-e.radius * 1.5, 0); ctx.lineTo(0, e.radius * 0.5); ctx.shadowBlur = 15; ctx.shadowColor = '#ffcc00'; }
         else if (e.isVortexNode) {
@@ -1925,62 +2134,7 @@ function draw() {
                 }
             }
         }
-        else if (e.isOverlordApex) {
-            skipDefaultFill = true;
-            ctx.shadowBlur = 35; ctx.shadowColor = e.color;
-            e.drawRotAngle = (e.drawRotAngle || 0) + 0.018;
 
-            // Cuerpo principal: hexágono de Gris Corporativo
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                let a = (i * Math.PI / 3) + e.drawRotAngle * 0.3;
-                let x = Math.cos(a) * e.radius;
-                let y = Math.sin(a) * e.radius;
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            let bodyColor = e.bossPhase === 2 ? '#ff2200' : '#888888';
-            ctx.fillStyle = e.flashTicks > 0 ? '#ffffff' : bodyColor;
-            ctx.fill();
-            ctx.strokeStyle = e.color;
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // Anillos de Oro Líquido orbitales
-            for (let ri = 0; ri < 3; ri++) {
-                let ringRadius = e.radius * (0.7 + ri * 0.25);
-                let ringAngle = e.drawRotAngle * (ri % 2 === 0 ? 1 : -1) + ri * 1.2;
-                ctx.beginPath();
-                ctx.arc(0, 0, ringRadius, ringAngle, ringAngle + Math.PI * 0.6);
-                ctx.strokeStyle = e.color;
-                ctx.lineWidth = ri === 1 ? 4 : 2;
-                ctx.stroke();
-            }
-
-            // Núcleo central brillante
-            ctx.beginPath();
-            ctx.arc(0, 0, e.radius * 0.28, 0, Math.PI * 2);
-            ctx.fillStyle = e.bossPhase === 2 ? '#ff4400' : e.color;
-            ctx.shadowBlur = 20; ctx.shadowColor = e.color;
-            ctx.fill();
-
-            // Indicador de fase
-            if (e.bossPhase === 1) {
-                // Aura ámbar de inversión magnética
-                ctx.beginPath();
-                ctx.arc(0, 0, e.radius * 1.3, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 170, 0, ${0.2 + Math.sin(Date.now() * 0.008) * 0.15})`;
-                ctx.lineWidth = 6;
-                ctx.stroke();
-            } else if (e.bossPhase === 2) {
-                // Pulso rojo de emergencia
-                ctx.beginPath();
-                ctx.arc(0, 0, e.radius * 1.4, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 34, 0, ${0.3 + Math.sin(Date.now() * 0.02) * 0.2})`;
-                ctx.lineWidth = 8;
-                ctx.stroke();
-            }
-        }
         else { ctx.moveTo(e.radius * 1.2, 0); ctx.lineTo(-e.radius, -e.radius * 0.8); ctx.lineTo(-e.radius, e.radius * 0.8); }
         
         if (!skipDefaultFill) {
@@ -2266,18 +2420,68 @@ function draw() {
         }
 
         if (p.isChargingLaser) {
-            ctx.beginPath();
-            let radius = 20 + (p.laserCharge % 60) * 0.5; // El anillo crece
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = p.laserCharge >= 120 ? '#ff007f' : '#ffff00';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            let charge = p.laserCharge;
+            let targetRad = 30;
+            let currentRad = charge < 120 
+                ? 80 - (charge / 120) * 50 
+                : Math.max(15, 30 - ((charge - 120) / 60) * 15);
             
-            // Texto de carga
-            ctx.font = "bold 12px 'Courier New'";
-            ctx.fillStyle = ctx.strokeStyle;
+            let color = '#00ffcc';
+            let label = 'CARGANDO...';
+            if (charge >= 60 && charge < 120) {
+                color = '#ffff00';
+                label = '¡ÓPTIMO! (x2)';
+            } else if (charge >= 120 && charge < 180) {
+                color = '#ff007f';
+                label = '🔥 ¡CRÍTICO! (x6) 🔥';
+            } else if (charge >= 180) {
+                color = '#ff0000';
+                label = '⚠️ ¡SOBRECARGA! ⚠️';
+            }
+            
+            // Vibración si está muy cerca de sobrecargar (2.7s a 3.0s)
+            let isVibrating = charge >= 160 && charge < 180;
+            let vx = isVibrating ? (Math.random() - 0.5) * 4 : 0;
+            let vy = isVibrating ? (Math.random() - 0.5) * 4 : 0;
+            
+            // Dibujar círculo objetivo (línea discontinua)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, targetRad, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Dibujar anillo de contracción
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(vx, vy, currentRad, 0, Math.PI * 2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = charge >= 120 ? 3 : 2;
+            if (isVibrating) {
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#ff0000';
+            }
+            ctx.stroke();
+            ctx.restore();
+            
+            // Dibujar textos
+            ctx.save();
+            ctx.font = "bold 11px 'Courier New'";
+            ctx.fillStyle = color;
             ctx.textAlign = 'center';
-            ctx.fillText(`CARGA: ${Math.min(3, Math.floor(p.laserCharge/60))}s`, 0, -p.radius - 15);
+            
+            let shadowColor = color === '#00ffcc' ? '#008888' : (color === '#ffff00' ? '#888800' : '#880044');
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = shadowColor;
+            
+            let chargeSecStr = (charge / 60).toFixed(1) + 's';
+            ctx.fillText(label, 0, -p.radius - 28);
+            ctx.font = "9px 'Courier New'";
+            ctx.fillText(chargeSecStr, 0, -p.radius - 16);
+            ctx.restore();
             ctx.textAlign = 'left';
         }
 

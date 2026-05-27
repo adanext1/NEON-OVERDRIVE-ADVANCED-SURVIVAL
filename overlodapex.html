@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OVERLORD APEX - Final Encounter</title>
+    <style>
+        body {
+            margin: 0;
+            background: #010002;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0033;
+            pointer-events: none;
+            text-shadow: 0 0 10px #ff0033;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        #instruction {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            opacity: 0.5;
+            pointer-events: none;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="hud">
+        <h1 id="bossName">OVERLORD APEX</h1>
+        <p id="phaseText">FASE 1: DIAGNÓSTICO ESTRUCTURAL</p>
+    </div>
+    <div id="instruction">TOCA LA PANTALLA PARA AVANZAR A LA SIGUIENTE FASE</div>
+
+    <canvas id="bossCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('bossCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // --- SISTEMA DE ESTADOS ---
+        let frame = 0;
+        let phase = 1; // 1, 2 o 3
+        let phaseTransition = 0; // Para animar el cambio de fase
+
+        const uiText = document.getElementById('phaseText');
+
+        // --- EVENTO PARA CAMBIAR DE FASE ---
+        window.addEventListener('pointerdown', () => {
+            if (phase < 3) {
+                phase++;
+                phaseTransition = 1.0; // Flash blanco al cambiar
+                if (phase === 2) uiText.innerText = "FASE 2: RUPTURA DE CONTENCIÓN";
+                if (phase === 3) {
+                    uiText.innerText = "FASE 3: ANIQUILACIÓN BERSERKER";
+                    uiText.style.color = "#ffffff";
+                    uiText.style.textShadow = "0 0 15px #ff0033, 0 0 30px #ff0033";
+                }
+            }
+        });
+
+        // --- PALETAS DE COLOR POR FASE ---
+        const THEMES = {
+            1: { core: "#ffffff", primary: "#6600ff", secondary: "#330088", bg: "rgba(2, 0, 8, 0.3)" }, // Morado calculador
+            2: { core: "#ffffff", primary: "#ff0033", secondary: "#880011", bg: "rgba(8, 0, 2, 0.3)" }, // Rojo furia
+            3: { core: "#ffffff", primary: "#ff0000", secondary: "#ffffff", bg: "rgba(5, 0, 0, 0.4)" }  // Contraste apocalíptico
+        };
+
+        // --- PARTÍCULAS ---
+        let particles = [];
+        class Debris {
+            constructor(x, y, color, speedMultiplier) {
+                this.x = x; this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * 10 + 5) * speedMultiplier;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.color = color;
+                this.size = Math.random() * 4 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.life -= 0.02;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        // --- UTILIDADES VISUALES ---
+        function drawAggressiveLightning(startX, startY, endX, endY, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width + Math.random() * 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            let currX = startX, currY = startY;
+            const segments = 10;
+            for (let i = 1; i <= segments; i++) {
+                currX += (endX - startX) / segments + (Math.random() - 0.5) * 50;
+                currY += (endY - startY) / segments + (Math.random() - 0.5) * 50;
+                ctx.lineTo(currX, currY);
+            }
+            ctx.stroke();
+            // Núcleo blanco
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.shadowBlur = 0; ctx.stroke();
+            ctx.restore();
+        }
+
+        // Dibuja anillos poligonales geométricos
+        function drawPolyRing(x, y, radius, sides, angleOffset, color, dash) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angleOffset);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = phase === 3 ? 4 : 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            if (dash) ctx.setLineDash([15, 10]);
+
+            ctx.beginPath();
+            for (let i = 0; i <= sides; i++) {
+                const theta = (i * 2 * Math.PI) / sides;
+                // Si es fase 3, los anillos se deforman como glitches
+                const glitch = phase === 3 ? (Math.random() - 0.5) * 20 : 0;
+                const px = Math.cos(theta) * (radius + glitch);
+                const py = Math.sin(theta) * (radius + glitch);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // El infame Láser de Aguja de la Fase 3
+        function drawDeathBeam(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            const length = Math.max(canvas.width, canvas.height) * 1.5;
+
+            // Aura exterior
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = THEMES[3].primary;
+            ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+            ctx.fillRect(0, -15, length, 30);
+
+            // Cuerpo rojo
+            ctx.fillStyle = THEMES[3].primary;
+            ctx.fillRect(0, -4, length, 8);
+
+            // Aguja blanca letal
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowBlur = 10;
+            ctx.fillRect(0, -1, length, 2);
+
+            // Rayos gruesos alrededor del haz
+            if (Math.random() > 0.5) {
+                drawAggressiveLightning(0, 0, length * 0.8, (Math.random() - 0.5) * 100, THEMES[3].primary, 5);
+            }
+            ctx.restore();
+        }
+
+        // --- RENDER PRINCIPAL ---
+        function render() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2 - 50; // Ligeramente arriba del centro
+            const t = THEMES[phase];
+
+            // Screen Shake (Terremoto visual dependiente de la fase)
+            let shakeX = 0, shakeY = 0;
+            if (phase === 2) { shakeX = (Math.random() - 0.5) * 4; shakeY = (Math.random() - 0.5) * 4; }
+            if (phase === 3) { shakeX = (Math.random() - 0.5) * 12; shakeY = (Math.random() - 0.5) * 12; }
+
+            // Fondo
+            ctx.fillStyle = t.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // --- DIBUJO DEL BOSS (OVERLORD APEX) ---
+
+            // Generar partículas desde el núcleo
+            if (phase > 1 && frame % (phase === 2 ? 3 : 1) === 0) {
+                particles.push(new Debris(cx, cy, Math.random() > 0.5 ? t.primary : t.core, phase));
+            }
+
+            // Efectos de Fase 3 (Rayos de Aniquilación)
+            if (phase === 3) {
+                // Dos lásers como tijeras que barren la pantalla
+                const sweepAngle = Math.sin(frame * 0.02) * Math.PI;
+                drawDeathBeam(cx, cy, sweepAngle + Math.PI / 2);
+                drawDeathBeam(cx, cy, -sweepAngle + Math.PI / 2);
+
+                // Rayos erráticos saliendo del núcleo a la pantalla
+                if (frame % 2 === 0) {
+                    drawAggressiveLightning(cx, cy, cx + (Math.random() - 0.5) * 800, cy + (Math.random() - 0.5) * 800, t.primary, 8);
+                }
+            }
+
+            // Efectos de Fase 2 (Inestabilidad)
+            if (phase === 2) {
+                if (frame % 5 === 0) {
+                    drawAggressiveLightning(cx, cy, cx + (Math.random() - 0.5) * 300, cy + (Math.random() - 0.5) * 300, t.primary, 3);
+                }
+            }
+
+            // Anillos protectores (Geometría del Boss)
+            const pulse = Math.sin(frame * 0.05) * 10;
+            // Anillo exterior
+            drawPolyRing(cx, cy, 120 + pulse, 6, frame * (phase * 0.01), t.secondary, true);
+            // Anillo medio (gira al revés)
+            drawPolyRing(cx, cy, 80 - pulse, 8, -frame * (phase * 0.02), t.primary, false);
+            // Anillo interior (caótico en fase 3)
+            drawPolyRing(cx, cy, 40, phase === 3 ? 3 : 4, frame * (phase * 0.05), t.core, false);
+
+            // NÚCLEO (El "Ojo")
+            ctx.beginPath();
+            const coreRadius = phase === 3 ? 25 + Math.random() * 10 : 20 + pulse * 0.5;
+            ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+            ctx.fillStyle = t.core;
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = t.primary;
+            ctx.fill();
+
+            // Pupila/Iris
+            ctx.beginPath();
+            ctx.fillStyle = "#000";
+            ctx.shadowBlur = 0;
+            // En fase 2 y 3, el ojo se rasga
+            if (phase > 1) {
+                const slitHeight = 35 + Math.random() * 10;
+                ctx.ellipse(cx, cy, 5, slitHeight, 0, 0, Math.PI * 2);
+            } else {
+                ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            }
+            ctx.fill();
+
+            // Actualizar partículas
+            particles.forEach((p, i) => {
+                p.update(); p.draw();
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+
+            ctx.restore();
+
+            // Flash de transición de fase
+            if (phaseTransition > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${phaseTransition})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                phaseTransition -= 0.05;
+            }
+
+            // Glitch de pantalla aleatorio en fase 3
+            if (phase === 3 && Math.random() > 0.95) {
+                ctx.fillStyle = "rgba(255, 0, 50, 0.2)";
+                ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 100 + 20);
+            }
+
+            ctx.globalAlpha = 1;
+            frame++;
+            requestAnimationFrame(render);
+        }
+
+        // Adaptación a resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        render();
+    </script>
+</body>
+
+</html>

@@ -86,6 +86,9 @@ function fireMinigun(pObj) {
         vx: Math.cos(targetAngle) * 15, vy: Math.sin(targetAngle) * 15, 
         radius: 4, color: '#ffff00', damage: dmg, type: 'minigun' 
     });
+    if (pObj.recoilEnabled && typeof applyWeaponRecoil === 'function') {
+        applyWeaponRecoil(pObj, targetAngle, 0.45);
+    }
     
     // Incrementar calor (Enfriador Criogénico)
     let heatDefLvl = getPassiveLevel('passive_heat_def');
@@ -241,6 +244,10 @@ function fireWeapon(pObj) {
             critDmgLvl: critDmgLvl,
             singularityLvl: isSingularityShot ? singularityLvl : 0
         });
+        if (pObj.recoilEnabled && typeof applyWeaponRecoil === 'function') {
+            let recoilForce = wep.type === 'plasma' ? 5.5 : 2.5;
+            applyWeaponRecoil(pObj, targetAngle, recoilForce);
+        }
     } else if (wep.type === 'spread') {
         let count = wep.count + (mods.count || 0);
         for (let i = 0; i < count; i++) {
@@ -258,6 +265,9 @@ function fireWeapon(pObj) {
                 critDmgLvl: critDmgLvl,
                 singularityLvl: isSingularityShot ? singularityLvl : 0
             });
+        }
+        if (pObj.recoilEnabled && typeof applyWeaponRecoil === 'function') {
+            applyWeaponRecoil(pObj, targetAngle, 4.5);
         }
     }
 
