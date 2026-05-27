@@ -57,6 +57,7 @@
     const knobAim = joyAim.querySelector('.touch-joy-knob');
     let aimActiveId = null;
     let aimCenter = { x: 0, y: 0 };
+    let fireBtnPressed = false; // Flag interno para saber si el botón de disparo está presionado
 
     function startAim(touch) {
         const r = joyAim.getBoundingClientRect();
@@ -101,11 +102,8 @@
         knobAim.style.transform = `translate(-50%, -50%)`;
         // Dejar de disparar si se suelta el joystick de apuntado,
         // a menos que se mantenga pulsado el botón de disparar dedicado.
-        if (typeof mouse !== 'undefined') {
-            const fireBtnActive = document.querySelector('.touch-btn-fire:active');
-            if (!fireBtnActive) {
-                mouse.isDown = false;
-            }
+        if (typeof mouse !== 'undefined' && !fireBtnPressed) {
+            mouse.isDown = false;
         }
     }
 
@@ -169,10 +167,16 @@
         btn.addEventListener('mouseleave', onUp);
     }
 
-    // Disparar: mantener mouse.isDown
+    // Disparar: mantener mouse.isDown y actualizar flag interno
     setupActionButton('.touch-btn-fire', {
-        onDown: () => { if (typeof mouse !== 'undefined') mouse.isDown = true; },
-        onUp:   () => { if (typeof mouse !== 'undefined') mouse.isDown = false; }
+        onDown: () => {
+            fireBtnPressed = true;
+            if (typeof mouse !== 'undefined') mouse.isDown = true;
+        },
+        onUp:   () => {
+            fireBtnPressed = false;
+            if (typeof mouse !== 'undefined') mouse.isDown = false;
+        }
     });
 
     // Arma especial (clic derecho equivalente)
@@ -243,28 +247,55 @@
         }
     });
 
-    // Pantalla completa (Fullscreen API)
+    // Pantalla completa (Fullscreen API) — robusto para Edge Android
     const fsBtn = document.getElementById('touch-btn-fs');
     if (fsBtn) {
-        fsBtn.addEventListener('click', (e) => {
+        const toggleFullscreen = (e) => {
             e.preventDefault();
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.warn(`Error al activar pantalla completa: ${err.message}`);
+            e.stopPropagation();
+            const doc = document.documentElement;
+            const can = canvas;
+
+            // Función auxiliar para intentar fullscreen
+            const tryFullscreen = (elem) => {
+                if (!elem) return Promise.reject('No element');
+                const method = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+                if (method) {
+                    return method.call(elem).catch(err => {
+                        console.warn(`Error requestFullscreen en ${elem.tagName}:`, err);
+                        throw err;
+                    });
+                }
+                return Promise.reject('No requestFullscreen method');
+            };
+
+            // Función auxiliar para salir de fullscreen
+            const exitFullscreen = () => {
+                const method = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                if (method) {
+                    method.call(document).catch(err => {
+                        console.warn('Error exitFullscreen:', err);
+                    });
+                }
+            };
+
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+            if (!isFs) {
+                // Intentar primero en el canvas (mejor en móviles)
+                tryFullscreen(can).catch(() => {
+                    // Fallback a document.documentElement
+                    tryFullscreen(doc).catch(err => {
+                        console.warn('No se pudo activar pantalla completa:', err);
+                    });
                 });
             } else {
-                document.exitFullscreen();
+                exitFullscreen();
             }
-        });
-        // Soporte táctil directo
-        fsBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {});
-            } else {
-                document.exitFullscreen();
-            }
-        });
+        };
+
+        fsBtn.addEventListener('click', toggleFullscreen);
+        fsBtn.addEventListener('touchstart', toggleFullscreen);
     }
 
     // Mostrar overlay solo durante juego activo (ocultar en menús/modales/pausa)
