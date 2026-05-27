@@ -26,6 +26,20 @@ let userSave = JSON.parse(localStorage.getItem('neon_overdrive_save')) || {
     unlockedArtifacts: []
 };
 
+// === SISTEMA MULTI-JUGADOR: SAVES INDIVIDUALES ===
+const SAVE_KEYS = [
+    'neon_overdrive_save',      // P1 (compatible con save actual)
+    'neon_overdrive_save_p2',   // P2
+    'neon_overdrive_save_p3',   // P3
+    'neon_overdrive_save_p4'    // P4
+];
+
+const PLAYER_COLORS = ['#00ffcc', '#ff007f', '#ffff00', '#aa00ff'];
+
+let playerSaves = []; // Se llena en loadAllPlayerSaves()
+let activePlayers = 1;
+let isCoop = false;
+
 // --- CATÁLOGO TÉCNICO DE COMPONENTES ---
 const COMPONENT_CATALOG = {
     // --- MÓDULOS PASIVOS ---
@@ -251,9 +265,10 @@ userSave.unlockedComponents.forEach(id => {
 localStorage.setItem('neon_overdrive_save', JSON.stringify(userSave));
 
 // --- FUNCIONES HELPER PARA EL NEXUS ---
-function getEquippedRam() {
+function getEquippedRam(save) {
+    let s = save || playerSaves[0] || userSave;
     let ram = 0;
-    let build = userSave.nexusBuild;
+    let build = s.nexusBuild;
     if (!build) return 0;
     if (build.primaryWeapon && COMPONENT_CATALOG[build.primaryWeapon]) {
         ram += COMPONENT_CATALOG[build.primaryWeapon].ram;
@@ -277,22 +292,31 @@ function getEquippedRam() {
     return ram;
 }
 
-function getPassiveLevel(id) {
-    if (!userSave.nexusBuild || !userSave.nexusBuild.passives) return 0;
-    if (!userSave.nexusBuild.passives.includes(id)) return 0;
-    return userSave.componentLevels[id] || 0;
+function getPassiveLevel(id, pObj) {
+    let save = (pObj !== undefined && pObj !== null && pObj.saveIndex !== undefined)
+        ? (playerSaves[pObj.saveIndex] || playerSaves[0])
+        : (playerSaves[0] || userSave);
+    if (!save || !save.nexusBuild || !save.nexusBuild.passives) return 0;
+    if (!save.nexusBuild.passives.includes(id)) return 0;
+    return save.componentLevels[id] || 0;
 }
 
-function getActiveSkillLevel(id) {
-    if (!userSave.nexusBuild || !userSave.nexusBuild.skills) return 0;
-    if (!Object.values(userSave.nexusBuild.skills).includes(id)) return 0;
-    return userSave.componentLevels[id] || 0;
+function getActiveSkillLevel(id, pObj) {
+    let save = (pObj !== undefined && pObj !== null && pObj.saveIndex !== undefined)
+        ? (playerSaves[pObj.saveIndex] || playerSaves[0])
+        : (playerSaves[0] || userSave);
+    if (!save || !save.nexusBuild || !save.nexusBuild.skills) return 0;
+    if (!Object.values(save.nexusBuild.skills).includes(id)) return 0;
+    return save.componentLevels[id] || 0;
 }
 
-function getActiveSkillModifier(id) {
-    let lvl = getActiveSkillLevel(id);
+function getActiveSkillModifier(id, pObj) {
+    let save = (pObj !== undefined && pObj !== null && pObj.saveIndex !== undefined)
+        ? (playerSaves[pObj.saveIndex] || playerSaves[0])
+        : (playerSaves[0] || userSave);
+    let lvl = getActiveSkillLevel(id, pObj);
     if (lvl === 0) {
-        lvl = userSave.componentLevels[id] || 1;
+        lvl = (save.componentLevels && save.componentLevels[id]) || 1;
     }
     let cdMultiplier = 1.0;
     let effectMultiplier = 1.0;
@@ -316,25 +340,117 @@ function getActiveSkillModifier(id) {
     return { cdMultiplier, effectMultiplier, level: lvl };
 }
 
-function saveGame() { localStorage.setItem('neon_overdrive_save', JSON.stringify(userSave)); }
+// Guardar todos los saves activos
+function saveGame() {
+    playerSaves.forEach((save, i) => {
+        if (save) localStorage.setItem(SAVE_KEYS[i] || SAVE_KEYS[0], JSON.stringify(save));
+    });
+}
 
-// --- VARIABLES DE GAMEPLAY ---
-let players = [
-    {
-        id: 1,
-        inputSource: 'keyboard',
-        x: canvas.width / 2 - 40, y: canvas.height / 2, radius: 15, speed: 4.2,
-        hp: 100, maxHp: 100, shield: 0, maxShield: 40, xp: 0, nextXp: 100, level: 1, credits: 0, angle: 0,
-        damageModifier: 1.0, weapons: ['basic'], currentWeaponIndex: 0,
+function savePlayerProgress(playerIndex) {
+    let save = playerSaves[playerIndex];
+    if (save) localStorage.setItem(SAVE_KEYS[playerIndex] || SAVE_KEYS[0], JSON.stringify(save));
+}
+
+function getPlayerSave(pObj) {
+    if (!pObj || pObj.saveIndex === undefined) return playerSaves[0] || userSave;
+    return playerSaves[pObj.saveIndex] || playerSaves[0] || userSave;
+}
+
+function getDefaultPlayerSave() {
+    return {
+        materials: { core: 0, plate: 0, crystal: 0, bossRelic: 0 },
+        artifacts: { hyperdrive: 0, shieldGen: 0, singularity: 0, shipHp: 0, shipDmg: 0 },
+        settings: { musicVolume: 0.7, sfxVolume: 0.7 },
+        unlockedArtifacts: [],
+        componentLevels: {},
+        unlockedComponents: ['basic', 'laser', 'turbo_impulso', 'pulso_choque', 'sobrecarga_armas', 'torreta_desplegable'],
+        nexusBuild: {
+            passives: [null, null, null],
+            skills: { Q: 'sobrecarga_armas', E: 'pulso_choque', Shift: 'turbo_impulso', Space: 'torreta_desplegable' },
+            primaryWeapon: 'basic',
+            specialWeapon: 'laser'
+        },
+        credits: 0,
+        stats: { totalWavesReached: 0, totalKills: 0, bossesDefeated: [], highScore: 0, totalPlaytime: 0 },
+        cloudProfile: { username: null, email: null, authToken: null, lastSyncTimestamp: 0, isSynced: false, pendingSync: false }
+    };
+}
+
+function loadAllPlayerSaves() {
+    // Asegurar que P1 tenga cloudProfile y stats en su save
+    if (!userSave.cloudProfile) userSave.cloudProfile = { username: null, email: null, authToken: null, lastSyncTimestamp: 0, isSynced: false, pendingSync: false };
+    if (!userSave.stats) userSave.stats = { totalWavesReached: 0, totalKills: 0, bossesDefeated: [], highScore: 0, totalPlaytime: 0 };
+    playerSaves = [userSave]; // P1 = save existente migrado
+    for (let i = 1; i < 4; i++) {
+        let raw = localStorage.getItem(SAVE_KEYS[i]);
+        let save = raw ? JSON.parse(raw) : getDefaultPlayerSave();
+        // Asegurar campos nuevos
+        if (!save.cloudProfile) save.cloudProfile = { username: null, email: null, authToken: null, lastSyncTimestamp: 0, isSynced: false, pendingSync: false };
+        if (!save.stats) save.stats = { totalWavesReached: 0, totalKills: 0, bossesDefeated: [], highScore: 0, totalPlaytime: 0 };
+        if (!save.componentLevels) save.componentLevels = {};
+        if (!save.materials) save.materials = { core: 0, plate: 0, crystal: 0, bossRelic: 0 };
+        if (!save.unlockedComponents) save.unlockedComponents = ['basic', 'laser', 'turbo_impulso', 'pulso_choque', 'sobrecarga_armas', 'torreta_desplegable'];
+        if (!save.nexusBuild) save.nexusBuild = getDefaultPlayerSave().nexusBuild;
+        // Asegurar nivel mínimo 1
+        save.unlockedComponents.forEach(id => {
+            let comp = COMPONENT_CATALOG[id];
+            if (comp && (comp.type === 'passive' || comp.type === 'skill')) {
+                if (!save.componentLevels[id] || save.componentLevels[id] === 0) save.componentLevels[id] = 1;
+            }
+        });
+        playerSaves.push(save);
+    }
+}
+
+function createPlayer(id, gamepadIndex) {
+    return {
+        id: id,
+        saveIndex: id - 1,
+        inputSource: id === 1 ? 'keyboard' : 'gamepad',
+        gamepadIndex: gamepadIndex !== undefined ? gamepadIndex : (id - 1),
+        x: canvas.width / 2 + (id - 1) * 70 - 105,
+        y: canvas.height / 2,
+        radius: 15, speed: 4.2, color: PLAYER_COLORS[id - 1] || '#00ffcc',
+        hp: 100, maxHp: 100, shield: 0, maxShield: 40,
+        xp: 0, nextXp: 100, level: 1, credits: 0, angle: 0,
+        damageModifier: 1.0, _baseDmgMod: 1.0, weapons: ['basic'], currentWeaponIndex: 0,
         dashCooldown: 0, dashTimer: 0, dashVx: 0, dashVy: 0, pulseCooldown: 0,
-        aimMode: 'AUTO', overdriveTimer: 0, color: '#00ffcc',
+        aimMode: 'AUTO', overdriveTimer: 0,
         flashTicks: 0, damageFlashAlpha: 0, invulnTimer: 0,
         weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
-        upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 }
-    }
-];
+        upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 },
+        laserCharge: 0, laserCooldown: 0, teleportCooldown: 0,
+        reinicioForzadoCooldown: 0, postCombustionTimer: 0,
+        lastShotTime: 0, isTurret: false, minigunHeat: 0, minigunOverheat: false,
+        qCooldown: 0, qTurboTimer: 0, minigunSpool: 0, minigunCooldown: 0,
+        rearDischargeTimer: 0, isDead: false
+    };
+}
 
-let isCoop = false;
+// === STUBS DE SINCRONIZACIÓN EN NUBE (listos para conectar a backend) ===
+async function cloudLogin(username, password, playerIndex = 0) {
+    // TODO: POST /api/auth/login — cuando el backend esté listo, implementar aquí
+    return { success: false, message: '☁️ Sincronización en nube próximamente.' };
+}
+async function cloudPushSave(playerIndex = 0) {
+    // TODO: POST /api/save/:username
+    let profile = playerSaves[playerIndex]?.cloudProfile;
+    if (!profile?.authToken) return { success: false, message: 'No autenticado' };
+    return { success: false };
+}
+async function cloudPullSave(playerIndex = 0) {
+    // TODO: GET /api/save/:username
+    let profile = playerSaves[playerIndex]?.cloudProfile;
+    if (!profile?.authToken) return { success: false, save: null };
+    return { success: false, save: null };
+}
+
+// --- CARGAR SAVES DE TODOS LOS JUGADORES ---
+loadAllPlayerSaves();
+
+// --- VARIABLES DE GAMEPLAY ---
+let players = [createPlayer(1, 0)];
 let currentMusic = null;
 
 const WEAPONS = {
@@ -350,7 +466,7 @@ let enemiesToSpawn = 0; let spawnTimer = 0; let hazardTimer = 0;
 
 let gameStarted = false; let isPaused = false; let inCollectionMenu = false; let isShopActive = false;
 let isGameOver = false;
-let selectedMenuItem = [0, 0];
+let selectedMenuItem = [0, 0, 0, 0];
 let lastGamepadButtons = [];
 let menuNavCooldown = 0;
 

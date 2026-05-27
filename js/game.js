@@ -95,16 +95,17 @@ function startGameSimulation() {
     updateHUDLabels();
     
     players.forEach(p => {
-        // Inicializar stats según pasivas equipadas
-        p.maxHp = 100 + getPassiveLevel('passive_hp') * 15;
+        let pSave = getPlayerSave(p);
+        // Inicializar stats según pasivas equipadas de su propio Nexus
+        p.maxHp = 100 + getPassiveLevel('passive_hp', p) * 15;
         p.hp = p.maxHp;
-        p.damageModifier = 1.0 + getPassiveLevel('passive_dmg') * 0.05;
+        p.damageModifier = 1.0 + getPassiveLevel('passive_dmg', p) * 0.05;
         p._baseDmgMod = p.damageModifier; // Base para restaurar tras buffs
-        p.maxShield = getPassiveLevel('passive_shield') > 0 ? (40 + getPassiveLevel('passive_shield') * 10) : 0;
+        p.maxShield = getPassiveLevel('passive_shield', p) > 0 ? (40 + getPassiveLevel('passive_shield', p) * 10) : 0;
         p.shield = p.maxShield;
         
-        // Equipamiento del Nexus
-        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
+        // Equipamiento del Nexus — usando el save del jugador
+        p.weapons = [pSave.nexusBuild.primaryWeapon || 'basic'];
         p.currentWeaponIndex = 0;
         
         // Variables v0.8.0 / v0.9.0
@@ -122,6 +123,7 @@ function startGameSimulation() {
         p.minigunSpool = 0;
         p.minigunCooldown = 0;
         p.rearDischargeTimer = 0;
+        p.isDead = false;
     });
 
     if (!isOnline || isHost) {
@@ -147,18 +149,22 @@ function resetGame() {
     helperDrones = [];
     xpMultiplier = 1;
     
-    // Guardar créditos de la partida al reiniciar
-    userSave.credits = (userSave.credits || 0) + players[0].credits;
+    // Guardar créditos de TODOS los jugadores al reiniciar
+    players.forEach((p, i) => {
+        let save = getPlayerSave(p);
+        save.credits = (save.credits || 0) + p.credits;
+    });
     saveGame();
     
     players.forEach(p => {
+        let pSave = getPlayerSave(p);
         p.credits = 0;
         p.level = 1;
         p.xp = 0;
         p.nextXp = 100;
         p.hp = p.maxHp || 100;
         p.shield = 0;
-        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
+        p.weapons = [pSave.nexusBuild.primaryWeapon || 'basic'];
         p.currentWeaponIndex = 0;
         p.overdriveTimer = 0;
         p.dashTimer = 0;
@@ -200,18 +206,22 @@ function returnToMainMenu() {
     helperDrones = [];
     xpMultiplier = 1;
     
-    // Guardar créditos de la partida al volver al menú
-    userSave.credits = (userSave.credits || 0) + players[0].credits;
+    // Guardar créditos de TODOS los jugadores al volver al menú
+    players.forEach((p) => {
+        let save = getPlayerSave(p);
+        save.credits = (save.credits || 0) + p.credits;
+    });
     saveGame();
     
     players.forEach(p => {
+        let pSave = getPlayerSave(p);
         p.credits = 0;
         p.level = 1;
         p.xp = 0;
         p.nextXp = 100;
         p.hp = p.maxHp || 100;
         p.shield = 0;
-        p.weapons = [userSave.nexusBuild.primaryWeapon || 'basic'];
+        p.weapons = [pSave.nexusBuild.primaryWeapon || 'basic'];
         p.currentWeaponIndex = 0;
         p.overdriveTimer = 0;
         p.dashTimer = 0;
@@ -241,6 +251,16 @@ function returnToMainMenu() {
     
     document.getElementById('game-over-modal').style.display = 'none';
     document.getElementById('hud-box').style.display = 'none';
+    // Ocultar HUDs de P2-P4
+    for (let i = 2; i <= 4; i++) {
+        let h = document.getElementById(`hud-box-p${i}`);
+        if (h) h.style.display = 'none';
+    }
+    // Reiniciar estado de jugadores para el menú
+    players = [createPlayer(1, 0)];
+    activePlayers = 1;
+    isCoop = false;
+    playerSlotsActive = [true, false, false, false];
     document.getElementById('main-menu').style.display = 'block';
     
     if (typeof updateMenuSelection !== 'undefined') {
@@ -303,10 +323,11 @@ function triggerAbility(slotKey, pObj) {
     if (pObj.isDead || isPaused || !gameStarted) return;
     if ((pObj.empTimer || 0) > 0) return;
     
-    let abilityId = userSave.nexusBuild.skills[slotKey];
+    let pSave = getPlayerSave(pObj);
+    let abilityId = pSave.nexusBuild.skills[slotKey];
     if (!abilityId) return;
     
-    let mod = getActiveSkillModifier(abilityId);
+    let mod = getActiveSkillModifier(abilityId, pObj);
     
     if (abilityId === 'dash' || abilityId === 'turbo_impulso') {
         if (pObj.dashCooldown > 0 || pObj.dashTimer > 0) return;
@@ -328,7 +349,7 @@ function triggerAbility(slotKey, pObj) {
         let len = Math.hypot(moveX, moveY);
         pObj.dashVx = (moveX / len) * 14; pObj.dashVy = (moveY / len) * 14;
         
-        let baseCD = Math.max(30, 90 - (getPassiveLevel('passive_cooldown') * 5));
+        let baseCD = Math.max(30, 90 - (getPassiveLevel('passive_cooldown', pObj) * 5));
         let dashCD = Math.max(15, Math.floor(baseCD * mod.cdMultiplier));
         
         pObj.dashTimer = 10; pObj.dashCooldown = dashCD; screenShake = 5;
@@ -603,6 +624,11 @@ function update() {
     if (menuNavCooldown > 0) menuNavCooldown--;
     processGamepadInput();
 
+    // Detectar gamepads para el selector de jugadores en el menú
+    if (!gameStarted && typeof updatePlayerSlotUI !== 'undefined') {
+        updatePlayerSlotUI();
+    }
+
     if (!gameStarted || isPaused) return;
 
     // Cooldowns
@@ -735,7 +761,7 @@ function update() {
     // Movimiento
     players.forEach(p => {
         if (p.isDead) return; // No mover jugadores muertos
-        if (typeof isOnline !== 'undefined' && isOnline && p.id !== 1) return; 
+        if (typeof isOnline !== 'undefined' && isOnline && p.id !== localPlayerId) return; 
         if (p.inputSource === 'keyboard') {
             if (p.dashTimer > 0) {
                 p.x += p.dashVx; p.y += p.dashVy; p.dashTimer--;
@@ -798,7 +824,7 @@ function update() {
     // Disparar
     players.forEach(p => {
         if (p.isDead) return; // No disparar si está muerto
-        if (typeof isOnline !== 'undefined' && isOnline && p.id !== 1) return; 
+        if (typeof isOnline !== 'undefined' && isOnline && p.id !== localPlayerId) return; 
         if (p.id === 1 && p.inputSource === 'keyboard' && mouse.isDown) fireWeapon(p);
         else if (p.isShooting) fireWeapon(p);
     });
@@ -891,7 +917,7 @@ function update() {
                     p.hp = 1;
                     p.reviveTimer = 0;
                     createExplosion(p.x, p.y, '#00ff88', 20, 1);
-                    showNetworkMessage(`➕ ${p.id === 1 ? 'J1' : 'J2'} revivido al terminar la oleada con 1 HP`, 3000);
+                    showNetworkMessage(`➕ J${p.id} revivido al terminar la oleada con 1 HP`, 3000);
                 }
             });
             players.forEach(p => p.credits += 60);
@@ -1285,21 +1311,37 @@ function update() {
             let magRange = nearestP.magnetRange || 150;
             if (dist < magRange && dist > 0) { d.x += ((nearestP.x - d.x) / dist) * 6.5; d.y += ((nearestP.y - d.y) / dist) * 6.5; }
             if (dist < nearestP.radius + d.radius) {
-                nearestP.credits += d.credits; nearestP.xp += Math.round(d.xp * xpMultiplier);
-                if (d.matType) { userSave.materials[d.matType]++; saveGame(); }
-                if (nearestP.xp >= nearestP.nextXp) {
-                    nearestP.level++; nearestP.xp -= nearestP.nextXp; nearestP.nextXp = Math.floor(nearestP.nextXp * 1.45);
-                    createExplosion(nearestP.x, nearestP.y, nearestP.color || '#00ffcc', 35, 1.8);
-                    showLevelUpMenu(nearestP);
-                }
+                // Sincronizar ganancia de créditos, XP y materiales para todos los jugadores activos
+                players.forEach(p => {
+                    p.credits += d.credits;
+                    p.xp += Math.round(d.xp * xpMultiplier);
+                    if (d.matType) {
+                        let pSave = getPlayerSave(p);
+                        if (pSave && pSave.materials) {
+                            pSave.materials[d.matType]++;
+                        }
+                    }
+                    if (p.xp >= p.nextXp) {
+                        p.level++; p.xp -= p.nextXp; p.nextXp = Math.floor(p.nextXp * 1.45);
+                        createExplosion(p.x, p.y, p.color || '#00ffcc', 35, 1.8);
+                        showLevelUpMenu(p);
+                    }
+                });
+                if (d.matType) saveGame();
                 drops.splice(i, 1); updateUI();
                 
                 // Enviar sincronización de stats al Cliente
                 if (typeof isOnline !== 'undefined' && isOnline && isHost) {
-                    sendGameEvent('sync-stats', {
-                        p1: { xp: players[0].xp, level: players[0].level, credits: players[0].credits, nextXp: players[0].nextXp },
-                        p2: { xp: (players[1] ? players[1].xp : 0), level: (players[1] ? players[1].level : 1), credits: (players[1] ? players[1].credits : 0), nextXp: (players[1] ? players[1].nextXp : 100) }
+                    let allStats = {};
+                    players.forEach(p => {
+                        allStats[`p${p.id}`] = {
+                            xp: p.xp,
+                            level: p.level,
+                            credits: p.credits,
+                            nextXp: p.nextXp
+                        };
                     });
+                    sendGameEvent('sync-stats', allStats);
                 }
             }
         }

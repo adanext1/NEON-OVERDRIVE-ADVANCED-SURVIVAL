@@ -2,6 +2,35 @@ let socket;
 let currentRoomId;
 let isOnline = false;
 let isHost = false;
+let localPlayerId = 1; // ID del jugador local (1-4)
+let onlineConnectedPlayers = [];
+
+function updateOnlinePlayerList() {
+    for (let i = 1; i <= 4; i++) {
+        let slot = document.getElementById(`online-player-slot-${i}`);
+        if (!slot) continue;
+        let connected = onlineConnectedPlayers.includes(i);
+        let color = PLAYER_COLORS[i - 1] || '#00ffcc';
+        slot.innerHTML = `J${i}<br>${connected ? (i === localPlayerId ? 'TÚ' : 'ONLINE') : 'VACÍO'}`;
+        slot.style.color = connected ? color : '#555';
+        slot.style.borderColor = connected ? color : '#333';
+        slot.style.boxShadow = connected ? `0 0 8px ${color}` : 'none';
+        slot.style.background = connected ? 'rgba(255,255,255,0.04)' : 'transparent';
+    }
+}
+
+function markOnlinePlayerConnected(playerId) {
+    if (!onlineConnectedPlayers.includes(playerId)) onlineConnectedPlayers.push(playerId);
+    onlineConnectedPlayers.sort((a, b) => a - b);
+    activePlayers = Math.max(activePlayers || 1, onlineConnectedPlayers.length);
+    updateOnlinePlayerList();
+}
+
+function markOnlinePlayerDisconnected(playerId) {
+    onlineConnectedPlayers = onlineConnectedPlayers.filter(id => id !== playerId);
+    activePlayers = Math.max(1, onlineConnectedPlayers.length);
+    updateOnlinePlayerList();
+}
 
 function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrender.com') {
     socket = io(url);
@@ -12,46 +41,127 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
         document.getElementById('chat-box').style.display = 'block';
     });
 
-    socket.on('player-joined', (data) => {
-        console.log('Otro jugador se unió a la sala.');
-        showNetworkMessage('🎮 ¡JUGADOR 2 CONECTADO! Listo para jugar.', 5000);
-        let p2Status = document.getElementById('p2-status');
-        if (p2Status) {
-            p2Status.innerText = '[ONLINE]';
-            p2Status.style.color = '#00ffcc';
+    socket.on('player-assigned-id', (data) => {
+        console.log('ID de jugador asignado:', data.playerId);
+        localPlayerId = data.playerId;
+        markOnlinePlayerConnected(localPlayerId);
+        
+        let localP = players.find(p => p.id === localPlayerId && p.inputSource !== 'remote');
+        if (!localP) {
+            localP = players.find(p => p.inputSource !== 'remote') || players[0];
         }
-        // Indicador visual en la sala
+        if (localP) {
+            localP.id = localPlayerId;
+            localP.color = PLAYER_COLORS[localPlayerId - 1];
+            localP.saveIndex = localPlayerId - 1;
+            localP.inputSource = localPlayerId === 1 ? 'keyboard' : localP.inputSource;
+        }
+        
+        // Si no somos el host, somos cliente
+        isHost = (localPlayerId === 1);
+        
+        showNetworkMessage(`🎮 Eres JUGADOR ${localPlayerId}`, 3000);
+    });
+
+    socket.on('room-full', (data) => {
+        alert(data.message);
+        isOnline = false;
+        document.getElementById('chat-box').style.display = 'none';
+    });
+
+    socket.on('player-joined', (data) => {
+        console.log('Jugador', data.playerId, 'se unió a la sala. Total:', data.totalPlayers);
+        markOnlinePlayerConnected(data.playerId);
+        showNetworkMessage(`🎮 ¡JUGADOR ${data.playerId} CONECTADO! (${data.totalPlayers}/4)`, 5000);
+        
+        // Actualizar HUD del jugador que se unió
+        let hudId = data.playerId === 1 ? 'hud-box' : `hud-box-p${data.playerId}`;
+        let hudElem = document.getElementById(hudId);
+        if (hudElem) {
+            hudElem.style.display = 'block';
+            let statusElem = document.getElementById(`p${data.playerId}-status`);
+            if (statusElem) {
+                statusElem.innerText = '[ONLINE]';
+                statusElem.style.color = PLAYER_COLORS[data.playerId - 1];
+            }
+        }
+        
+        // Indicador visual
         let joinBanner = document.createElement('div');
-        joinBanner.innerText = '✅ ALIADO CONECTADO';
-        joinBanner.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,255,100,0.15);border:2px solid #00ff55;color:#00ff55;font-family:Courier New;font-size:28px;padding:20px 40px;border-radius:8px;z-index:9999;pointer-events:none;transition:opacity 1s;';
+        joinBanner.innerText = `✅ JUGADOR ${data.playerId} CONECTADO`;
+        joinBanner.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(${parseInt(PLAYER_COLORS[data.playerId - 1].slice(1,3),16)},${parseInt(PLAYER_COLORS[data.playerId - 1].slice(3,5),16)},${parseInt(PLAYER_COLORS[data.playerId - 1].slice(5,7),16)},0.15);border:2px solid ${PLAYER_COLORS[data.playerId - 1]};color:${PLAYER_COLORS[data.playerId - 1]};font-family:Courier New;font-size:28px;padding:20px 40px;border-radius:8px;z-index:9999;pointer-events:none;transition:opacity 1s;`;
         document.body.appendChild(joinBanner);
         setTimeout(() => { joinBanner.style.opacity = '0'; setTimeout(() => joinBanner.remove(), 1000); }, 2500);
     });
 
-    socket.on('remote-player-update', (data) => {
-        // Encontrar o crear al jugador 2
-        if (players.length < 2) {
-            // Crear jugador 2 si no existe
-            players.push({
-                id: 2, x: data.x, y: data.y, radius: 15, speed: 4, hp: 100, maxHp: 100,
-                credits: 0, level: 1, xp: 0, nextXp: 100, weapons: ['basic'], currentWeaponIndex: 0,
-                color: isHost ? '#ff007f' : '#00ffcc', shield: 0, maxShield: 40, aimMode: 'AUTO',
-                damageModifier: 1.0, overdriveTimer: 0, dashTimer: 0, invulnTimer: 0,
-                flashTicks: 0, damageFlashAlpha: 0,
-                weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
-                upgradeCounts: { hp: 0, dmg: 0 }
-            });
+    socket.on('existing-players', (data) => {
+        console.log('Jugadores existentes en la sala:', data);
+        // Crear jugadores remotos que ya están en la sala
+        data.forEach(existingPlayer => {
+            markOnlinePlayerConnected(existingPlayer.playerId);
+            let remoteP = players.find(p => p.id === existingPlayer.playerId);
+            if (!remoteP) {
+                remoteP = createPlayer(existingPlayer.playerId, existingPlayer.playerId - 1);
+                remoteP.inputSource = 'remote';
+                remoteP.color = PLAYER_COLORS[existingPlayer.playerId - 1];
+                players.push(remoteP);
+            }
+        });
+        
+        // Ordenar players por ID
+        players.sort((a, b) => a.id - b.id);
+    });
+
+    socket.on('player-disconnected', (data) => {
+        console.log('Jugador', data.playerId, 'se desconectó');
+        markOnlinePlayerDisconnected(data.playerId);
+        showNetworkMessage(`🔌 JUGADOR ${data.playerId} DESCONECTADO`, 3000);
+        
+        // Ocultar HUD del jugador desconectado
+        let hudId = data.playerId === 1 ? 'hud-box' : `hud-box-p${data.playerId}`;
+        let hudElem = document.getElementById(hudId);
+        if (hudElem) {
+            hudElem.style.display = 'none';
         }
         
-        let p2 = players[1];
-        if (p2) {
-            p2.x = data.x;
-            p2.y = data.y;
-            p2.hp = data.hp;
-            p2.shield = data.shield;
-            p2.aimMode = data.aimMode;
-            if (data.weapons) p2.weapons = data.weapons;
-            p2.currentWeaponIndex = Math.min(data.currentWeaponIndex, (p2.weapons.length - 1));
+        // Remover jugador del array
+        let index = players.findIndex(p => p.id === data.playerId);
+        if (index !== -1) {
+            players.splice(index, 1);
+        }
+    });
+
+    socket.on('new-host', (data) => {
+        console.log('Nuevo host asignado:', data.hostId);
+        if (socket.id === data.hostId) {
+            isHost = true;
+            showNetworkMessage('👑 Eres el nuevo HOST', 3000);
+        }
+    });
+
+    socket.on('remote-player-update', (data) => {
+        // Buscar jugador por ID en lugar de índice
+        let remoteP = players.find(p => p.id === data.playerId);
+        
+        if (!remoteP && data.playerId) {
+            // Crear jugador si no existe
+            remoteP = createPlayer(data.playerId, data.playerId - 1);
+            remoteP.inputSource = 'remote';
+            remoteP.color = PLAYER_COLORS[data.playerId - 1];
+            players.push(remoteP);
+            
+            // Ordenar players por ID
+            players.sort((a, b) => a.id - b.id);
+        }
+        
+        if (remoteP) {
+            remoteP.x = data.x;
+            remoteP.y = data.y;
+            remoteP.hp = data.hp;
+            remoteP.shield = data.shield;
+            remoteP.aimMode = data.aimMode;
+            if (data.weapons) remoteP.weapons = data.weapons;
+            remoteP.currentWeaponIndex = Math.min(data.currentWeaponIndex, (remoteP.weapons.length - 1));
         }
     });
 
@@ -88,26 +198,22 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             }
         } else if (data.type === 'open-level-up') {
             if (!isHost) {
-                let localP = players.find(p => p.id === 2) || players[0];
+                let localP = players.find(p => p.id === data.payload.playerId) || players[0];
                 showLevelUpMenu(localP);
             }
         } else if (data.type === 'sync-stats') {
             if (!isHost) {
-                let hostP = players.find(p => p.id === 1) || players[1];
-                let clientP = players.find(p => p.id === 2) || players[0];
-                
-                if (hostP) {
-                    hostP.xp = data.payload.p1.xp;
-                    hostP.level = data.payload.p1.level;
-                    hostP.credits = data.payload.p1.credits;
-                    hostP.nextXp = data.payload.p1.nextXp;
-                }
-                if (clientP) {
-                    clientP.xp = data.payload.p2.xp;
-                    clientP.level = data.payload.p2.level;
-                    clientP.credits = data.payload.p2.credits;
-                    clientP.nextXp = data.payload.p2.nextXp;
-                }
+                // Sincronizar stats de todos los jugadores
+                Object.keys(data.payload).forEach(key => {
+                    let playerId = parseInt(key.replace('p', ''));
+                    let localP = players.find(p => p.id === playerId);
+                    if (localP) {
+                        localP.xp = data.payload[key].xp;
+                        localP.level = data.payload[key].level;
+                        localP.credits = data.payload[key].credits;
+                        localP.nextXp = data.payload[key].nextXp;
+                    }
+                });
                 updateUI();
             }
         } else if (data.type === 'start-game') {
@@ -121,9 +227,13 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
         } else if (data.type === 'chat') {
             let messagesDiv = document.getElementById('chat-messages');
             let msgEl = document.createElement('div');
-            msgEl.innerHTML = `<span style="color: #ff007f;">[Aliado]:</span> ${data.payload}`;
+            let senderId = data.payload.playerId || '?';
+            let senderColor = PLAYER_COLORS[senderId - 1] || '#ff007f';
+            msgEl.innerHTML = `<span style="color: ${senderColor};">[J${senderId}]:</span> ${data.payload.message || ''}`;
             messagesDiv.appendChild(msgEl);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } else if (data.type === 'player-upgrade') {
+            applyRemotePlayerUpgrade(data.payload);
         } else if (data.type === 'level-up-pause') {
             let remoteP = players.find(p => p.id === data.payload.playerId) || players[0];
             
@@ -161,18 +271,30 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
 function createOnlineRoom() {
     isHost = true;
     isCoop = true;
-    players[0].color = '#00ffcc'; // Host siempre verde/cyan
+    localPlayerId = 1; // Host siempre es jugador 1
+    players[0].color = PLAYER_COLORS[0]; // Host siempre verde/cyan
+    players[0].id = 1;
+    players[0].saveIndex = 0;
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     connectToServer();
     socket.emit('join-room', currentRoomId);
+    let codeEl = document.getElementById('online-room-code');
+    if (codeEl) {
+        codeEl.style.display = 'block';
+        codeEl.innerHTML = `SALA: <strong style="color:#fff; letter-spacing:3px;">${currentRoomId}</strong>`;
+    }
     showNetworkMessage(`Sala creada. Código: <strong style="color:#fff;">${currentRoomId}</strong> <button onclick="navigator.clipboard.writeText('${currentRoomId}'); this.innerText='¡Copiado!';" style="background:#00ffcc; border:none; color:#000; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-left:10px; font-family:inherit; font-weight:bold;">Copiar</button>`, 10000);
     return currentRoomId;
 }
 
 function joinOnlineRoom(roomId) {
+    if (!roomId || !roomId.trim()) {
+        showNetworkMessage('⚠️ Ingresa un código de sala válido', 2500);
+        return;
+    }
     isHost = false;
     isCoop = true;
-    players[0].color = '#ff007f'; // Cliente siempre rosa/rojo
+    // El ID se asignará cuando el servidor responda con player-assigned-id
     currentRoomId = roomId.toUpperCase();
     connectToServer();
     socket.emit('join-room', currentRoomId);
@@ -180,16 +302,19 @@ function joinOnlineRoom(roomId) {
 
 function sendPlayerUpdate() {
     if (!socket || !currentRoomId || !isOnline) return;
-    let p1 = players[0];
+    let localP = players.find(p => p.id === localPlayerId);
+    if (!localP) return;
+    
     socket.emit('player-update', {
         roomId: currentRoomId,
-        x: p1.x,
-        y: p1.y,
-        hp: p1.hp,
-        shield: p1.shield,
-        aimMode: p1.aimMode,
-        currentWeaponIndex: p1.currentWeaponIndex,
-        weapons: p1.weapons
+        playerId: localPlayerId,
+        x: localP.x,
+        y: localP.y,
+        hp: localP.hp,
+        shield: localP.shield,
+        aimMode: localP.aimMode,
+        currentWeaponIndex: localP.currentWeaponIndex,
+        weapons: localP.weapons
     });
 }
 
@@ -209,13 +334,54 @@ function sendChat() {
     
     let messagesDiv = document.getElementById('chat-messages');
     let msgEl = document.createElement('div');
-    msgEl.innerHTML = `<span style="color: #00ffcc;">[Tú]:</span> ${message}`;
+    let localColor = PLAYER_COLORS[localPlayerId - 1] || '#00ffcc';
+    msgEl.innerHTML = `<span style="color: ${localColor};">[Tú J${localPlayerId}]:</span> ${message}`;
     messagesDiv.appendChild(msgEl);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     
-    sendGameEvent('chat', message);
+    sendGameEvent('chat', { playerId: localPlayerId, message: message });
     
     input.value = '';
+}
+
+function sendPlayerUpgradeSync(pObj) {
+    if (!pObj || !isOnline) return;
+    sendGameEvent('player-upgrade', {
+        playerId: pObj.id,
+        hp: pObj.hp,
+        maxHp: pObj.maxHp,
+        credits: pObj.credits,
+        damageModifier: pObj.damageModifier,
+        weapons: pObj.weapons,
+        currentWeaponIndex: pObj.currentWeaponIndex,
+        upgradeCounts: pObj.upgradeCounts,
+        laserDmgMod: pObj.laserDmgMod,
+        minigunHeatMod: pObj.minigunHeatMod,
+        qCdMod: pObj.qCdMod
+    });
+}
+
+function applyRemotePlayerUpgrade(payload) {
+    if (!payload || payload.playerId === localPlayerId) return;
+    let pObj = players.find(p => p.id === payload.playerId);
+    if (!pObj) {
+        pObj = createPlayer(payload.playerId, payload.playerId - 1);
+        pObj.inputSource = 'remote';
+        pObj.color = PLAYER_COLORS[payload.playerId - 1];
+        players.push(pObj);
+        players.sort((a, b) => a.id - b.id);
+    }
+    pObj.hp = payload.hp;
+    pObj.maxHp = payload.maxHp;
+    pObj.credits = payload.credits;
+    pObj.damageModifier = payload.damageModifier;
+    pObj.weapons = payload.weapons || pObj.weapons;
+    pObj.currentWeaponIndex = payload.currentWeaponIndex || 0;
+    pObj.upgradeCounts = payload.upgradeCounts || pObj.upgradeCounts;
+    pObj.laserDmgMod = payload.laserDmgMod;
+    pObj.minigunHeatMod = payload.minigunHeatMod;
+    pObj.qCdMod = payload.qCdMod;
+    updateUI();
 }
 
 function spawnRemoteBullet(data) {

@@ -52,8 +52,12 @@ function updateDynamicEvents() {
                 createExplosion(ev.x, ev.y, '#00ffcc', 50, 2);
                 screenShake = 10;
                 let mat = Math.random() > 0.5 ? 'crystal' : 'plate';
-                userSave.materials[mat]++;
-                userSave.materials[mat]++; // garantizado 2 materiales
+                players.forEach(p => {
+                    let pSave = getPlayerSave(p);
+                    if (pSave && pSave.materials) {
+                        pSave.materials[mat] += 2;
+                    }
+                });
                 saveGame();
                 showNetworkMessage('✅ EXTRACTOR COMPLETADO — Material raro obtenido!', 3000);
                 ev.active = false;
@@ -77,7 +81,7 @@ function updateDynamicEvents() {
                 // Éxito
                 createExplosion(ev.x, ev.y, '#ffff00', 60, 2.5); screenShake = 12;
                 let reward = 100 + Math.floor(Math.random() * 51);
-                players.forEach(p => p.credits += Math.floor(reward / players.length));
+                players.forEach(p => p.credits += reward);
                 showNetworkMessage(`✅ NÚCLEO ESTABILIZADO — +$${reward} créditos!`, 3000);
                 updateUI(); ev.active = false;
             } else if (ev.timer <= 0) {
@@ -175,7 +179,7 @@ function updateDynamicEvents() {
                     let newSeg = Math.floor(ev.segmentsDropped + (1 - ev.hp / ev.maxHp) * 3);
                     if (newSeg > ev.segmentsDropped && newSeg <= 2) {
                         let reward = 80 + Math.floor(Math.random() * 40);
-                        players.forEach(p => p.credits += Math.floor(reward / players.length));
+                        players.forEach(p => p.credits += reward);
                         updateUI();
                         showNetworkMessage(`⚡ ANOMALÍA DAÑADA — +$${reward} créditos!`, 2000);
                         let escapeAngle = Math.atan2(ev.y - nearest.y, ev.x - nearest.x);
@@ -188,7 +192,14 @@ function updateDynamicEvents() {
 
             if (ev.hp <= 0) {
                 createExplosion(ev.x, ev.y, '#ffffff', 70, 2.5); screenShake = 15;
-                userSave.materials.crystal++; userSave.materials.core++; saveGame();
+                players.forEach(p => {
+                    let pSave = getPlayerSave(p);
+                    if (pSave && pSave.materials) {
+                        pSave.materials.crystal++;
+                        pSave.materials.core++;
+                    }
+                });
+                saveGame();
                 drops.push({ x: ev.x, y: ev.y, credits: 200, xp: 150, radius: 6, matType: 'crystal' });
                 showNetworkMessage('✅ ANOMALÍA DESTRUIDA — Cristal y Núcleo garantizados!', 4000);
                 ev.active = false;

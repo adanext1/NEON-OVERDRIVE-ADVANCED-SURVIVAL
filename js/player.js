@@ -58,7 +58,7 @@ function takeDamage(pObj, amount, attacker = null) {
     pObj.invulnTimer = 35;
     pObj.flashTicks = 6; pObj.damageFlashAlpha = 0.5;
     
-    let hudId = pObj.id === 1 ? 'hud-box' : 'hud-box-p2';
+    let hudId = pObj.id === 1 ? 'hud-box' : `hud-box-p${pObj.id}`;
     let hudElem = document.getElementById(hudId);
     if (hudElem) {
         hudElem.classList.remove('hud-damage');
@@ -119,7 +119,7 @@ function takeDamage(pObj, amount, attacker = null) {
                 createExplosion(pObj.x, pObj.y, pObj.color, 40, 2.5);
                 
                 // Mártir (passive_guardian Nv6)
-                if (getPassiveLevel('passive_guardian') === 6) {
+                if (getPassiveLevel('passive_guardian', pObj) === 6) {
                     createExplosion(pObj.x, pObj.y, '#ffffff', 80, 3.0);
                     players.forEach(p => {
                         if (p !== pObj && !p.isDead) {
@@ -138,7 +138,8 @@ function takeDamage(pObj, amount, attacker = null) {
                 
                 if (!isCoop && !isOnline) {
                     isGameOver = true;
-                    userSave.credits = (userSave.credits || 0) + players[0].credits;
+                    let pSave = getPlayerSave(pObj);
+                    pSave.credits = (pSave.credits || 0) + pObj.credits;
                     saveGame();
                     document.getElementById('game-over-stats').innerText = `Oleada alcanzada: ${wave}`;
                     document.getElementById('game-over-modal').style.display = 'block';
@@ -148,7 +149,7 @@ function takeDamage(pObj, amount, attacker = null) {
                 } else {
                     pObj.isDead = true;
                     pObj.reviveTimer = 0;
-                    showNetworkMessage(`💀 ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} CAÍDO — acércate y mantén [R] para revivir!`, 5000);
+                    showNetworkMessage(`💀 JUGADOR ${pObj.id} CAÍDO — acércate y mantén [A/R] para revivir!`, 5000);
                 }
             }
         } else {
@@ -163,7 +164,7 @@ function revivePlayer(pObj) {
     pObj.hp = Math.floor(pObj.maxHp * 0.3); // Revive con 30% de vida
     pObj.shield = 0;
     createExplosion(pObj.x, pObj.y, '#00ff88', 30, 1.5);
-    showNetworkMessage(`✅ ${pObj.id === 1 ? 'JUGADOR 1' : 'JUGADOR 2'} REVIVIDO!`, 3000);
+    showNetworkMessage(`✅ JUGADOR ${pObj.id} REVIVIDO!`, 3000);
     screenShake = 8;
     updateUI();
 }
@@ -202,39 +203,17 @@ function triggerPulse() {
 
 function processGamepadInput() {
     const gamepads = navigator.getGamepads();
-    let gp1 = gamepads[0];
-    let gp2 = gamepads[1];
-
-    if (!lastGamepadButtons[0]) lastGamepadButtons[0] = [];
-    if (!lastGamepadButtons[1]) lastGamepadButtons[1] = [];
-
-    // Activar co-op si el Mando 1 presiona START (botón 9) y no estamos en co-op ni en online
-    /*
-    if (gp1 && gp1.buttons[9]?.pressed && !lastGamepadButtons[0][9] && !isCoop && !isOnline) {
-        isCoop = true;
-        let p2 = {
-            id: 2,
-            inputSource: 'gamepad',
-            x: players[0].x + 50, y: players[0].y, radius: 15, speed: 4.2,
-            hp: 100, maxHp: 100, shield: 0, maxShield: 40, xp: 0, nextXp: 100, level: 1, credits: 0, angle: 0,
-            damageModifier: 1.0, weapons: ['basic'], currentWeaponIndex: 0,
-            dashCooldown: 0, dashTimer: 0, dashVx: 0, dashVy: 0, pulseCooldown: 0,
-            aimMode: 'AUTO', overdriveTimer: 0,
-            flashTicks: 0, damageFlashAlpha: 0,
-            weaponUpgrades: { basic: { damage: 0, fireRate: 0 }, shotgun: { damage: 0, fireRate: 0 }, plasma: { damage: 0, fireRate: 0 } },
-            upgradeCounts: { hp: 0, dmg: 0, laser: 0, minigun: 0, q_cooldown: 0 }
-        };
-        // Aplicar mejoras permanentes J2
-        p2.maxHp = 100 + (userSave.artifacts.shipHp * 15);
-        p2.hp = p2.maxHp;
-        p2.damageModifier = 1.0 + (userSave.artifacts.shipDmg * 0.05);
-        p2.maxShield = 40 + (userSave.artifacts.shieldGen * 10);
-        if (userSave.artifacts.shieldGen > 0) { p2.shield = p2.maxShield; }
-        
-        players.push(p2);
-        updateUI();
+    // Recopilar hasta 4 gamepads conectados
+    let connectedGamepads = [];
+    for (let i = 0; i < 4; i++) {
+        connectedGamepads.push(gamepads[i] && gamepads[i].connected ? gamepads[i] : null);
     }
-    */
+    let gp1 = connectedGamepads[0];
+    let gp2 = connectedGamepads[1];
+
+    for (let i = 0; i < 4; i++) {
+        if (!lastGamepadButtons[i]) lastGamepadButtons[i] = [];
+    }
 
     let inMenu = !gameStarted || isShopActive || inCollectionMenu || isGameOver || (document.getElementById('level-up-modal')?.style.display === 'block');
 
@@ -301,7 +280,20 @@ function processGamepadInput() {
         
         // Pulso (B / Botón 1) -> slot E
         if (gp.buttons[1]?.pressed && !lastGamepadButtons[gpIdx][1]) {
-            triggerAbility('E', pObj);
+            // Botón B: primero intenta revivir a aliado cercano caído
+            let revived = false;
+            if (isCoop) {
+                players.forEach(deadP => {
+                    if (deadP.isDead && deadP !== pObj) {
+                        let dist = Math.hypot(pObj.x - deadP.x, pObj.y - deadP.y);
+                        if (dist < 60) {
+                            pObj.isReviving = true;
+                            revived = true;
+                        }
+                    }
+                });
+            }
+            if (!revived) triggerAbility('E', pObj);
         }
         
         // Modo Torreta (Y / Botón 3) -> slot Space
@@ -317,7 +309,8 @@ function processGamepadInput() {
         // Arma Especial (RB / Botón 5) -> Clic Derecho
         if (gp.buttons[5]?.pressed) {
             if ((pObj.empTimer || 0) === 0 && (pObj.laserCooldown || 0) <= 0 && !pObj.isTurret) {
-                let specWep = userSave.nexusBuild.specialWeapon || 'laser';
+                let pSave = getPlayerSave(pObj);
+                let specWep = pSave.nexusBuild.specialWeapon || 'laser';
                 if (specWep === 'laser' && !pObj.isChargingLaser) {
                     pObj.isChargingLaser = true;
                     pObj.laserCharge = 0;
@@ -341,6 +334,7 @@ function processGamepadInput() {
         if (!gameStarted) {
             const controlsModal = document.getElementById('controls-modal');
             if (controlsModal?.style.display === 'block') activeModal = controlsModal;
+            else if (inCollectionMenu) activeModal = document.getElementById('collection-modal');
             else activeModal = document.getElementById('main-menu');
         }
         else if (isShopActive) activeModal = document.getElementById('shop-modal');
@@ -348,8 +342,60 @@ function processGamepadInput() {
         else if (isGameOver) activeModal = document.getElementById('game-over-modal');
         else if (document.getElementById('level-up-modal')?.style.display === 'block') activeModal = document.getElementById('level-up-modal');
 
-        const buttons = activeModal ? activeModal.querySelectorAll('.shop-btn, .level-up-card') : [];
-        if (buttons.length === 0) return;
+        // Navegación especial del Nexus multi-panel
+        if (inCollectionMenu && typeof handleNexusGamepadInput === 'function') {
+            handleNexusGamepadInput(gpIdx, gp, lastGamepadButtons[gpIdx]);
+            gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false);
+            return;
+        }
+
+        // --- GESTIÓN DE UNIÓN EN MENÚ PRINCIPAL ---
+        if (!gameStarted && activeModal && activeModal.id === 'main-menu') {
+            // El jugador 2, 3 o 4 presiona A (botón 0) o Start (botón 9) para activarse
+            if (gpIdx > 0) {
+                if ((gp.buttons[0]?.pressed && !lastGamepadButtons[gpIdx][0]) || 
+                    (gp.buttons[9]?.pressed && !lastGamepadButtons[gpIdx][9])) {
+                    if (!playerSlotsActive[gpIdx]) {
+                        togglePlayerSlot(gpIdx + 1);
+                    }
+                }
+                // Presiona B (botón 1) para desactivarse (salir)
+                if (gp.buttons[1]?.pressed && !lastGamepadButtons[gpIdx][1]) {
+                    if (playerSlotsActive[gpIdx]) {
+                        togglePlayerSlot(gpIdx + 1);
+                    }
+                }
+                // Los mandos secundarios en el menú principal no mueven el cursor ni hacen clic
+                gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false);
+                return;
+            }
+        }
+
+        // Determinar qué botones son accesibles por este mando en este modal
+        let buttons = [];
+        if (activeModal) {
+            if (activeModal.id === 'shop-modal') {
+                // En la tienda, cada jugador sólo navega su propia columna + el botón de cerrar
+                let colEl = document.getElementById(`shop-p${gpIdx + 1}-col`);
+                buttons = colEl ? Array.from(colEl.querySelectorAll('.shop-btn')).filter(btn => btn.offsetParent !== null) : [];
+                let closeBtn = activeModal.querySelector('.shop-btn[onclick*="toggleShop(false)"]');
+                if (closeBtn) buttons.push(closeBtn);
+            } else if (activeModal.id === 'level-up-modal') {
+                // En el menú de subida de nivel, sólo el jugador que está subiendo de nivel debe controlar
+                if (window.currentLevelUpPlayer && gpIdx === (window.currentLevelUpPlayer.id - 1)) {
+                    buttons = Array.from(activeModal.querySelectorAll('.level-up-card')).filter(btn => btn.offsetParent !== null);
+                } else {
+                    // Otros jugadores no pueden interactuar con el modal de subida de nivel de este jugador
+                    gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false);
+                    return;
+                }
+            } else {
+                // Modales generales (pausa, controles, principal, fin de partida)
+                buttons = Array.from(activeModal.querySelectorAll('.shop-btn, .level-up-card, .menu-btn')).filter(btn => btn.offsetParent !== null);
+            }
+        }
+
+        if (buttons.length === 0) { gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false); return; }
 
         if (gp.axes[1] < -0.5 || gp.buttons[12]?.pressed) { if (!menuNavCooldown) { selectedMenuItem[gpIdx]--; moved = true; } }
         else if (gp.axes[1] > 0.5 || gp.buttons[13]?.pressed) { if (!menuNavCooldown) { selectedMenuItem[gpIdx]++; moved = true; } }
@@ -362,67 +408,68 @@ function processGamepadInput() {
             if (selectedMenuItem[gpIdx] >= buttons.length) selectedMenuItem[gpIdx] = 0;
 
             if (isShopActive) {
-                buttons.forEach((btn, idx) => {
-                    if (idx === selectedMenuItem[gpIdx]) btn.classList.add('selected');
-                    else btn.classList.remove('selected');
-                });
+                // Quitar la clase de selección específica de este jugador de todos los botones de su columna + el botón de cerrar
+                buttons.forEach(btn => btn.classList.remove(`selected-p${gpIdx + 1}`));
+                // Añadirla al botón seleccionado por este jugador
+                buttons[selectedMenuItem[gpIdx]]?.classList.add(`selected-p${gpIdx + 1}`);
             } else {
-                const allBtns = activeModal.querySelectorAll('.shop-btn, .level-up-card');
+                const allBtns = activeModal.querySelectorAll('.shop-btn, .level-up-card, .menu-btn');
                 allBtns.forEach(btn => btn.classList.remove('selected'));
                 buttons[selectedMenuItem[gpIdx]]?.classList.add('selected');
             }
         }
 
+        // A = confirmar
         if (gp.buttons[0]?.pressed && !lastGamepadButtons[gpIdx][0]) {
             buttons[selectedMenuItem[gpIdx]]?.click();
+        }
+        // En menú principal: presionar Start activa/desactiva el slot del jugador correspondiente (para P1)
+        if (!gameStarted && gpIdx === 0 && gp.buttons[9]?.pressed && !lastGamepadButtons[gpIdx][9]) {
+            togglePlayerSlot(gpIdx + 1);
         }
         gp.buttons.forEach((b, i) => lastGamepadButtons[gpIdx][i] = b ? b.pressed : false);
     }
 
-    // Procesar pausa
-    let gpPausa = gp1 || gp2;
-    if (gpPausa && gpPausa.buttons[9]?.pressed && !lastGamepadButtons[gpPausa === gp1 ? 0 : 1][9]) {
-        if (!isShopActive && !inCollectionMenu && !isGameOver && gameStarted) {
-            togglePause();
+    // Procesar pausa (cualquier mando activo puede pausar)
+    for (let gi = 0; gi < 4; gi++) {
+        let gpPause = connectedGamepads[gi];
+        if (gpPause && gpPause.buttons[9]?.pressed && !lastGamepadButtons[gi][9]) {
+            if (!isShopActive && !inCollectionMenu && !isGameOver && gameStarted) {
+                togglePause();
+            }
         }
     }
 
     // Procesar entrada de juego
     if (!inMenu) {
-        // Asignación de mandos según preferencia del usuario
-        if (gp1 && gp2) {
-            players[0].inputSource = 'gamepad';
-            players[0].gamepadIndex = 0;
-            if (players[1]) {
-                players[1].inputSource = 'gamepad';
-                players[1].gamepadIndex = 1;
-            }
-        } else if (gp1 && !gp2) {
-            if (isCoop) {
-                players[0].inputSource = 'keyboard';
-                if (players[1]) {
-                    players[1].inputSource = 'gamepad';
-                    players[1].gamepadIndex = 0;
-                }
-            } else {
-                players[0].inputSource = 'gamepad';
-                players[0].gamepadIndex = 0;
-            }
-        } else {
-            players[0].inputSource = 'keyboard';
-        }
-
-        // Ejecutar control para cada jugador
+        // Reglas de asignación de input:
+        // Si hay N gamepads conectados, cada jugador activo usa su gamepad (índice = id-1)
+        // El teclado solo controla P1 si NO hay ningún gamepad conectado
+        let anyGamepad = connectedGamepads.some(g => g !== null);
+        
         players.forEach(p => {
+            if (p.isDead) return;
+            if (typeof isOnline !== 'undefined' && isOnline && p.id !== localPlayerId) return;
+            
+            if (anyGamepad) {
+                // Con gamepads: todos los jugadores usan su mando
+                p.inputSource = 'gamepad';
+                p.gamepadIndex = p.id - 1; // P1=gp0, P2=gp1, etc.
+            } else {
+                // Sin gamepads: solo P1 con teclado
+                p.inputSource = 'keyboard';
+            }
+            
             if (p.inputSource === 'gamepad') {
-                let gp = gamepads[p.gamepadIndex];
+                let gp = connectedGamepads[p.gamepadIndex];
                 if (gp) handlePlayerGamepad(gp, p, p.gamepadIndex);
             }
         });
     }
 
     if (inMenu) {
-        if (gp1) handleMenuGamepad(gp1, 0);
-        if (gp2) handleMenuGamepad(gp2, 1);
+        for (let gi = 0; gi < 4; gi++) {
+            if (connectedGamepads[gi]) handleMenuGamepad(connectedGamepads[gi], gi);
+        }
     }
 }

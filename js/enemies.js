@@ -276,18 +276,33 @@ function updateEnemies() {
             enemies.splice(i, 1); 
             
             // Logro primer jefe
-            if (e.isCoreGuardian && userSave && userSave.unlockedArtifacts && !userSave.unlockedArtifacts.includes('hyperdrive')) {
-                userSave.unlockedArtifacts.push('hyperdrive');
+            if (e.isCoreGuardian) {
+                players.forEach(p => {
+                    let pSave = getPlayerSave(p);
+                    if (pSave && pSave.unlockedArtifacts && !pSave.unlockedArtifacts.includes('hyperdrive')) {
+                        pSave.unlockedArtifacts.push('hyperdrive');
+                    }
+                });
                 showNetworkMessage('🏆 LOGRO: ¡Derrotaste al Guardián! Desbloqueaste Motor Hiperespacial.', 5000);
                 saveGame();
             }
-            if (e.isVectorSupreme && userSave && userSave.unlockedArtifacts && !userSave.unlockedArtifacts.includes('heavy_hull')) {
-                userSave.unlockedArtifacts.push('heavy_hull');
+            if (e.isVectorSupreme) {
+                players.forEach(p => {
+                    let pSave = getPlayerSave(p);
+                    if (pSave && pSave.unlockedArtifacts && !pSave.unlockedArtifacts.includes('heavy_hull')) {
+                        pSave.unlockedArtifacts.push('heavy_hull');
+                    }
+                });
                 showNetworkMessage('🏆 LOGRO: ¡Derrotaste a Vector Supremo! Desbloqueaste Casco Pesado.', 5000);
                 saveGame();
             }
-            if (e.isOverlordApex && userSave && userSave.unlockedArtifacts && !userSave.unlockedArtifacts.includes('kinetic_core')) {
-                userSave.unlockedArtifacts.push('kinetic_core');
+            if (e.isOverlordApex) {
+                players.forEach(p => {
+                    let pSave = getPlayerSave(p);
+                    if (pSave && pSave.unlockedArtifacts && !pSave.unlockedArtifacts.includes('kinetic_core')) {
+                        pSave.unlockedArtifacts.push('kinetic_core');
+                    }
+                });
                 showNetworkMessage('🏆 LOGRO LEGENDARIO: ¡Derrotaste al OVERLORD APEX! Desbloqueaste Núcleo Cinético.', 7000);
                 saveGame();
             }

@@ -272,8 +272,9 @@ function fireWeapon(pObj) {
     }
 
     // Emitir evento si estamos online y somos el jugador local
-    if (typeof isOnline !== 'undefined' && isOnline && pObj.id === 1) {
+    if (typeof isOnline !== 'undefined' && isOnline && typeof localPlayerId !== 'undefined' && pObj.id === localPlayerId) {
         sendGameEvent('shoot', {
+            playerId: localPlayerId,
             x: pObj.x, y: pObj.y,
             angle: targetAngle,
             weaponType: wep.type,
