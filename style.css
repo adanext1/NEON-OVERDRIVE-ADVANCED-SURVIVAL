@@ -1774,10 +1774,31 @@ body.magnetic-inversion #hud-wave::after {
     touch-action: none;
 }
 
-.touch-joy {
+/* Zonas de controles (izquierda y derecha) */
+.touch-zone {
     position: absolute;
-    width: 140px;
-    height: 140px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+#touch-left-zone {
+    left: 20px;
+}
+
+#touch-right-zone {
+    right: 20px;
+}
+
+/* Joysticks al 60% del tamaño original (140px -> 84px) */
+.touch-joy {
+    position: relative;
+    width: 84px;
+    height: 84px;
     border-radius: 50%;
     background: rgba(0, 255, 204, 0.08);
     border: 2px solid rgba(0, 255, 204, 0.45);
@@ -1786,25 +1807,19 @@ body.magnetic-inversion #hud-wave::after {
     touch-action: none;
 }
 
-#touch-joy-move {
-    left: 24px;
-    bottom: 24px;
-}
-
 #touch-joy-aim {
-    right: 24px;
-    bottom: 24px;
     border-color: rgba(255, 0, 127, 0.5);
     background: rgba(255, 0, 127, 0.08);
     box-shadow: 0 0 18px rgba(255, 0, 127, 0.2);
 }
 
+/* Knob al 60% del tamaño original (60px -> 36px) */
 .touch-joy-knob {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 60px;
-    height: 60px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(0, 255, 204, 0.5);
     border: 2px solid #00ffcc;
@@ -1819,24 +1834,15 @@ body.magnetic-inversion #hud-wave::after {
     box-shadow: 0 0 12px #ff007f;
 }
 
-#touch-buttons {
-    position: absolute;
-    right: 180px;
-    bottom: 24px;
-    display: grid;
-    grid-template-columns: repeat(2, 64px);
-    gap: 8px;
-    pointer-events: auto;
-}
-
+/* Botones de habilidad al 70% del tamaño original (64px -> 45px) */
 .touch-btn {
-    width: 64px;
-    height: 64px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     border: 2px solid #00ffcc;
     background: rgba(5, 5, 20, 0.65);
     color: #00ffcc;
-    font-size: 22px;
+    font-size: 16px;
     font-weight: bold;
     font-family: 'Courier New', monospace;
     cursor: pointer;
@@ -1845,6 +1851,21 @@ body.magnetic-inversion #hud-wave::after {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Botones alrededor de los joysticks */
+.touch-btn-around {
+    pointer-events: auto;
+}
+
+/* Botón especial al lado del joystick derecho */
+.touch-btn-side {
+    position: absolute;
+    right: -55px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .touch-btn:active {
@@ -1866,44 +1887,92 @@ body.magnetic-inversion #hud-wave::after {
     position: fixed;
     top: 12px;
     left: 12px;
-    width: 44px;
-    height: 44px;
-    font-size: 14px;
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
     border-color: #00aaff;
     color: #00aaff;
     z-index: 5002;
 }
 
-/* Pausa en una posición fija arriba para evitar pulsarla por error */
+/* Pausa en una posición fija arriba derecha */
 .touch-btn-pause {
     position: fixed;
     top: 12px;
     right: 12px;
-    width: 44px;
-    height: 44px;
-    font-size: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 11px;
     z-index: 5001;
 }
 
+/* Botón de modo de apuntado arriba centro-derecha */
+.touch-btn-aim {
+    position: fixed;
+    top: 12px;
+    right: 60px;
+    width: 40px;
+    height: 40px;
+    font-size: 11px;
+    z-index: 5001;
+}
+
+/* Overlay de enfriamiento dentro de los botones */
+.touch-cd-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.touch-cd-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: rgba(0, 0, 0, 0.6);
+    transition: height 0.1s linear;
+}
+
+/* Colores específicos para cada habilidad */
+#touch-cd-q { background: rgba(170, 0, 255, 0.5); }
+#touch-cd-space { background: rgba(255, 255, 0, 0.5); }
+#touch-cd-e { background: rgba(255, 0, 127, 0.5); }
+#touch-cd-shift { background: rgba(0, 255, 170, 0.5); }
+#touch-cd-special { background: rgba(255, 0, 85, 0.5); }
+
 /* --- Escalado responsivo del HUD/menús --- */
 @media (max-width: 900px) {
-    #ui-layer { padding: 8px; }
+    #ui-layer { padding: 6px; }
     .hud-box {
-        font-size: 11px;
-        padding: 8px;
-        width: 180px;
+        font-size: 10px;
+        padding: 6px;
+        width: 160px;
         border-radius: 7px;
     }
-    .hud-box .hud-row { font-size: 9px; }
+    .hud-box .hud-row { font-size: 8px; }
     .hud-compact {
-        padding: 6px;
-        width: 130px;
-        font-size: 9px;
+        padding: 5px;
+        width: 120px;
+        font-size: 8px;
     }
     #hud-box    { left: 6px; top: 6px; }
     #hud-box-p2 { right: 6px; top: 6px; }
-    #hud-box-p3 { left: 6px; bottom: 170px; }
-    #hud-box-p4 { right: 6px; bottom: 170px; }
+    #hud-box-p3 { left: 6px; bottom: 140px; }
+    #hud-box-p4 { right: 6px; bottom: 140px; }
+
+    /* Ocultar barras de enfriamiento en HUD cuando hay controles táctiles (se muestran en botones) */
+    #touch-controls:not([style*="display:none"]) ~ #ui-layer .hud-box .cooldown-bar {
+        display: none;
+    }
+    #touch-controls:not([style*="display:none"]) ~ #ui-layer .hud-box div[style*="margin-top:10px; font-size:11px; color:#aaa;"] {
+        display: none;
+    }
+    #touch-controls:not([style*="display:none"]) ~ #ui-layer .hud-box div[style*="margin-top:5px; font-size:11px; color:#aaa;"] {
+        display: none;
+    }
 
     /* Modales: ocupar la pantalla con scroll interno */
     #shop-modal,
@@ -1920,50 +1989,102 @@ body.magnetic-inversion #hud-wave::after {
         top: 50% !important;
         transform: translate(-50%, -50%) !important;
         overflow-y: auto !important;
-        padding: 12px !important;
-        font-size: 12px !important;
+        padding: 10px !important;
+        font-size: 11px !important;
     }
     .shop-btn, button {
-        font-size: 12px !important;
-        padding: 8px !important;
+        font-size: 11px !important;
+        padding: 6px !important;
     }
-    h1 { font-size: 22px !important; }
-    h2 { font-size: 18px !important; }
-    h3 { font-size: 14px !important; }
+    h1 { font-size: 20px !important; }
+    h2 { font-size: 16px !important; }
+    h3 { font-size: 13px !important; }
 
     /* Chat compacto */
     #chat-box {
-        width: 200px !important;
-        max-height: 140px !important;
-        font-size: 10px !important;
+        width: 180px !important;
+        max-height: 120px !important;
+        font-size: 9px !important;
     }
+
+    /* Nexus multi-panel: hacer más compacto en móvil */
+    .nexus-player-panel {
+        min-height: 300px !important;
+        padding: 8px !important;
+    }
+    .nexus-player-list {
+        max-height: 200px !important;
+    }
+    .nexus-multipanel-grid[data-players="2"] { font-size: 11px !important; }
+    .nexus-multipanel-grid[data-players="3"] { font-size: 9px !important; }
+    .nexus-multipanel-grid[data-players="4"] { font-size: 8px !important; }
 }
 
 @media (max-width: 600px) {
     .hud-box {
-        font-size: 10px;
-        width: 150px;
+        font-size: 9px;
+        width: 140px;
+        padding: 5px;
     }
     .hud-compact {
-        width: 110px;
-        font-size: 8px;
+        width: 100px;
+        font-size: 7px;
+        padding: 4px;
     }
-    .touch-joy { width: 110px; height: 110px; }
-    .touch-joy-knob { width: 48px; height: 48px; }
-    #touch-buttons {
-        grid-template-columns: repeat(2, 52px);
-        right: 130px;
-        gap: 6px;
+    #hud-box    { left: 4px; top: 4px; }
+    #hud-box-p2 { right: 4px; top: 4px; }
+    #hud-box-p3 { left: 4px; bottom: 120px; }
+    #hud-box-p4 { right: 4px; bottom: 120px; }
+
+    /* Ajustes adicionales para controles táctiles en pantallas muy pequeñas */
+    .touch-joy { width: 70px; height: 70px; }
+    .touch-joy-knob { width: 30px; height: 30px; }
+    .touch-btn { width: 38px; height: 38px; font-size: 14px; }
+    .touch-btn-side { right: -48px; }
+    #touch-btn-fs, .touch-btn-pause, .touch-btn-aim {
+        width: 36px;
+        height: 36px;
+        font-size: 10px;
     }
-    .touch-btn { width: 52px; height: 52px; font-size: 18px; }
-    .touch-btn-aim, .touch-btn-pause { font-size: 11px; }
+    .touch-btn-aim { right: 52px; }
+
+    /* Modales aún más compactos */
+    #shop-modal,
+    #level-up-modal,
+    #pause-modal,
+    #game-over-modal,
+    #controls-modal,
+    #collection-modal,
+    #main-menu {
+        width: 98vw !important;
+        max-width: 98vw !important;
+        max-height: 94vh !important;
+        padding: 8px !important;
+        font-size: 10px !important;
+    }
+    .shop-btn, button {
+        font-size: 10px !important;
+        padding: 5px !important;
+    }
+    h1 { font-size: 18px !important; }
+    h2 { font-size: 14px !important; }
+    h3 { font-size: 12px !important; }
+
+    /* Nexus: apilar verticalmente en pantallas muy pequeñas */
+    .nexus-multipanel-grid {
+        grid-template-columns: 1fr !important;
+        font-size: 10px !important;
+    }
+    .nexus-player-panel {
+        min-height: 250px !important;
+    }
 }
 
-/* En móvil ocultar la leyenda de tecla M de "apuntado" extra si no cabe */
+/* En pantallas muy bajas, ajustar posición de HUD para no tapar controles */
 @media (max-height: 500px) {
-    #touch-buttons {
-        bottom: 6px;
-        grid-template-columns: repeat(4, 52px);
-    }
+    #hud-box    { top: 4px; }
+    #hud-box-p2 { top: 4px; }
+    #hud-box-p3 { bottom: 100px; }
+    #hud-box-p4 { bottom: 100px; }
 }
 

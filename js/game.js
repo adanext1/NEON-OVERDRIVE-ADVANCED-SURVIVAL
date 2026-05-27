@@ -55,7 +55,7 @@ function updateHUDCooldownBars(p) {
     let pSave = typeof getPlayerSave === 'function' ? getPlayerSave(p) : userSave;
     let build = pSave.nexusBuild;
     if (!build) return;
-    
+
     function getCooldownPercent(skillId, pObj) {
         if (!skillId) return 0;
         let mod = getActiveSkillModifier(skillId, pObj);
@@ -74,19 +74,45 @@ function updateHUDCooldownBars(p) {
         }
         return 1;
     }
-    
+
     let shiftPercent = getCooldownPercent(build.skills.Shift, p);
     document.getElementById('dash-cd').style.width = `${Math.max(0, Math.min(1, shiftPercent)) * 100}%`;
-    
+
     let ePercent = getCooldownPercent(build.skills.E, p);
     document.getElementById('pulse-cd').style.width = `${Math.max(0, Math.min(1, ePercent)) * 100}%`;
-    
+
     let qPercent = getCooldownPercent(build.skills.Q, p);
     document.getElementById('q-cd').style.width = `${Math.max(0, Math.min(1, qPercent)) * 100}%`;
-    
+
     let specWep = build.specialWeapon;
     let maxLaserCD = specWep === 'mortar' ? 240 : (p.maxLaserCooldown || 480);
     document.getElementById('laser-cd').style.width = `${(1 - p.laserCooldown / maxLaserCD) * 100}%`;
+
+    // Sincronizar enfriamientos en botones táctiles (si existen)
+    const touchShift = document.getElementById('touch-cd-shift');
+    if (touchShift) touchShift.style.height = `${Math.max(0, Math.min(1, shiftPercent)) * 100}%`;
+
+    const touchE = document.getElementById('touch-cd-e');
+    if (touchE) touchE.style.height = `${Math.max(0, Math.min(1, ePercent)) * 100}%`;
+
+    const touchQ = document.getElementById('touch-cd-q');
+    if (touchQ) touchQ.style.height = `${Math.max(0, Math.min(1, qPercent)) * 100}%`;
+
+    const touchSpecial = document.getElementById('touch-cd-special');
+    if (touchSpecial) touchSpecial.style.height = `${(1 - p.laserCooldown / maxLaserCD) * 100}%`;
+
+    // Enfriamiento de escudo (espacio) - si tiene habilidad de escudo
+    const touchSpace = document.getElementById('touch-cd-space');
+    if (touchSpace) {
+        let spaceSkill = build.skills.Space;
+        if (spaceSkill === 'shield_dome' || spaceSkill === 'campo_energetico') {
+            let maxShieldCD = 300;
+            let shieldPercent = 1 - ((p.shieldCooldown || 0) / maxShieldCD);
+            touchSpace.style.height = `${Math.max(0, Math.min(1, shieldPercent)) * 100}%`;
+        } else {
+            touchSpace.style.height = '0%';
+        }
+    }
 }
 
 function startGameSimulation() {
