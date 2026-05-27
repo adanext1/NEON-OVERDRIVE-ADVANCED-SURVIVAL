@@ -198,8 +198,12 @@ function connectToServer(url = 'https://neon-overdrive-advanced-survival.onrende
             }
         } else if (data.type === 'open-level-up') {
             if (!isHost) {
-                let localP = players.find(p => p.id === data.payload.playerId) || players[0];
-                showLevelUpMenu(localP);
+                let targetP = players.find(p => p.id === data.payload.playerId) || players[0];
+                if (data.payload.playerId === localPlayerId) {
+                    showLevelUpMenu(targetP);
+                } else {
+                    showNetworkMessage(`⏳ J${data.payload.playerId} está eligiendo mejora`, 2000);
+                }
             }
         } else if (data.type === 'sync-stats') {
             if (!isHost) {

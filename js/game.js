@@ -319,7 +319,7 @@ function triggerTeleport(pObj) {
 }
 
 function triggerAbility(slotKey, pObj) {
-    if (!pObj) pObj = players[0];
+    if (!pObj) pObj = (typeof getLocalPlayer === 'function') ? getLocalPlayer() : players[0];
     if (pObj.isDead || isPaused || !gameStarted) return;
     if ((pObj.empTimer || 0) > 0) return;
     
@@ -494,12 +494,20 @@ function triggerAbility(slotKey, pObj) {
 }
 
 // === ENTRADA DE TECLADO Y MOUSE ===
+function getLocalPlayer() {
+    if (typeof isOnline !== 'undefined' && isOnline && typeof localPlayerId !== 'undefined') {
+        return players.find(p => p.id === localPlayerId) || players[0];
+    }
+    return players[0];
+}
+
 window.addEventListener('keydown', e => {
     let k = e.key.toLowerCase(); keys[k] = true;
     if (!gameStarted) return;
     if (k === 'p') { if (!isShopActive && !inCollectionMenu) { togglePause(); } }
     if (isPaused) return;
-    if (k === 'm') { players[0].aimMode = players[0].aimMode === 'AUTO' ? 'MANUAL' : 'AUTO'; updateUI(); }
+    let localP = getLocalPlayer();
+    if (k === 'm') { localP.aimMode = localP.aimMode === 'AUTO' ? 'MANUAL' : 'AUTO'; updateUI(); }
     
     // Mapeo dinámico de habilidades del Nexus
     if (e.key === 'Shift') { triggerAbility('Shift'); } 
@@ -516,7 +524,7 @@ window.addEventListener('keydown', e => {
         }
     }
     if (k === 'c') { if (!waveActive && enemies.length === 0) { if (isShopActive) toggleShop(false); toggleCollection(!inCollectionMenu); } }
-    if (e.key >= '1' && e.key <= '3') { let idx = parseInt(e.key) - 1; if (players[0].weapons[idx]) players[0].currentWeaponIndex = idx; updateUI(); }
+    if (e.key >= '1' && e.key <= '3') { let idx = parseInt(e.key) - 1; if (localP.weapons[idx]) localP.currentWeaponIndex = idx; updateUI(); }
 });
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 window.addEventListener('mousemove', e => {
@@ -527,7 +535,7 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mousedown', e => {
     if (e.button === 0 && gameStarted && !isPaused) mouse.isDown = true;
     if (e.button === 2 && gameStarted && !isPaused) {
-        let p = players[0];
+        let p = getLocalPlayer();
         if ((p.empTimer || 0) === 0 && (p.laserCooldown || 0) <= 0 && !p.isTurret) {
             let specWep = userSave.nexusBuild.specialWeapon || 'laser';
             if (specWep === 'laser') {
@@ -542,7 +550,7 @@ window.addEventListener('mousedown', e => {
 window.addEventListener('mouseup', e => {
     if (e.button === 0) mouse.isDown = false;
     if (e.button === 2) {
-        let p = players[0];
+        let p = getLocalPlayer();
         if (p.isChargingLaser) {
             p.isChargingLaser = false;
             fireMegaLaser(p);
@@ -552,7 +560,7 @@ window.addEventListener('mouseup', e => {
 window.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('wheel', e => {
     if (!gameStarted || isPaused) return;
-    let p = players[0];
+    let p = getLocalPlayer();
     if (p.isTurret) return; // Bloquear cambio de arma en modo torreta
     if (e.deltaY < 0) {
         p.currentWeaponIndex = (p.currentWeaponIndex + 1) % p.weapons.length;
@@ -1324,7 +1332,11 @@ function update() {
                     if (p.xp >= p.nextXp) {
                         p.level++; p.xp -= p.nextXp; p.nextXp = Math.floor(p.nextXp * 1.45);
                         createExplosion(p.x, p.y, p.color || '#00ffcc', 35, 1.8);
-                        showLevelUpMenu(p);
+                        if (typeof isOnline !== 'undefined' && isOnline && isHost && p.id !== localPlayerId) {
+                            sendGameEvent('open-level-up', { playerId: p.id });
+                        } else {
+                            showLevelUpMenu(p);
+                        }
                     }
                 });
                 if (d.matType) saveGame();
