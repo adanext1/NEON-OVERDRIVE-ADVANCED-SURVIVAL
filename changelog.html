@@ -505,12 +505,15 @@
                 <div>
                     <div class="entry-title c-cyan">Comportamientos Tácticos y Amagos de Carga (IA Vector Fase 3)</div>
                     El combate contra los fragmentos de Vector Supremo ahora es mucho más dinámico y desafiante:
-                    <ul style="margin-top:6px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:3px;">⬡ <strong>Cargas y Tiempos Dinámicos:</strong> Cada fragmento calcula un desfase aleatorio al iniciar el ciclo, haciendo que sus ataques de dash comiencen de forma asíncrona para evitar patrones predecibles.</li>
-                        <li style="margin-bottom:3px;">⬡ <strong>Mecánica de Fintas (Amagos):</strong> Los fragmentos tienen un 45% de probabilidad por ciclo de realizar una finta (un impulso rápido de velocidad 12 durante 10 frames) antes de detenerse y parpadear agresivamente en su posición, induciendo al jugador a esquivar prematuramente.</li>
-                        <li style="margin-bottom:3px;">⬡ <strong>Dash Ultra-Rápido:</strong> El dash de embestida final se incrementó a velocidad <strong>24.5</strong>.</li>
-                        <li>⬡ <strong>Colisiones contra Paredes:</strong> Si un fragmento choca con el borde de la pantalla durante su dash, frena en seco inmediatamente y produce chispas de impacto, manteniéndose visible en el mapa de juego.</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:6px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:3px;">⬡ <strong>Cargas y Tiempos Dinámicos:</strong> Cada fragmento calcula un desfase aleatorio al iniciar el ciclo, haciendo que sus ataques de dash comiencen de forma asíncrona para evitar patrones predecibles.</li>
+                            <li style="margin-bottom:3px;">⬡ <strong>Mecánica de Fintas (Amagos):</strong> Los fragmentos tienen un 45% de probabilidad por ciclo de realizar una finta (un impulso rápido de velocidad 12 durante 10 frames) antes de detenerse y parpadear agresivamente en su posición, induciendo al jugador a esquivar prematuramente.</li>
+                            <li style="margin-bottom:3px;">⬡ <strong>Dash Ultra-Rápido:</strong> El dash de embestida final se incrementó a velocidad <strong>24.5</strong>.</li>
+                            <li>⬡ <strong>Colisiones contra Paredes:</strong> Si un fragmento choca con el borde de la pantalla durante su dash, frena en seco inmediatamente y produce chispas de impacto, manteniéndose visible en el mapa de juego.</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
             <li class="highlight-gameplay">
@@ -525,13 +528,16 @@
                 <div>
                     <div class="entry-title c-cyan">Efectos y Partículas de Habilidad Especializadas</div>
                     Añadidos efectos visuales y de partículas únicos para cada nodo:
-                    <ul style="margin-top:6px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:3px;">· <strong>Escudo:</strong> Fuerza de barrera naranja pasiva en aros radiales e impacto radial de chispas naranja al recibir daño.</li>
-                        <li style="margin-bottom:3px;">· <strong>Rastreador:</strong> Rastro/estela neón rosa continuo que sigue su movimiento a alta velocidad.</li>
-                        <li style="margin-bottom:3px;">· <strong>Disparador:</strong> Destellos morados de fuego de boca al disparar y estelas de partículas moradas en la trayectoria de sus balas.</li>
-                        <li style="margin-bottom:3px;">· <strong>Vórtice:</strong> Remolinos concéntricos pasivos de partículas doradas que viajan en espiral hacia su núcleo para indicar el área gravitatoria.</li>
-                        <li>· <strong>Aturdimiento:</strong> Chispas eléctricas amarillas y celestes intermitentes para los nodos inhabilitados temporalmente.</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:6px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:3px;">· <strong>Escudo:</strong> Fuerza de barrera naranja pasiva en aros radiales e impacto radial de chispas naranja al recibir daño.</li>
+                            <li style="margin-bottom:3px;">· <strong>Rastreador:</strong> Rastro/estela neón rosa continuo que sigue su movimiento a alta velocidad.</li>
+                            <li style="margin-bottom:3px;">· <strong>Disparador:</strong> Destellos morados de fuego de boca al disparar y estelas de partículas moradas en la trayectoria de sus balas.</li>
+                            <li style="margin-bottom:3px;">· <strong>Vórtice:</strong> Remolinos concéntricos pasivos de partículas doradas que viajan en espiral hacia su núcleo para indicar el área gravitatoria.</li>
+                            <li>· <strong>Aturdimiento:</strong> Chispas eléctricas amarillas y celestes intermitentes para los nodos inhabilitados temporalmente.</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
         </ul>
@@ -557,13 +563,16 @@
                 <div>
                     <div class="entry-title" style="color:#00ffaa;">Sistema Completo de Habilidades Activas — 40 Módulos Funcionales</div>
                     El <strong>Nexus de Ensamblaje</strong> despierta. Todos los módulos activos ahora ejecutan mecánicas reales únicas con física, partículas neon, osciladores de audio y efectos Ultra Lv6 exclusivos. Gestor centralizado en <code>js/skills.js</code> con actualizaciones y renderizado por frame:
-                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Tier Común:</strong> Minas de proximidad con fragmentación, Bengalas que desvían IA enemiga, Escudo Frontal con contraexplosión, Dron de Escolta orbital con intercepción de proyectiles.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#4488ff;">Tier Raro:</strong> Mega-Láser de Carga con estela, Mortero de Plasma parabólico, Cúpula Defensiva con reducción real de daño, Gancho de Energía, Granada Criogénica.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#aa55ff;">Tier Épico:</strong> Agujero Negro con succión gravitacional real, Lluvia de Misiles teledirigidos, Escudo Espejo que refleja proyectiles, Pulso EMP de área total, Campo de Éstasis que detiene balas en aire.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#ffcc00;">Tier Legendario:</strong> Rayo Orbital de seguimiento, Protocolo Última Muralla (invuln 6s), Tormenta Eléctrica con chain lightning, Cañón de Antimateria que devora balas, Invisibilidad Total.</li>
-                        <li>⬡ <strong style="color:#ff4444;">Tier Mítico:</strong> Cronos dilata el tiempo del juego, Supernova (explosión global con autobuff), Avatar de la Guerra (x2 stats 10s), Llamada de la Flota (5 naves IA aliadas), La Singularidad Maestra.</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Tier Común:</strong> Minas de proximidad con fragmentación, Bengalas que desvían IA enemiga, Escudo Frontal con contraexplosión, Dron de Escolta orbital con intercepción de proyectiles.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#4488ff;">Tier Raro:</strong> Mega-Láser de Carga con estela, Mortero de Plasma parabólico, Cúpula Defensiva con reducción real de daño, Gancho de Energía, Granada Criogénica.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#aa55ff;">Tier Épico:</strong> Agujero Negro con succión gravitacional real, Lluvia de Misiles teledirigidos, Escudo Espejo que refleja proyectiles, Pulso EMP de área total, Campo de Éstasis que detiene balas en aire.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#ffcc00;">Tier Legendario:</strong> Rayo Orbital de seguimiento, Protocolo Última Muralla (invuln 6s), Tormenta Eléctrica con chain lightning, Cañón de Antimateria que devora balas, Invisibilidad Total.</li>
+                            <li>⬡ <strong style="color:#ff4444;">Tier Mítico:</strong> Cronos dilata el tiempo del juego, Supernova (explosión global con autobuff), Avatar de la Guerra (x2 stats 10s), Llamada de la Flota (5 naves IA aliadas), La Singularidad Maestra.</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
 
@@ -573,18 +582,21 @@
                 <div>
                     <div class="entry-title" style="color:#00ccff;">Sistema Completo de Módulos Pasivos — 30 Efectos Reales</div>
                     Cada pasivo tiene efectos de tick, on-hit, on-kill y on-damage con sus Ultra Lv6 únicos:
-                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Munición Incendiaria:</strong> Probabilidad de quemadura por disparo. Ultra: Ignición en Cadena — enemigos que mueren ardiendo explotan propagando fuego.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Balística de Rebote:</strong> Balas rebotan en bordes del arena. Ultra Lv6: Fragmentación — al primer rebote genera 2 proyectiles secundarios en diagonal.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Condensador de Pulso:</strong> Knockback extra en impactos. Ultra: Onda de Choque — doble daño si el enemigo impacta el borde del mapa.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Analizador de Debilidades:</strong> +3% probabilidad crítica por nivel. Ultra: Punto de Quiebre — los críticos ejecutan enemigos con &lt;15% HP.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Sifón de Vida:</strong> Roba HP según el daño infligido. Ultra: cura también al aliado con menos HP.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Venganza de Código:</strong> +2% daño por cada 1% de HP perdido. Ultra a 1 HP: crítico garantizado y atraviesa armadura.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Núcleo de Singularidad:</strong> Cada 10 disparos la bala succiona enemigos cercanos. Ultra: colapso con explosión de 300 dmg.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Protocolo Guardián:</strong> Redirige daño letal de aliados hacia ti. Ultra Mártir: al morir, curas al 100% a todos los aliados.</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Inyector de Adrenalina:</strong> Matar un Élite o Jefe otorga +100% cadencia 5s. Ultra: sin consumo de calor de Minigun.</li>
-                        <li>⬡ <strong style="color:#00ffcc;">Batería de Repuesto Ultra (Reciclaje):</strong> Cada kill reduce 0.5s el cooldown activo más largo.</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Munición Incendiaria:</strong> Probabilidad de quemadura por disparo. Ultra: Ignición en Cadena — enemigos que mueren ardiendo explotan propagando fuego.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Balística de Rebote:</strong> Balas rebotan en bordes del arena. Ultra Lv6: Fragmentación — al primer rebote genera 2 proyectiles secundarios en diagonal.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Condensador de Pulso:</strong> Knockback extra en impactos. Ultra: Onda de Choque — doble daño si el enemigo impacta el borde del mapa.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Analizador de Debilidades:</strong> +3% probabilidad crítica por nivel. Ultra: Punto de Quiebre — los críticos ejecutan enemigos con &lt;15% HP.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Sifón de Vida:</strong> Roba HP según el daño infligido. Ultra: cura también al aliado con menos HP.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Venganza de Código:</strong> +2% daño por cada 1% de HP perdido. Ultra a 1 HP: crítico garantizado y atraviesa armadura.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Núcleo de Singularidad:</strong> Cada 10 disparos la bala succiona enemigos cercanos. Ultra: colapso con explosión de 300 dmg.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Protocolo Guardián:</strong> Redirige daño letal de aliados hacia ti. Ultra Mártir: al morir, curas al 100% a todos los aliados.</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#00ffcc;">Inyector de Adrenalina:</strong> Matar un Élite o Jefe otorga +100% cadencia 5s. Ultra: sin consumo de calor de Minigun.</li>
+                            <li>⬡ <strong style="color:#00ffcc;">Batería de Repuesto Ultra (Reciclaje):</strong> Cada kill reduce 0.5s el cooldown activo más largo.</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
 
@@ -665,11 +677,14 @@
                 <div>
                     <div class="entry-title" style="color:#d4af37;">OVERLORD APEX — The Kinetic Architect (Jefe Oleada 15)</div>
                     El titán definitivo. 14,000 HP, 3 fases mecánicas únicas que exigen el dominio total del arsenal:
-                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#d4af37;">Fase 1 — La Jaula de Vectores:</strong> Clava 4 pilares en las esquinas conectados por láseres rojos. Destruye los pilares con la Minigun en Modo Torreta antes de que la jaula se cierre (10s).</li>
-                        <li style="margin-bottom:4px;">⬡ <strong style="color:#ffaa00;">Fase 2 — Inversión Magnética:</strong> Controles completamente invertidos. Cada disparo genera retroceso físico real. Usa el Dash para contrarrestar el empuje de tus propias armas.</li>
-                        <li>⬡ <strong style="color:#ff2200;">Fase 3 — Muro de Ejecución:</strong> Inmune a balas normales. Un muro láser avanza desde la izquierda acelerando. Solo el Mega-Láser Crítico (3s de carga) puede dañarlo. El mando vibra al máximo.</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#d4af37;">Fase 1 — La Jaula de Vectores:</strong> Clava 4 pilares en las esquinas conectados por láseres rojos. Destruye los pilares con la Minigun en Modo Torreta antes de que la jaula se cierre (10s).</li>
+                            <li style="margin-bottom:4px;">⬡ <strong style="color:#ffaa00;">Fase 2 — Inversión Magnética:</strong> Controles completamente invertidos. Cada disparo genera retroceso físico real. Usa el Dash para contrarrestar el empuje de tus propias armas.</li>
+                            <li>⬡ <strong style="color:#ff2200;">Fase 3 — Muro de Ejecución:</strong> Inmune a balas normales. Un muro láser avanza desde la izquierda acelerando. Solo el Mega-Láser Crítico (3s de carga) puede dañarlo. El mando vibra al máximo.</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
 
@@ -910,14 +925,17 @@
                 <div>
                     <div class="entry-title c-yellow">Rebalance General de Vida de Enemigos</div>
                     Reducción generalizada de HP para que la oleada 2 sea superable con el Blaster inicial:
-                    <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
-                        <li style="margin-bottom:3px;">· Común: 70 → <strong style="color:#fff">42 HP</strong> (−40%) en Ol. 2</li>
-                        <li style="margin-bottom:3px;">· Kamikaze: 40 → <strong style="color:#fff">26 HP</strong> (−35%) en Ol. 2</li>
-                        <li style="margin-bottom:3px;">· Escudado: 240 → <strong style="color:#fff">130 HP</strong> (−46%) en Ol. 3</li>
-                        <li style="margin-bottom:3px;">· Elite Gold: 800 → <strong style="color:#fff">400 HP</strong> (−50%) en Ol. 7</li>
-                        <li style="margin-bottom:3px;">· Core Guardian (Ol. 5): 7,500 → <strong style="color:#fff">3,600 HP</strong> (−52%)</li>
-                        <li>· Vector Supreme (Ol. 10): 18,750 → <strong style="color:#fff">8,500 HP</strong> (−55%)</li>
-                    </ul>
+                    <details>
+                        <summary>Ver Detalles Técnicos</summary>
+                        <ul style="margin-top:8px; padding-left:14px; list-style:none; color:#aaa; font-size:12px;">
+                            <li style="margin-bottom:3px;">· Común: 70 → <strong style="color:#fff">42 HP</strong> (−40%) en Ol. 2</li>
+                            <li style="margin-bottom:3px;">· Kamikaze: 40 → <strong style="color:#fff">26 HP</strong> (−35%) en Ol. 2</li>
+                            <li style="margin-bottom:3px;">· Escudado: 240 → <strong style="color:#fff">130 HP</strong> (−46%) en Ol. 3</li>
+                            <li style="margin-bottom:3px;">· Elite Gold: 800 → <strong style="color:#fff">400 HP</strong> (−50%) en Ol. 7</li>
+                            <li style="margin-bottom:3px;">· Core Guardian (Ol. 5): 7,500 → <strong style="color:#fff">3,600 HP</strong> (−52%)</li>
+                            <li>· Vector Supreme (Ol. 10): 18,750 → <strong style="color:#fff">8,500 HP</strong> (−55%)</li>
+                        </ul>
+                    </details>
                 </div>
             </li>
         </ul>

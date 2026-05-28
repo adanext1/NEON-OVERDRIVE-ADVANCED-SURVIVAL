@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON OVERDRIVE - Informe Técnico de Arquitectura, Modularización &amp; Servicios de Nube</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #334155;
+            line-height: 1.7;
+            padding: 40px 24px 80px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ── HEADER ── */
+        .page-header {
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 24px;
+            margin-bottom: 35px;
+        }
+
+        .page-title {
+            font-size: 34px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .page-subtitle {
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        /* ── BOTÓN VOLVER ── */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-back:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+
+        /* ── TABS NAVEGABLES ── */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #64748b;
+            padding: 12px 20px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+        .tab-btn.active {
+            color: #1e40af;
+            background: #eff6ff;
+            box-shadow: inset 0 0 0 1px rgba(30, 64, 175, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── PANELES Y TARJETAS ── */
+        .panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 32px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .panel-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+        .panel-subtitle {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-top: 28px;
+            margin-bottom: 14px;
+        }
+
+        p {
+            font-size: 15px;
+            color: #475569;
+            margin-bottom: 16px;
+        }
+
+        strong {
+            color: #0f172a;
+        }
+
+        ul {
+            margin-bottom: 16px;
+            padding-left: 20px;
+        }
+
+        li {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        /* ── GRILLA DE DIAGNÓSTICO ── */
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .diagnostic-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        .diagnostic-card:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+            transform: translateY(-1px);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-name {
+            font-weight: 700;
+            color: #1e40af;
+            font-size: 16px;
+        }
+        .card-size {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .metric-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .metric-fill {
+            height: 100%;
+            background: #2563eb;
+            border-radius: 4px;
+        }
+
+        /* ── LISTA DE FLUJO DE SCRIPTS ── */
+        .flow-list {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 25px;
+        }
+        .flow-item {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            font-size: 14px;
+        }
+        .flow-item:hover {
+            border-color: #bfdbfe;
+            background: #f8fafc;
+        }
+        .flow-number {
+            background: #dbeafe;
+            color: #1e40af;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .flow-details code {
+            color: #b91c1c;
+            background: #fef2f2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* ── BLOQUES DE CÓDIGO ── */
+        pre {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #f1f5f9;
+            margin-bottom: 20px;
+            max-height: 420px;
+        }
+        code {
+            font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+        }
+        .comment { color: #64748b; font-style: italic; }
+        .keyword { color: #f472b6; }
+        .string  { color: #34d399; }
+        .number  { color: #fbbf24; }
+        .function { color: #60a5fa; }
+        .var { color: #f87171; }
+
+        /* ── ACCORDEONES Y DETALLES ── */
+        details {
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        details[open] {
+            border-color: #cbd5e1;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        summary {
+            padding: 16px 20px;
+            color: #1e293b;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        summary:hover {
+            color: #1e40af;
+            background: #f1f5f9;
+        }
+        summary::after {
+            content: '▶';
+            font-size: 11px;
+            transition: transform 0.2s ease;
+            color: #64748b;
+            display: inline-block;
+        }
+        details[open] summary::after {
+            transform: rotate(90deg);
+        }
+        .details-body {
+            padding: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* ── TABLAS ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* ── ALERTAS DE INFORMACIÓN ── */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            border-left: 4px solid;
+        }
+        .alert-info {
+            background: #eff6ff;
+            border-color: #2563eb;
+            color: #1e40af;
+        }
+        .alert-warning {
+            background: #fffbef;
+            border-color: #d97706;
+            color: #92400e;
+        }
+        .alert-danger {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @media (max-width: 768px) {
+            .tabs-container { flex-direction: column; }
+            .tab-btn { width: 100%; text-align: center; }
+            body { padding: 20px 12px 40px; }
+            .page-title { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-title">NEON OVERDRIVE</div>
+        <div class="page-subtitle">Informe Técnico de Arquitectura, Modularización &amp; Servicios de Nube</div>
+    </div>
+
+    <!-- Botón Volver -->
+    <a href="p.html" class="btn-back">
+        <span>◀</span>
+        <span>VOLVER AL SIMULADOR</span>
+    </a>
+
+    <!-- Tabs Navegables -->
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab(event, 'diagnostico')">Diagnóstico General</button>
+        <button class="tab-btn" onclick="switchTab(event, 'estrategia')">Estrategia Segura</button>
+        <button class="tab-btn" onclick="switchTab(event, 'modulos')">Nuevos Módulos</button>
+        <button class="tab-btn" onclick="switchTab(event, 'multilenguaje')">Soporte Multilenguaje</button>
+        <button class="tab-btn" onclick="switchTab(event, 'sincronizacion')">Sincronización y Soporte</button>
+        <button class="tab-btn" onclick="switchTab(event, 'monetizacion')">Monetización y Plataformas</button>
+        <button class="tab-btn" onclick="switchTab(event, 'optimizaciones')">Optimizaciones Avanzadas</button>
+    </div>
+
+    <!-- ================= TAB 1: DIAGNÓSTICO GENERAL ================= -->
+    <div id="diagnostico" class="tab-content active">
+        <div class="panel">
+            <h3 class="panel-title">Estado Actual de la Base de Código</h3>
+            <p>
+                El simulador de combate de NEON OVERDRIVE ha crecido de manera orgánica incorporando cooperativo local offline, multijugador online mediante WebSockets, interfaces móviles y múltiples clases de enemigos. Como consecuencia, varios archivos lógicos del directorio <code>/js</code> han aumentado considerablemente su volumen, dificultando las tareas de mantenimiento y depuración del simulador.
+            </p>
+
+            <div class="diagnostic-grid">
+                <!-- game.js -->
+                <div class="diagnostic-card">
+                    <div class="card-header">
+                        <span class="card-name">js/game.js</span>
+                        <span class="card-size">117 KB (2,698 líneas)</span>
+                    </div>
+                    <div class="metric-bar"><div class="metric-fill" style="width: 95%;"></div></div>
+                    <p style="font-size:13px; margin-bottom:0; color:#64748b;">
+                        <strong>Impacto:</strong> Archivo principal sobrecargado. Agrupa la renderización completa de elementos en pantalla, el cálculo del bucle físico y las rutinas de fin de oleada.
+                    </p>
+                </div>
+                <!-- ui.js -->
+                <div class="diagnostic-card">
+                    <div class="card-header">
+                        <span class="card-name">js/ui.js</span>
+                        <span class="card-size">72 KB (1,530 líneas)</span>
+                    </div>
+                    <div class="metric-bar"><div class="metric-fill" style="width: 70%; background:#2563eb;"></div></div>
+                    <p style="font-size:13px; margin-bottom:0; color:#64748b;">
+                        <strong>Impacto:</strong> Mezcla manipulación básica de elementos del DOM con la lógica del chasis y la compleja navegación de cursor por gamepad del Nexus de Ensamblaje.
+                    </p>
+                </div>
+                <!-- data.js -->
+                <div class="diagnostic-card">
+                    <div class="card-header">
+                        <span class="card-name">js/data.js</span>
+                        <span class="card-size">37 KB (476 líneas)</span>
+                    </div>
+                    <div class="metric-bar"><div class="metric-fill" style="width: 35%; background:#d97706;"></div></div>
+                    <p style="font-size:13px; margin-bottom:0; color:#64748b;">
+                        <strong>Impacto:</strong> Almacena todas las variables de estado y catálogos globales. Representa la raíz de datos común leída y modificada por todos los demás scripts.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Análisis de Acoplamiento:</strong> Los scripts del simulador utilizan un espacio de nombres global compartido. Aunque esta arquitectura simplifica la sincronización de elementos rápidos en un juego web con renderizado dinámico en Canvas, genera una fuerte dependencia entre la representación gráfica y las reglas físicas de juego.
+            </div>
+
+            <h4 class="panel-subtitle">Áreas de Mayor Volumen Lógico (Monolitos)</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Función / Rutina</th>
+                        <th>Archivo</th>
+                        <th>Impacto Lógico y de Rendimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>draw()</code></td>
+                        <td><code>js/game.js</code></td>
+                        <td>~1,150 líneas dedicadas a pintar grids dinámicos, pilares de jefes, láseres de Fragmentos Vectoriales, barras de vida flotantes y menús. Incrementa notablemente el esfuerzo para realizar modificaciones estéticas.</td>
+                    </tr>
+                    <tr>
+                        <td><code>update()</code></td>
+                        <td><code>js/game.js</code></td>
+                        <td>~816 líneas. Ejecuta la actualización física de proyectiles, clamps de límites del mapa, colisiones círculo-círculo y la replicación Socket.io por cada frame del loop.</td>
+                    </tr>
+                    <tr>
+                        <td><code>processGamepadInput()</code></td>
+                        <td><code>js/player.js</code></td>
+                        <td>~270 líneas dedicadas al procesamiento analógico de mandos para 4 jugadores. Limita la modularidad para realizar ajustes en teclado/ratón o toques móviles de forma aislada.</td>
+                    </tr>
+                    <tr>
+                        <td><code>renderNexusMultiPanel()</code></td>
+                        <td><code>js/ui.js</code></td>
+                        <td>~200 líneas encargadas de la inyección HTML de las interfaces del chasis cooperativo local. Maneja visualización de RAM, estado de componentes y tabs de filtros.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================= TAB 2: ESTRATEGIA SEGURA ================= -->
+    <div id="estrategia" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Estrategia de Modularización Sin Rupturas</h3>
+            <p>
+                Para mantener la compatibilidad con ejecuciones locales directas (usando el protocolo <code>file:///</code> sin necesidad de levantar servidores locales) y evitar incompatibilidades de CORS, se desaconseja migrar a Módulos nativos de JavaScript (<code>type="module"</code> / <code>import-export</code>). 
+            </p>
+            <p>
+                En su lugar, la estrategia óptima consiste en **desacoplar las funciones de forma lógica en archivos javascript independientes, manteniendo el espacio de nombres global unificado en data.js**. Esto permite reducir a menos de la mitad el tamaño de los monolitos principales manteniendo intacta la lógica de red, co-op offline y controles.
+            </p>
+
+            <div class="alert alert-warning">
+                <strong>Importante (Orden de Carga en p.html):</strong> La separación lógica obliga a un orden de carga riguroso en el código HTML de importación de scripts, asegurando que los datos base se carguen antes de inicializar los sistemas gráficos y de entrada.
+            </div>
+
+            <h4 class="panel-subtitle">Orden de Carga de Scripts en p.html</h4>
+            <ul class="flow-list">
+                <li class="flow-item">
+                    <span class="flow-number">1</span>
+                    <div class="flow-details">
+                        <strong>js/data.js:</strong> Define variables globales (<code>players[]</code>, <code>enemies[]</code>, <code>bullets[]</code>), constantes de visualización y catálogo de chasis.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">2</span>
+                    <div class="flow-details">
+                        <strong>js/audio.js:</strong> Sintetizador Web Audio API para música y SFX.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">3</span>
+                    <div class="flow-details">
+                        <strong>js/inputs.js <span style="color:#2563eb;">[NUEVO]</span>:</strong> Consolida escuchas de teclado, coordenadas de ratón, joysticks táctiles y el bucle de gamepads.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">4</span>
+                    <div class="flow-details">
+                        <strong>js/physics.js <span style="color:#2563eb;">[NUEVO]</span>:</strong> Agrupa rutinas matemáticas de colisiones, límites perimetrales y atracción magnética de drops.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">5</span>
+                    <div class="flow-details">
+                        <strong>js/skills.js:</strong> Actualización física de habilidades del Nexus de ensamblaje.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">6</span>
+                    <div class="flow-details">
+                        <strong>js/enemies.js:</strong> IA básica y secuenciador de Oleadas.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">7</span>
+                    <div class="flow-details">
+                        <strong>js/nexus.js <span style="color:#2563eb;">[NUEVO]</span>:</strong> Separación de la lógica del Nexus multi-panel (inyección de interfaces e inventario).
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">8</span>
+                    <div class="flow-details">
+                        <strong>js/ui.js:</strong> Menús iniciales, pantallas de pausa y compras en la tienda.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">9</span>
+                    <div class="flow-details">
+                        <strong>js/renderer.js <span style="color:#2563eb;">[NUEVO]</span>:</strong> Contiene todas las rutinas de dibujo del Canvas de juego.
+                    </div>
+                </li>
+                <li class="flow-item">
+                    <span class="flow-number">10</span>
+                    <div class="flow-details">
+                        <strong>js/game.js:</strong> Inicializador del bucle de simulación <code>requestAnimationFrame(gameLoop)</code>.
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ================= TAB 3: NUEVOS MÓDULOS ================= -->
+    <div id="modulos" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Propuesta de Nuevos Módulos</h3>
+            <p>
+                A continuación se exponen las especificaciones y firmas de las funciones correspondientes a cada uno de los 4 nuevos módulos propuestos para realizar el desacoplamiento lógico de forma limpia.
+            </p>
+
+            <!-- DETALLE DE RENDERER -->
+            <details>
+                <summary>1. js/renderer.js (Separación Gráfica)</summary>
+                <div class="details-body">
+                    <p>
+                        Este script asumirá la responsabilidad de dibujar sobre el Canvas de juego. El archivo <code>js/game.js</code> se reduce significativamente, aislando la lógica lógica (cooldowns, daño, red) de la representación en pantalla.
+                    </p>
+                    <p><strong>Funciones a transferir:</strong></p>
+                    <ul>
+                        <li style="margin-bottom:6px;">&bull; <code>draw()</code> (Se traslada completa desde <code>game.js</code>)</li>
+                        <li style="margin-bottom:6px;">&bull; Dibujo de la cuadrícula adaptada con distorsiones y glitches.</li>
+                        <li style="margin-bottom:6px;">&bull; Renderizado del jefe Overlord Apex, sus muros láser y pilares.</li>
+                        <li style="margin-bottom:6px;">&bull; Dibujo de las naves hexagonales de jugadores y naves de amenazas enemigas.</li>
+                    </ul>
+                    <p class="panel-subtitle">Estructura Propuesta para js/renderer.js:</p>
+                    <pre><span class="comment">// js/renderer.js - Responsable exclusivo de la salida en pantalla</span>
+
+<span class="keyword">function</span> <span class="function">drawGrid</span>(<span class="var">ctx</span>, <span class="var">glitchActive</span>) {
+    <span class="var">ctx</span>.save();
+    <span class="keyword">if</span> (<span class="var">glitchActive</span>) {
+        <span class="var">ctx</span>.strokeStyle = <span class="string">'rgba(255, 0, 127, 0.05)'</span>;
+        <span class="comment">// Dibujar grid con offsets aleatorios (glitch)</span>
+    } <span class="keyword">else</span> {
+        <span class="var">ctx</span>.strokeStyle = <span class="string">'rgba(0, 255, 204, 0.025)'</span>;
+        <span class="comment">// Grid estándar del simulador</span>
+    }
+    <span class="comment">// Bucles de renderizado...</span>
+    <span class="var">ctx</span>.restore();
+}
+
+<span class="keyword">function</span> <span class="function">drawPlayers</span>(<span class="var">ctx</span>) {
+    <span class="var">players</span>.forEach(<span class="var">p</span> => {
+        <span class="var">ctx</span>.save();
+        <span class="var">ctx</span>.translate(<span class="var">p</span>.x, <span class="var">p</span>.y);
+        <span class="comment">// Dibujar nave hexagonal, barra de escudo, dash, ko status...</span>
+        <span class="var">ctx</span>.restore();
+    });
+}
+
+<span class="keyword">function</span> <span class="function">draw</span>() {
+    <span class="var">ctx</span>.clearRect(<span class="number">0</span>, <span class="number">0</span>, <span class="var">canvas</span>.width, <span class="var">canvas</span>.height);
+    <span class="var">ctx</span>.save();
+    
+    <span class="comment">// Aplicación de screenShake</span>
+    <span class="keyword">if</span> (<span class="var">screenShake</span> > <span class="number">0.4</span> && !<span class="var">isPaused</span> && <span class="var">gameStarted</span>) {
+        <span class="var">ctx</span>.translate((Math.random() - <span class="number">0.5</span>) * <span class="var">screenShake</span>, (Math.random() - <span class="number">0.5</span>) * <span class="var">screenShake</span>);
+    }
+    
+    <span class="function">drawGrid</span>(<span class="var">ctx</span>, <span class="var">enemies</span>.some(<span class="var">e</span> => <span class="var">e</span>.isVectorFragment));
+    <span class="function">drawPlayers</span>(<span class="var">ctx</span>);
+    
+    <span class="comment">// ... dibujar proyectiles, partículas, damageTexts ...</span>
+    <span class="var">ctx</span>.restore();
+}</pre>
+                </div>
+            </details>
+
+            <!-- DETALLE DE INPUTS -->
+            <details>
+                <summary>2. js/inputs.js (Consolidación de Entrada)</summary>
+                <div class="details-body">
+                    <p>
+                        Este archivo agrupará los escuchadores de teclado y ratón, además de la lógica analógica de sticks virtuales y la lectura por frame de mandos gamepads para todos los jugadores.
+                    </p>
+                    <p><strong>Funciones a transferir:</strong></p>
+                    <ul>
+                        <li style="margin-bottom:6px;">&bull; <code>processGamepadInput()</code> (Desde <code>player.js</code>)</li>
+                        <li style="margin-bottom:6px;">&bull; Manejo de teclado: event listeners `keydown` y `keyup` en window.</li>
+                        <li style="margin-bottom:6px;">&bull; Posicionamiento del puntero del ratón en escala virtual `mouse`.</li>
+                        <li style="margin-bottom:6px;">&bull; `handleMenuGamepad` y escuchas analógicos de menús.</li>
+                    </ul>
+                    <p class="panel-subtitle">Estructura Propuesta para js/inputs.js:</p>
+                    <pre><span class="comment">// js/inputs.js - Unificación de todas las entradas físicas y analógicas</span>
+
+<span class="keyword">let</span> <span class="var">keys</span> = {};
+<span class="keyword">let</span> <span class="var">mouse</span> = { x: <span class="number">0</span>, y: <span class="number">0</span>, isDown: <span class="keyword">false</span> };
+<span class="keyword">let</span> <span class="var">lastGamepadButtons</span> = [];
+<span class="keyword">let</span> <span class="var">menuNavCooldown</span> = <span class="number">0</span>;
+
+<span class="keyword">function</span> <span class="function">initInputSystem</span>() {
+    window.addEventListener(<span class="string">'keydown'</span>, <span class="var">e</span> => { <span class="var">keys</span>[<span class="var">e</span>.key.toLowerCase()] = <span class="keyword">true</span>; });
+    window.addEventListener(<span class="string">'keyup'</span>, <span class="var">e</span> => { <span class="var">keys</span>[<span class="var">e</span>.key.toLowerCase()] = <span class="keyword">false</span>; });
+    
+    <span class="var">canvas</span>.addEventListener(<span class="string">'mousemove'</span>, <span class="var">e</span> => {
+        <span class="keyword">let</span> <span class="var">rect</span> = <span class="var">canvas</span>.getBoundingClientRect();
+        <span class="var">mouse</span>.x = (<span class="var">e</span>.clientX - <span class="var">rect</span>.left) * (<span class="var">VIRTUAL_WIDTH</span> / <span class="var">rect</span>.width);
+        <span class="var">mouse</span>.y = (<span class="var">e</span>.clientY - <span class="var">rect</span>.top) * (<span class="var">VIRTUAL_HEIGHT</span> / <span class="var">rect</span>.height);
+    });
+    <span class="comment">// ... listeners adicionales de click ...</span>
+}
+
+<span class="keyword">function</span> <span class="function">processGamepadInput</span>() {
+    <span class="keyword">const</span> <span class="var">gamepads</span> = navigator.getGamepads();
+    <span class="comment">// Bucle de lectura y mapeo de joysticks y botones de mandos 1-4...</span>
+}</pre>
+                </div>
+            </details>
+
+            <!-- DETALLE DE PHYSICS -->
+            <details>
+                <summary>3. js/physics.js (Cálculos de Colisiones y Límites)</summary>
+                <div class="details-body">
+                    <p>
+                        Aísla las operaciones matemáticas de la lógica de actualización del juego, permitiendo realizar mejoras y optimizaciones lógicas en la detección espacial de manera focalizada.
+                    </p>
+                    <p><strong>Funciones a transferir:</strong></p>
+                    <ul>
+                        <li style="margin-bottom:6px;">&bull; Detección de colisiones círculo-círculo y caja-círculo.</li>
+                        <li style="margin-bottom:6px;">&bull; Algoritmos de atracción magnética de materiales y energía hacia las naves.</li>
+                        <li style="margin-bottom:6px;">&bull; Clamps de posiciones perimetrales de entidades frente a los bordes lógicos de la simulación.</li>
+                    </ul>
+                    <p class="panel-subtitle">Estructura Propuesta para js/physics.js:</p>
+                    <pre><span class="comment">// js/physics.js - Operaciones físicas y geométricas del simulador</span>
+
+<span class="keyword">function</span> <span class="function">circleOverlap</span>(<span class="var">x1</span>, <span class="var">y1</span>, <span class="var">r1</span>, <span class="var">x2</span>, <span class="var">y2</span>, <span class="var">r2</span>) {
+    <span class="keyword">let</span> <span class="var">dx</span> = <span class="var">x1</span> - <span class="var">x2</span>;
+    <span class="keyword">let</span> <span class="var">dy</span> = <span class="var">y1</span> - <span class="var">y2</span>;
+    <span class="keyword">return</span> (<span class="var">dx</span> * <span class="var">dx</span> + <span class="var">dy</span> * <span class="var">dy</span>) < (<span class="var">r1</span> + <span class="var">r2</span>) * (<span class="var">r1</span> + <span class="var">r2</span>);
+}
+
+<span class="keyword">function</span> <span class="function">clampEntityToMap</span>(<span class="var">entity</span>) {
+    <span class="keyword">if</span> (<span class="var">entity</span>.x - <span class="var">entity</span>.radius < <span class="number">0</span>) <span class="var">entity</span>.x = <span class="var">entity</span>.radius;
+    <span class="keyword">if</span> (<span class="var">entity</span>.x + <span class="var">entity</span>.radius > <span class="var">VIRTUAL_WIDTH</span>) <span class="var">entity</span>.x = <span class="var">VIRTUAL_WIDTH</span> - <span class="var">entity</span>.radius;
+    <span class="comment">// ... clamps en eje Y ...</span>
+}</pre>
+                </div>
+            </details>
+
+            <!-- DETALLE DE NEXUS -->
+            <details>
+                <summary>4. js/nexus.js (RPG &amp; Inventarios)</summary>
+                <div class="details-body">
+                    <p>
+                        Aísla las rutinas del menú permanente del chasis. Con esto se reduce la complejidad de <code>js/ui.js</code>, el cual se enfocará únicamente en modales sencillos y HUD dinámico en tiempo real.
+                    </p>
+                    <p><strong>Funciones a transferir:</strong></p>
+                    <ul>
+                        <li style="margin-bottom:6px;">&bull; <code>renderNexusMultiPanel()</code> (Inyección dinámica del panel cooperativo)</li>
+                        <li style="margin-bottom:6px;">&bull; <code>equipComponent()</code>, <code>unequipComponent()</code> y <code>upgradeComponent()</code>.</li>
+                        <li style="margin-bottom:6px;">&bull; Cálculos del coste de materiales y validaciones del consumo de memoria RAM.</li>
+                    </ul>
+                    <p class="panel-subtitle">Estructura Propuesta para js/nexus.js:</p>
+                    <pre><span class="comment">// js/nexus.js - Gestión de estadísticas y mejoras del chasis</span>
+
+<span class="keyword">function</span> <span class="function">updateNexusStats</span>(<span class="var">playerIdx</span>) {
+    <span class="keyword">let</span> <span class="var">pSave</span> = <span class="var">playerSaves</span>[<span class="var">playerIdx</span>];
+    <span class="comment">// Recalcula Max HP, Shield, Daño y velocidad según pasivos</span>
+}
+
+<span class="keyword">function</span> <span class="function">equipComponent</span>(<span class="var">playerIdx</span>, <span class="var">compId</span>) {
+    <span class="comment">// Valida consumo de memoria y realiza el guardado</span>
+    <span class="comment">// Llama a savePlayerProgress(playerIdx)</span>
+}</pre>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- ================= TAB 4: SOPORTE MULTILENGUAJE ================= -->
+    <div id="multilenguaje" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Estrategia para la Implementación de Multilenguaje (i18n)</h3>
+            <p>
+                Para traducir el juego de forma eficiente se plantean tres rutas de implementación técnica, diferenciando la traducción manual controlada de la traducción automática en tiempo real:
+            </p>
+
+            <h4 class="panel-subtitle">Comparativa: Traducción Manual vs. Automática en tiempo real</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Método</th>
+                        <th>Funcionamiento Técnico</th>
+                        <th>Ventajas</th>
+                        <th>Desventajas / Riesgos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1. Traducción Manual (Diccionario Local) <br><span style="color:#16a34a;">[RECOMENDADO]</span></strong></td>
+                        <td>Los textos se redactan manualmente en <code>js/locales.js</code> de forma estructurada.</td>
+                        <td>Control total del vocabulario del videojuego (ej: traducir "dash" como "desplazamiento rápido" y no como literal "guion"). Funciona 100% offline.</td>
+                        <td>Requiere redactar manualmente cada texto nuevo que se introduzca en el juego.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2. Traducción Automática (API deepL / Google)</strong></td>
+                        <td>El juego envía las cadenas a un endpoint de traducción externo por HTTP en tiempo de ejecución.</td>
+                        <td>Soporta traducción al vuelo de comentarios de usuarios o mensajes de chat de salas dinámicas en red.</td>
+                        <td>Requiere internet obligatorio, expone claves API del lado del cliente y las traducciones literales dañan la jerga gaming.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3. Traducción Semiautomática (Híbrida)</strong></td>
+                        <td>Un script en Node.js traduce automáticamente el archivo base (ES) a inglés usando la API de OpenAI/DeepL al empaquetar, generando el archivo local.</td>
+                        <td>Combina la rapidez del traductor automático con la posibilidad de corregir errores manualmente antes de publicar.</td>
+                        <td>Requiere configurar un paso extra (build step) en el pipeline de desarrollo.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-info">
+                <strong>Decisión de Diseño:</strong> Se aconseja combinar la **Traducción Manual (Opción 1)** para todas las interfaces, menús del chasis y HUD, y usar **Traducción Automática (Opción 2)** únicamente para traducir mensajes del chat multijugador online si se desea soportar salas internacionales.
+            </div>
+
+            <h4 class="panel-subtitle">Estructura del Diccionario de Traducción (js/locales.js)</h4>
+            <p>
+                A continuación se muestra el esquema del diccionario para la traducción manual estática:
+            </p>
+            <pre><span class="comment">// js/locales.js - Diccionario unificado de traducción manual</span>
+
+<span class="keyword">const</span> <span class="var">LOCALES</span> = {
+    <span class="string">es</span>: {
+        <span class="string">menu</span>: {
+            <span class="string">start</span>: <span class="string">"INICIAR SIMULACIÓN"</span>,
+            <span class="string">permanent_upgrades</span>: <span class="string">"MEJORAS PERMANENTES"</span>,
+            <span class="string">controls</span>: <span class="string">"CONTROLES"</span>
+        },
+        <span class="string">game</span>: {
+            <span class="string">wave</span>: <span class="string">"OLEADA: {wave}"</span>,
+            <span class="string">ko</span>: <span class="string">"KO"</span>,
+            <span class="string">inverted_controls</span>: <span class="string">"⚠ CONTROLES INVERTIDOS ⚠"</span>
+        },
+        <span class="string">nexus</span>: {
+            <span class="string">ram_usage</span>: <span class="string">"MEMORIA RAM: {used} / {total} GB"</span>
+        }
+    },
+    <span class="string">en</span>: {
+        <span class="string">menu</span>: {
+            <span class="string">start</span>: <span class="string">"START SIMULATION"</span>,
+            <span class="string">permanent_upgrades</span>: <span class="string">"PERMANENT UPGRADES"</span>,
+            <span class="string">controls</span>: <span class="string">"CONTROLS"</span>
+        },
+        <span class="string">game</span>: {
+            <span class="string">wave</span>: <span class="string">"WAVE: {wave}"</span>,
+            <span class="string">ko</span>: <span class="string">"KO"</span>,
+            <span class="string">inverted_controls</span>: <span class="string">"⚠ CONTROLS INVERTED ⚠"</span>
+        },
+        <span class="string">nexus</span>: {
+            <span class="string">ram_usage</span>: <span class="string">"RAM MEMORY: {used} / {total} GB"</span>
+        }
+    }
+};</pre>
+
+            <h4 class="panel-subtitle">Motor de Traducción (i18n Engine)</h4>
+            <p>
+                El resolvedor unificado en <code>js/data.js</code> leerá este archivo y formateará las variables del juego:
+            </p>
+            <pre><span class="comment">// js/data.js o js/locales.js</span>
+<span class="keyword">let</span> <span class="var">currentLanguage</span> = localStorage.getItem(<span class="string">'neon_overdrive_lang'</span>) || <span class="string">'es'</span>;
+
+<span class="keyword">function</span> <span class="function">_t</span>(<span class="var">path</span>, <span class="var">replacements</span> = {}) {
+    <span class="keyword">const</span> <span class="var">keys</span> = <span class="var">path</span>.split(<span class="string">'.'</span>);
+    <span class="keyword">let</span> <span class="var">translation</span> = <span class="var">LOCALES</span>[<span class="var">currentLanguage</span>];
+    
+    <span class="keyword">for</span> (<span class="keyword">const</span> <span class="var">k</span> <span class="keyword">of</span> <span class="var">keys</span>) {
+        <span class="keyword">if</span> (<span class="var">translation</span> && <span class="var">translation</span>[<span class="var">k</span>] !== undefined) {
+            <span class="var">translation</span> = <span class="var">translation</span>[<span class="var">k</span>];
+        } <span class="keyword">else</span> {
+            <span class="keyword">return</span> <span class="var">path</span>; <span class="comment">// Fallback</span>
+        }
+    }
+
+    <span class="keyword">Object</span>.keys(<span class="var">replacements</span>).forEach(<span class="var">key</span> => {
+        <span class="var">translation</span> = <span class="var">translation</span>.replace(<span class="string">`{${key}}`</span>, <span class="var">replacements</span>[<span class="var">key</span>]);
+    });
+
+    <span class="keyword">return</span> <span class="var">translation</span>;
+}</pre>
+
+            <h4 class="panel-subtitle">4. Opción de Carga de Idioma Manual Externo (Comunidad)</h4>
+            <p>
+                Para facilitar que los propios jugadores o traductores externos traduzcan el videojuego de forma manual (sin requerir acceso al código fuente o subirlo a la nube), se propone una **opción de traducción manual externa** mediante la carga de un archivo local en formato JSON:
+            </p>
+
+            <pre><span class="comment">&lt;!-- Input selector en el panel de Opciones de p.html --&gt;</span>
+&lt;div class="file-upload-section"&gt;
+    &lt;label&gt;Importar Traducción Manual Personalizada (JSON):&lt;/label&gt;
+    &lt;input type="file" id="custom-lang-file" accept=".json" onchange="loadCustomLanguageFile(event)" /&gt;
+    &lt;p style="font-size: 11px; color: #64748b; margin-top: 4px;"&gt;
+        Sube tu archivo de traducción estructurado. Puedes descargar la plantilla base en español.
+    &lt;/p&gt;
+&lt;/div&gt;</pre>
+
+            <p><strong>Lógica de análisis y sobreescritura de locales en tiempo de ejecución:</strong></p>
+            <pre><span class="comment">// js/locales.js o js/data.js - Carga dinámica del JSON de traducción manual</span>
+
+<span class="keyword">function</span> <span class="function">loadCustomLanguageFile</span>(<span class="var">event</span>) {
+    <span class="keyword">const</span> <span class="var">file</span> = <span class="var">event</span>.target.files[<span class="number">0</span>];
+    <span class="keyword">if</span> (!<span class="var">file</span>) <span class="keyword">return</span>;
+
+    <span class="keyword">const</span> <span class="var">reader</span> = <span class="keyword">new</span> FileReader();
+    <span class="var">reader</span>.onload = <span class="keyword">function</span>(<span class="var">e</span>) {
+        <span class="keyword">try</span> {
+            <span class="keyword">const</span> <span class="var">json</span> = JSON.parse(<span class="var">e</span>.target.result);
+            
+            <span class="comment">// Validar que contenga la estructura requerida del diccionario</span>
+            <span class="keyword">if</span> (<span class="var">json</span>.menu && <span class="var">json</span>.game && <span class="var">json</span>.nexus) {
+                <span class="comment">// Inyectar el idioma personalizado en LOCALES</span>
+                <span class="var">LOCALES</span>[<span class="string">'custom'</span>] = <span class="var">json</span>;
+                <span class="var">currentLanguage</span> = <span class="string">'custom'</span>;
+                
+                <span class="comment">// Persistir la elección y el contenido</span>
+                localStorage.setItem(<span class="string">'neon_overdrive_lang'</span>, <span class="string">'custom'</span>);
+                localStorage.setItem(<span class="string">'neon_overdrive_custom_json'</span>, JSON.stringify(<span class="var">json</span>));
+                
+                <span class="comment">// Actualizar los textos de la interfaz en tiempo real</span>
+                <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="var">updateUINames</span> === <span class="string">'function'</span>) <span class="var">updateUINames</span>();
+                
+                <span class="function">showNetworkMessage</span>(<span class="string">"¡Archivo de traducción manual aplicado correctamente!"</span>);
+            } <span class="keyword">else</span> {
+                alert(<span class="string">"Error: El JSON no cuenta con las secciones requeridas ('menu', 'game', 'nexus')."</span>);
+            }
+        } <span class="keyword">catch</span> (<span class="var">err</span>) {
+            alert(<span class="string">"El archivo cargado no es un JSON válido."</span>);
+        }
+    };
+    <span class="var">reader</span>.readAsText(<span class="var">file</span>);
+}
+
+<span class="comment">// Cargar idioma personalizado en el arranque del juego</span>
+<span class="keyword">function</span> <span class="function">initLanguageSettings</span>() {
+    <span class="keyword">if</span> (<span class="var">currentLanguage</span> === <span class="string">'custom'</span>) {
+        <span class="keyword">const</span> <span class="var">savedJson</span> = localStorage.getItem(<span class="string">'neon_overdrive_custom_json'</span>);
+        <span class="keyword">if</span> (<span class="var">savedJson</span>) {
+            <span class="var">LOCALES</span>[<span class="string">'custom'</span>] = JSON.parse(<span class="var">savedJson</span>);
+        } <span class="keyword">else</span> {
+            <span class="var">currentLanguage</span> = <span class="string">'es'</span>;
+        }
+    }
+}</pre>
+
+            <h4 class="panel-subtitle">5. Selector Completo de Opciones de Idioma en el Juego</h4>
+            <p>
+                Para dar máxima libertad al jugador, el panel de configuración del simulador ofrecería las siguientes opciones de selección:
+            </p>
+            <ul>
+                <li style="margin-bottom:8px;">
+                    <strong>Traducción Manual Oficial:</strong> Cambiar entre los idiomas oficiales pulidos y pre-compilados (Español, Inglés) incluidos por defecto en el diccionario local (funciona 100% offline).
+                </li>
+                <li style="margin-bottom:8px;">
+                    <strong>Traducción Manual Externa (JSON de Comunidad):</strong> Cargar un archivo local JSON editado por la comunidad para soportar otros idiomas de forma manual y sin dependencias de red.
+                </li>
+                <li style="margin-bottom:8px;">
+                    <strong>Traducción Automática en Línea:</strong> Integrar servicios web (APIs de DeepL/Google) para traducir en tiempo real tanto textos genéricos como salas de chat activas con jugadores internacionales.
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ================= TAB 5: SINCRONIZACIÓN Y SOPORTE ================= -->
+    <div id="sincronizacion" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Sincronización en la Nube y Soporte para Reporte de Errores</h3>
+            <p>
+                Para ofrecer una experiencia de juego moderna y simplificar la resolución de problemas (bugs), se detalla la arquitectura técnica para sincronizar partidas y un sistema de reporte de errores integrado con captura de datos lógicos y subida de archivos multimedia manual por parte del usuario.
+            </p>
+
+            <h4 class="panel-subtitle">1. Sistema de Guardado en la Nube (Cloud Save)</h4>
+            <p>
+                El avance se guarda localmente en <code>localStorage</code>. Para sincronizarlo en la nube de forma eficiente, se propone un modelo de resolución de conflictos basado en marcas de tiempo (timestamps).
+            </p>
+            <ul>
+                <li style="margin-bottom:8px;"><strong>Flujo de Autenticación:</strong> Formulario de login ligero integrado en el menú. Tras el inicio de sesión, el servidor devuelve un token JWT y los datos de guardado vinculados al perfil del usuario.</li>
+                <li style="margin-bottom:8px;"><strong>Resolución de Conflictos:</strong> Cada vez que se realiza un guardado, se añade el campo <code>lastSyncTimestamp: Date.now()</code>. Al iniciar la sesión en un nuevo dispositivo, se comparan las marcas de tiempo local y en la nube, mostrando un modal de decisión si hay discrepancias.</li>
+            </ul>
+
+            <h4 class="panel-subtitle">2. Autenticación Simple (Nombre de Usuario y PIN)</h4>
+            <p>
+                Para implementar una autenticación sumamente ligera e intuitiva para los usuarios (sin necesidad de complejos flujos de email o confirmaciones de contraseñas), se propone un sistema basado en **Nombre de Usuario único y un PIN numérico de 4 dígitos**.
+            </p>
+            <div class="alert alert-info">
+                <strong>Flujo de Autenticación Simple:</strong> El usuario escribe su nombre y un PIN de 4 números. Si el usuario no existe, el sistema lo registra automáticamente en la base de datos vinculando ese PIN. Si existe, valida que el PIN coincida y descarga su perfil.
+            </div>
+
+            <p class="panel-subtitle">Integración del Formulario en HTML (Modo Menú):</p>
+            <pre><span class="comment">&lt;!-- Modal de Autenticación Simple en p.html --&gt;</span>
+&lt;div id="login-modal" style="display:none;"&gt;
+    &lt;h3&gt;Sincronización de Chasis&lt;/h3&gt;
+    &lt;input type="text" id="login-username" placeholder="NOMBRE DE USUARIO" /&gt;
+    &lt;input type="password" id="login-pin" placeholder="PIN DE 4 DÍGITOS" maxlength="4" /&gt;
+    &lt;button onclick="executeSimpleLogin()"&gt;CONECTAR&lt;/button&gt;
+&lt;/div&gt;</pre>
+
+            <p class="panel-subtitle">Lógica de Comunicación y Guardado Local:</p>
+            <pre><span class="comment">// js/network.js - Implementación de Login Simple</span>
+
+<span class="keyword">async</span> <span class="keyword">function</span> <span class="function">executeSimpleLogin</span>() {
+    <span class="keyword">const</span> <span class="var">username</span> = document.getElementById(<span class="string">'login-username'</span>).value.trim();
+    <span class="keyword">const</span> <span class="var">pin</span> = document.getElementById(<span class="string">'login-pin'</span>).value;
+
+    <span class="keyword">if</span> (!<span class="var">username</span> || <span class="var">pin</span>.length !== <span class="number">4</span> || isNaN(<span class="var">pin</span>)) {
+        <span class="function">showNetworkMessage</span>(<span class="string">"Escribe un usuario y PIN de 4 números válidos"</span>);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">try</span> {
+        <span class="keyword">let</span> <span class="var">response</span> = <span class="keyword">await</span> fetch(<span class="string">'/api/auth/simple'</span>, {
+            method: <span class="string">'POST'</span>,
+            headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+            body: JSON.stringify({ username: <span class="var">username</span>, pin: <span class="var">pin</span> })
+        });
+
+        <span class="keyword">let</span> <span class="var">resData</span> = <span class="keyword">await</span> <span class="var">response</span>.json();
+        
+        <span class="keyword">if</span> (<span class="var">response</span>.ok) {
+            <span class="comment">// Guardar datos de sesión localmente</span>
+            <span class="var">userSave</span>.cloudProfile = {
+                username: <span class="var">username</span>,
+                authToken: <span class="var">resData</span>.token,
+                isSynced: <span class="keyword">true</span>,
+                lastSyncTimestamp: <span class="var">resData</span>.saveData ? <span class="var">resData</span>.saveData.lastSyncTimestamp : <span class="number">0</span>
+            };
+            
+            <span class="comment">// Si el servidor tenía una partida guardada más nueva, sobreescribir la local</span>
+            <span class="keyword">if</span> (<span class="var">resData</span>.saveData && <span class="var">resData</span>.saveData.lastSyncTimestamp > (<span class="var">userSave</span>.lastSyncTimestamp || <span class="number">0</span>)) {
+                <span class="var">userSave</span> = <span class="keyword">Object</span>.assign(<span class="var">userSave</span>, <span class="var">resData</span>.saveData);
+            }
+            
+            <span class="function">saveGame</span>();
+            <span class="function">showNetworkMessage</span>(<span class="string">"¡Sesión iniciada y sincronizada!"</span>);
+            document.getElementById(<span class="string">'login-modal'</span>).style.display = <span class="string">'none'</span>;
+        } <span class="keyword">else</span> {
+            <span class="function">showNetworkMessage</span>(<span class="string">"Error: "</span> + <span class="var">resData</span>.message);
+        }
+    } <span class="keyword">catch</span> (<span class="var">err</span>) {
+        <span class="function">showNetworkMessage</span>(<span class="string">"Fallo de conexión con el servidor de nube"</span>);
+    }
+}</pre>
+
+            <h4 class="panel-subtitle">3. Buzón de Feedback y Reporte de Bugs (Subida Manual de Archivos)</h4>
+            <p>
+                Para respetar la privacidad de los usuarios, reducir el consumo de CPU y evitar sobrecargar el ancho de banda con capturas automatizadas, se descarta la grabación de pantalla del canvas en segundo plano. 
+            </p>
+            <p>
+                En su lugar, se propone un **sistema de reporte manual** donde el usuario escribe sus comentarios y, opcionalmente, **adjunta una imagen (captura de pantalla) o un vídeo corto (en caso de que estuviera grabando por su cuenta)** usando campos estándar de selección de archivos.
+            </p>
+
+            <div class="alert alert-info">
+                <strong>Ventajas del Reporte Manual:</strong> 
+                1. **Privacidad:** El juego no captura vídeo ni audio sin consentimiento expreso.
+                2. **Compatibilidad:** Evita el overhead de la API de grabación (MediaRecorder) en dispositivos móviles de gama baja.
+                3. **Filtro de Ruido:** Los reportes se envían solo cuando el usuario decide conscientemente documentar un bug real.
+            </div>
+
+            <p class="panel-subtitle">Formulario de Reporte de Errores con Carga de Archivos:</p>
+            <pre><span class="comment">&lt;!-- Interfaz de Reporte Manual de Bugs en p.html --&gt;</span>
+&lt;div id="bug-report-modal" style="display:none;"&gt;
+    &lt;h3&gt;Reportar Error del Simulador&lt;/h3&gt;
+    &lt;textarea id="bug-comments" placeholder="Describe qué ocurrió..."&gt;&lt;/textarea&gt;
+    
+    &lt;div class="file-upload-section"&gt;
+        &lt;label&gt;Adjuntar Captura (Imagen):&lt;/label&gt;
+        &lt;input type="file" id="bug-image-file" accept="image/*" /&gt;
+    &lt;/div&gt;
+    
+    &lt;div class="file-upload-section"&gt;
+        &lt;label&gt;Adjuntar Grabación (Vídeo):&lt;/label&gt;
+        &lt;input type="file" id="bug-video-file" accept="video/*" /&gt;
+    &lt;/div&gt;
+    
+    &lt;button onclick="submitManualBugReport()"&gt;ENVIAR REPORTE&lt;/button&gt;
+&lt;/div&gt;</pre>
+
+            <p class="panel-subtitle">Envío de Datos de Diagnóstico Automáticos + Archivos del Usuario:</p>
+            <p>
+                Aunque las imágenes y vídeos son opcionales y cargados por el usuario, el script adjunta automáticamente los metadatos y variables lógicas del juego para que el desarrollador pueda reproducir el bug:
+            </p>
+            <pre><span class="comment">// js/diagnostics.js - Emisor de reportes de errores manuales</span>
+
+<span class="keyword">async</span> <span class="keyword">function</span> <span class="function">submitManualBugReport</span>() {
+    <span class="keyword">const</span> <span class="var">comments</span> = document.getElementById(<span class="string">'bug-comments'</span>).value.trim();
+    <span class="keyword">const</span> <span class="var">imageInput</span> = document.getElementById(<span class="string">'bug-image-file'</span>);
+    <span class="keyword">const</span> <span class="var">videoInput</span> = document.getElementById(<span class="string">'bug-video-file'</span>);
+
+    <span class="keyword">if</span> (!<span class="var">comments</span>) {
+        <span class="function">showNetworkMessage</span>(<span class="string">"Por favor, añade una descripción del error"</span>);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 1. Recopilar telemetría de depuración del estado del juego automáticamente</span>
+    <span class="keyword">const</span> <span class="var">systemState</span> = {
+        wave: <span class="var">wave</span>,
+        enemiesCount: <span class="var">enemies</span>.length,
+        activePlayers: <span class="var">players</span>.length,
+        isCoop: <span class="var">isCoop</span>,
+        isOnline: <span class="var">isOnline</span>,
+        userAgent: navigator.userAgent,
+        recentConsoleErrors: window.recentConsoleErrors || []
+    };
+
+    <span class="comment">// 2. Empaquetar todo en Multipart Form Data</span>
+    <span class="keyword">const</span> <span class="var">formData</span> = <span class="keyword">new</span> FormData();
+    <span class="var">formData</span>.append(<span class="string">'comments'</span>, <span class="var">comments</span>);
+    <span class="var">formData</span>.append(<span class="string">'systemState'</span>, JSON.stringify(<span class="var">systemState</span>));
+
+    <span class="comment">// Adjuntar archivos cargados por el usuario (si existen)</span>
+    <span class="keyword">if</span> (<span class="var">imageInput</span>.files && <span class="var">imageInput</span>.files[<span class="number">0</span>]) {
+        <span class="var">formData</span>.append(<span class="string">'screenshot'</span>, <span class="var">imageInput</span>.files[<span class="number">0</span>]);
+    }
+    <span class="keyword">if</span> (<span class="var">videoInput</span>.files && <span class="var">videoInput</span>.files[<span class="number">0</span>]) {
+        <span class="var">formData</span>.append(<span class="string">'video'</span>, <span class="var">videoInput</span>.files[<span class="number">0</span>]);
+    }
+
+    <span class="keyword">try</span> {
+        <span class="keyword">let</span> <span class="var">response</span> = <span class="keyword">await</span> fetch(<span class="string">'/api/bugs/report'</span>, {
+            method: <span class="string">'POST'</span>,
+            body: <span class="var">formData</span> <span class="comment">// Multipart/form-data automático</span>
+        });
+
+        <span class="keyword">if</span> (<span class="var">response</span>.ok) {
+            <span class="function">showNetworkMessage</span>(<span class="string">"¡Gracias! Reporte de bug enviado correctamente."</span>);
+            <span class="comment">// Limpiar campos del formulario...</span>
+        } <span class="keyword">else</span> {
+            <span class="function">showNetworkMessage</span>(<span class="string">"Error al procesar el reporte en el servidor"</span>);
+        }
+    } <span class="keyword">catch</span> (<span class="var">err</span>) {
+        <span class="function">showNetworkMessage</span>(<span class="string">"Fallo de conexión al enviar el reporte"</span>);
+    }
+}</pre>
+        </div>
+    </div>
+
+    <!-- ================= TAB 6: MONETIZACIÓN Y PLATAFORMAS ================= -->
+    <div id="monetizacion" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Estrategia de Monetización e Integración de Plataformas</h3>
+            <p>
+                Para rentabilizar un juego de acción web como **NEON OVERDRIVE**, se proponen distintas vías técnicas de monetización y portales de publicación web y escritorio compatibles con la tecnología HTML5 del simulador.
+            </p>
+
+            <h4 class="panel-subtitle">1. Plataformas de Publicación Recomendadas</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Plataforma / Portal</th>
+                        <th>Modelo de Negocio</th>
+                        <th>Ventajas Técnicas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Poki (poki.com)</strong></td>
+                        <td>Ad-Revenue Share (Anuncios)</td>
+                        <td>Es la red más grande de juegos HTML5. Proporcionan un SDK nativo para anuncios recompensados e intersticiales con altas tasas de conversión en navegadores de escritorio y móviles.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CrazyGames (crazygames.com)</strong></td>
+                        <td>Anuncios + Promoción directa</td>
+                        <td>Gran tráfico y soporte excelente para controles por Gamepad. El SDK de CrazyGames permite colocar banners directamente en la UI HTML y vídeos en medio del juego de forma sencilla.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Itch.io (itch.io)</strong></td>
+                        <td>Paga lo que quieras / Compra Premium</td>
+                        <td>Perfecto para la fase indie. Permite alojar el juego gratis y aceptar donaciones, o venderlo de forma premium ofreciendo descargas empaquetadas para Windows/Mac.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Steam (Tienda de PC)</strong></td>
+                        <td>Venta Premium de una sola vez</td>
+                        <td>Es posible empaquetar el juego usando **Tauri** o **Electron** para convertir la web en una aplicación nativa ejecutable (<code>.exe</code>). Esto permite vender el juego en Steam, soportando logros, nube y guardado de Steam.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4 class="panel-subtitle">2. Integración Técnica de SDKs de Anuncios (Ad Networks)</h4>
+            <p>
+                Para evitar fallos lógicos si el juego se ejecuta offline o en un portal que no carga los scripts de Poki o CrazyGames, se debe diseñar una capa de abstracción segura. Un módulo centralizado (<code>js/monetization.js</code>) se encargará de realizar las llamadas condicionales.
+            </p>
+            <pre><span class="comment">// js/monetization.js - Adaptador seguro para Ads</span>
+
+<span class="keyword">const</span> <span class="var">AdManager</span> = {
+    <span class="var">sdkLoaded</span>: <span class="keyword">false</span>,
+    <span class="var">platform</span>: <span class="string">"crazygames"</span>, <span class="comment">// "poki", "crazygames", o "none"</span>
+
+    <span class="function">init</span>() {
+        <span class="comment">// Comprobar si el SDK de la plataforma está cargado en window</span>
+        <span class="keyword">if</span> (window.CrazyGames && window.CrazyGames.SDK) {
+            <span class="keyword">this</span>.sdkLoaded = <span class="keyword">true</span>;
+            <span class="keyword">this</span>.platform = <span class="string">"crazygames"</span>;
+        } <span class="keyword">else</span> <span class="keyword">if</span> (window.PokiSDK) {
+            <span class="keyword">this</span>.sdkLoaded = <span class="keyword">true</span>;
+            <span class="keyword">this</span>.platform = <span class="string">"poki"</span>;
+        } <span class="keyword">else</span> {
+            <span class="keyword">this</span>.platform = <span class="string">"none"</span>;
+        }
+    },
+
+    <span class="function">showRewardedAd</span>(<span class="var">onSuccess</span>, <span class="var">onFailure</span>) {
+        <span class="keyword">if</span> (!<span class="keyword">this</span>.sdkLoaded) {
+            <span class="comment">// Si no hay internet o red de anuncios, simular éxito o fallo localmente</span>
+            <span class="function">onSuccess</span>();
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">if</span> (<span class="keyword">this</span>.platform === <span class="string">"crazygames"</span>) {
+            <span class="var">crazygamesSDK</span>.ad.requestAd(<span class="string">'rewarded'</span>, {
+                adStarted: () => { <span class="function">togglePauseGame</span>(<span class="keyword">true</span>); },
+                adFinished: () => { <span class="function">togglePauseGame</span>(<span class="keyword">false</span>); <span class="function">onSuccess</span>(); },
+                adError: () => { <span class="function">togglePauseGame</span>(<span class="keyword">false</span>); <span class="function">onFailure</span>(); }
+            });
+        } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>.platform === <span class="string">"poki"</span>) {
+            <span class="var">PokiSDK</span>.rewardedAdOpportunity().then(<span class="var">success</span> => {
+                <span class="keyword">if</span> (<span class="var">success</span>) { <span class="function">onSuccess</span>(); } <span class="keyword">else</span> { <span class="function">onFailure</span>(); }
+            });
+        }
+    }
+};</pre>
+
+            <h4 class="panel-subtitle">3. Mecánicas de Monetización en el Gameplay</h4>
+            <ul>
+                <li style="margin-bottom:8px;">
+                    <strong>Anuncios Recompensados (Rewarded Ads):</strong> Ofrecidos de manera opcional en las transiciones lógicas del simulador. Por ejemplo, en la pantalla de Game Over se puede ver un anuncio a cambio de **doblar los créditos obtenidos en la oleada** o conservar los materiales recolectados tras colapsar.
+                </li>
+                <li style="margin-bottom:8px;">
+                    <strong>Anuncios Intersticiales (Interstitials):</strong> Vídeos cortos obligatorios (de 5 a 15 segundos) colocados estratégicamente al pulsar "INICIAR SIMULACIÓN" o "REINICIAR SIMULACIÓN". Nunca deben irrumpir en mitad de una oleada para mantener una buena experiencia de usuario.
+                </li>
+                <li style="margin-bottom:8px;">
+                    <strong>Compras de Cosméticos (Microtransacciones):</strong> Si se integra una base de datos de usuarios (stubs de nube en <code>data.js</code>), se pueden desbloquear diseños especiales y skins para las naves (ej. estelas de motor personalizadas, colores neón únicos) usando pasarelas como Stripe o PayPal.
+                </li>
+            </ul>
+
+            <h4 class="panel-subtitle">4. Seguridad en Guardado Local (Prevención de Hacks)</h4>
+            <p>
+                Dado que los progresos y créditos de los jugadores se almacenan de forma local en <code>localStorage</code>, es muy fácil para los usuarios alterar su saldo de créditos directamente desde la consola del navegador.
+            </p>
+            <div class="alert alert-danger">
+                <strong>Solución Técnica (Save Signing):</strong> Para evitar trampas que rompan la economía del juego, se puede encriptar o firmar el JSON del save con un hash SHA-256 utilizando una clave secreta. Al cargar el save en <code>data.js</code>, el juego calcula de nuevo el hash de los datos cargados y, si no coincide con la firma guardada, se detecta manipulación y se limpia o advierte el perfil.
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 7: OPTIMIZACIONES AVANZADAS ================= -->
+    <div id="optimizaciones" class="tab-content">
+        <div class="panel">
+            <h3 class="panel-title">Técnicas de Optimización y Rendimiento</h3>
+            <p>
+                La reorganización física del código en módulos especializados facilita la implementación de mejoras avanzadas de rendimiento dirigidas a la GPU y la gestión del Garbage Collector de los navegadores.
+            </p>
+
+            <h4 class="panel-subtitle">1. Object Pooling (Reciclaje de Elementos en Memoria)</h4>
+            <p>
+                <strong>Problema Actual:</strong> Cada disparo y explosión añade dinámicamente objetos al heap mediante <code>bullets.push()</code> o <code>particles.push()</code>. Al desaparecer, el recolector de basura del navegador (Garbage Collector) interrumpe la simulación para liberar memoria, causando micro-tirones (stuttering).
+            </p>
+            <div class="alert alert-info">
+                <strong>Solución Recomendada:</strong> Definir colecciones con un número máximo de elementos inactivos al iniciar. En lugar de instanciar nuevos objetos lógicos, se activan y reposicionan elementos ya cargados en memoria, reduciendo la carga del recolector de basura a cero durante la partida.
+            </div>
+
+            <h4 class="panel-subtitle">2. Caching de Gráficos (Offscreen Canvas)</h4>
+            <p>
+                <strong>Problema Actual:</strong> La cuadrícula del fondo y los efectos geométricos estáticos se dibujan línea por línea 60 veces por segundo, consumiendo recursos de procesador del Canvas 2D.
+            </p>
+            <div class="alert alert-info">
+                <strong>Solución Recomendada:</strong> Renderizar la cuadrícula una única vez en un elemento Canvas oculto en memoria al cargar el simulador. Durante el frame rate normal, el buffer se copia instantáneamente en el canvas de dibujo principal utilizando <code>ctx.drawImage(offscreenCanvas, 0, 0)</code>, liberando la carga del hilo principal.
+            </div>
+
+            <h4 class="panel-subtitle">3. Optimización de Eventos (Event Delegation)</h4>
+            <p>
+                <strong>Problema Actual:</strong> Las interfaces de compra y el inventario multi-panel añaden event listeners individuales por cada celda de componente, lo que consume memoria del DOM.
+            </p>
+            <div class="alert alert-info">
+                <strong>Solución Recomendada:</strong> Capturar los clicks en el contenedor superior (Nexus container) y determinar qué celda fue presionada a través del atributo <code>event.target.dataset.id</code>, simplificando la pila de listeners activos.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function switchTab(evt, tabId) {
+        var contents = document.getElementsByClassName('tab-content');
+        for (var i = 0; i < contents.length; i++) {
+            contents[i].classList.remove('active');
+        }
+
+        var buttons = document.getElementsByClassName('tab-btn');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.remove('active');
+        }
+
+        document.getElementById(tabId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+</script>
+</body>
+</html>
